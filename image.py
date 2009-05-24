@@ -1,9 +1,3 @@
-# TODO 
-#
-# Symmetrization - for reflection in one and two directions Deal with rotation
-# of image eg. due to CCD not being aligned to laser polarization
-#
-
 import numpy
 
 class VMI:
