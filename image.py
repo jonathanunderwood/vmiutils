@@ -118,7 +118,7 @@ if __name__ == "__main__":
 
     import pylab
     pylab.figure()
-    pylab.imshow(img.workspace)
+    pylab.imshow(img.workspace, origin='lower')
     pylab.show()
 
 
