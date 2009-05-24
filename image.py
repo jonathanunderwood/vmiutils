@@ -31,7 +31,7 @@ class VMI:
         xval = 0.0
         yval = 0.0
 
-        for index, val in numpy.ndenumerate(self.data):
+        for index, val in numpy.ndenumerate(self.image):
             sum += val
             xval += val * index[0]
             yval += val * index[1]
@@ -47,6 +47,7 @@ class VMI:
         method swaps the axes of the image in case that is needed to comply
         with this convention.
         """
+        numpy.transpose(self.image)
 
     def workspace_init(self, centre=None, *quadrants):
         """
@@ -60,31 +61,43 @@ class VMI:
         call the method swap_axes before setting up a workspace to rotate the
         image. 
 
-        This also sets up the four quadrant views into the image array.
+        The last argument(s) indicate the quadrants to be used for
+        constructing the workspace. The quadrants are numbered 0-3:
+
+        Quadrant 0: from centre to (xmax, ymax) [Top right]
+        Quadrant 1: from centre to (xmax, 0)    [Bottom right]
+        Quadrant 2: from centre to (0, 0)       [Bottom Left]
+        Quadrant 3: from centre to (0, ymax]    [Top left]
         """
         self.centre = centre
 
-        # Ensure the symmetry axis is along the y-axis of the image
-        if (sym_axis == "x"):
-            numpy.transpose(self.image)
-        
-        # Set up views into each quadrant with correct indexing away from
-        # image centre. The way these are setup actually assumes that the
+        # Set up views into each quadrant with correct indexing away
+        # from image centre. The way these are setup assumes that the
         # centre is right on the lower left corner ofthe centre pixel.
-        self.quadrant = [self.image[centre[0]::, centre[1]::), 
-                         self.image[centre[0]::, centre[1]-1::-1),
-                         self.image[centre[0]-1::-1, centre[1]::),
-                         self.image[centre[0]-1::-1, centre[1]-1::-1)]
+        self.quadrant = [
+            self.image[centre[0]::, centre[1]::], 
+            self.image[centre[0]::, centre[1]-1::-1],
+            self.image[centre[0]-1::-1, centre[1]-1::-1],
+            self.image[centre[0]-1::-1, centre[1]::]
+            ]
 
-        # Find largest dimension in x and y for the four quadrants
-        maxdim_x = max ([self.quadrant[i].shape[0] for i in range(4)])
-        maxdim_y = max ([self.quadrant[i].shape[1] for i in range(4)])
+        # Find largest dimension in x and y for the relevant quadrants
+        xdim = max ([self.quadrant[i].shape[0] for i in quadrants])
+        ydim = max ([self.quadrant[i].shape[1] for i in quadrants])
 
-        # Find smallest dimension in x and y for the four quadrants
-        mindim_x = min ([self.quadrant[i].shape[0] for i in range(4)])
-        mindim_y = min ([self.quadrant[i].shape[1] for i in range(4)])
-
+        self.workspace=numpy.zeros((xdim, ydim))
         
+        # Average together the requested quadrants. Take care of
+        # situation where a workspace pixel doesn't have a
+        # corresponding pixel in all 4 quadrants.
+        for (i, j), val in numpy.ndenumerate(self.workspace):
+            norm = 0
+            for q in quadrants:
+                if (i < self.quadrant[q].shape[0] and 
+                    j < self.quadrant[q].shape[1]):
+                    self.workspace[i][j] += self.quadrant[q][i][j]
+                    norm += 1
+            self.workspace[i][j] /= norm
 
 if __name__ == "__main__":
     import sys
@@ -100,8 +113,13 @@ if __name__ == "__main__":
 
     img.centre_of_gravity()
     print "Centre of gravity:", img.cofg 
-    print "Centre of gravity pixel:", img.cofg_pixel 
     
+    img.workspace_init(img.cofg, 0, 1, 2, 3)
+
+    import pylab
+    pylab.figure()
+    pylab.imshow(img.workspace)
+    pylab.show()
 
 
 
