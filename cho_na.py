@@ -10,40 +10,47 @@ class ChoNa:
         # than 0. Here we index from zero, so the formulas are adjusted
         # accordingly.
 
-        # Calculate the P matrix. Note that P[0][0] is zero, so iterate from 1
-        # upwards.
         P = numpy.zeros((dim, dim))
-        
-        acos = math.acos # Avoid dictionary lookup on each iteration
+
+        # Avoid dictionary lookup for functions on each iteration
+        acos = math.acos
         tan = math.tan
-
-        for i in range(0, dim):
-            for j in range (i, dim):
-                jj = j + 1
-                theta = acos (i / jj)
-                P[i][j] = 0.5 * (jj * jj * theta - 
-                                 i * i * tan(theta))
-
-        self.S = numpy.zeros((dim, dim))
         
-        for i in range(0, dim):
-            for j in range (i, dim):
-                self.S[i][j] = P[i][j]
+        # Here we set d = 1 / dim^2 to normalize to a width of 1. This
+        # isn't really necessary - we could dispense with this and the
+        # factor of 0.5 in the loop
+        dd = 1.0 / (dim * dim)
+        for i in xrange(dim):
+            ii = float(i)
+            for j in xrange(i, dim):
+                jj = float(j + 1)
+                theta = acos(ii / jj)
+                P[i, j] = 0.5 * dd * (jj * jj * theta - 
+                                      ii * ii * tan(theta))
 
-                a = (i <= dim - 2)
-                b = (j > 1)
-
+        self.S = P.copy()
+        for i in xrange(dim):
+            a = (i < dim - 1)
+            for j in xrange(i, dim):
                 if a:
-                    self.S[i][j] -= P[i + 1][j]
+                    self.S[i, j] -= P[i + 1, j]
 
-                if b: 
-                    self.S[i][j] -= P[i][j - 1]
+                if j > 0:
+                    self.S[i, j] -= P[i, j - 1]
+                    if a:
+                        self.S[i, j] += P[i + 1, j - 1]
 
-                if (a and b):
-                    self.S[i][j] += P[i + 1][j - 1]
+
+        
 
 
 if __name__ == "__main__":
-    chona = ChoNa()
+    from timeit import Timer
 
-    chona.Smatrix(1000)
+    chona = ChoNa()
+    chona.Smatrix(20)
+    print chona.S
+
+#    t = Timer("chona.Smatrix(5)", "from __main__ import ChoNa; chona = ChoNa()")
+
+#    print t.timeit()
