@@ -29,20 +29,9 @@ class ChoNa:
                                       ii * ii * tan(theta))
 
         self.S = P.copy()
-        for i in xrange(dim):
-            a = (i < dim - 1)
-            for j in xrange(i, dim):
-                if a:
-                    self.S[i, j] -= P[i + 1, j]
-
-                if j > 0:
-                    self.S[i, j] -= P[i, j - 1]
-                    if a:
-                        self.S[i, j] += P[i + 1, j - 1]
-
-
-        
-
+        self.S[0:dim - 1, :] -= P[1:dim, :]
+        self.S[:, 1:dim] -= P[:, 0:dim - 1]
+        self.S[0:dim - 1, 1:dim] += P[1:dim, 0:dim - 1]
 
 if __name__ == "__main__":
     from timeit import Timer
