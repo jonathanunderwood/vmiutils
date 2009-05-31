@@ -1,3 +1,9 @@
+# Functions relating to "Application of Abel inversion in real-time
+# calculations for circularly and elliptically symmetric radiation sources",
+# Y. T. Cho and S-J Na, Sci. Technol. 16 878-884 (2005).  Note that the i, j
+# indices in the Cho and Na paper start from 1 rather than 0. Here we index
+# from zero, so the formulas are adjusted accordingly.
+
 import numpy
 import math
 
