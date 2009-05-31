@@ -40,11 +40,5 @@ def area_matrix(dim):
     return S
 
 if __name__ == "__main__":
-    from timeit import Timer
-
     S = area_matrix(20)
     print S
-
-#    t = Timer("chona.Smatrix(5)", "from __main__ import ChoNa; chona = ChoNa()")
-
-#    print t.timeit()
