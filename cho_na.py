@@ -5,7 +5,7 @@
 # from zero, so the formulas are adjusted accordingly.
 
 import numpy
-import math
+import scipy.linalg
 
 def __P(i, j):
     """
@@ -38,6 +38,31 @@ def area_matrix(dim):
     S[0:dim - 1, 1:dim] += P[1:dim, 0:dim - 1]
 
     return S
+
+def invert(image, S=None):
+    """
+    Invert an image stored as a 2D numpy array. Assumes that image[0, 0]
+    corresponds to the first element of the area matrix etc. In other words,
+    assumes that image[0, 0] is the image centre and the array contains one
+    quadrant of the image. 
+
+    image: numpy 2D array containing image to be inverted
+
+    S: Area matrix as defined by Cho and Na. Optional - if not passed will be
+    calculated as needed
+
+    returns a 2D numpy array containing the inverted image in cylindrical
+    polar coordinates.
+    """
+
+    if S == None:
+        dim = image.shape[0]
+        S = area_matrix(dim)
+    elif S.shape[0] != image.shape[0]:
+        raise ValueError # TODO: replace with own exception
+
+    return scipy.linalg.solve(S, image)
+
 
 if __name__ == "__main__":
     S = area_matrix(20)
