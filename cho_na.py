@@ -56,8 +56,7 @@ def invert(image, S=None):
     """
 
     if S == None:
-        dim = image.shape[0]
-        S = area_matrix(dim)
+        S = area_matrix(image.shape[0])
     elif S.shape[0] != image.shape[0]:
         raise ValueError # TODO: replace with own exception
 
@@ -65,5 +64,26 @@ def invert(image, S=None):
 
 
 if __name__ == "__main__":
-    S = area_matrix(20)
-    print S
+    import image
+    import sys
+    import pylab
+    import matplotlib.cm
+
+    img = image.VMI()
+    file=sys.argv[1]
+
+    try:
+        img.read(file)
+    except IOError:
+        print "Could not read file", file
+        sys.exit(74)
+        
+    img.swap_axes()
+    img.centre_of_gravity()
+    img.workspace_init(img.cofg, 0)
+
+    dist=invert(img.workspace)
+    fig = pylab.figure()
+    #fig.colorbar()
+    pylab.imshow(dist, cmap=matplotlib.cm.gray, origin='lower')
+    pylab.show()
