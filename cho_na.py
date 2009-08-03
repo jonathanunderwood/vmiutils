@@ -55,12 +55,41 @@ def invert(image, S=None):
     polar coordinates.
     """
 
+    im = image.transpose()
+
     if S == None:
-        S = area_matrix(image.shape[0])
-    elif S.shape[0] != image.shape[0]:
+        S = area_matrix(im.shape[0])
+    elif S.shape[0] != im.shape[0]:
         raise ValueError # TODO: replace with own exception
 
-    return scipy.linalg.solve(S, image)
+    a = scipy.linalg.solve(S, im)
+    return a.transpose()
+
+
+from scipy import signal
+
+def gauss_kern(size, sizey=None):
+    """ Returns a normalized 2D gauss kernel array for convolutions """
+    size = int(size)
+    if not sizey:
+        sizey = size
+    else:
+        sizey = int(sizey)
+    x, y = numpy.mgrid[-size:size+1, -sizey:sizey+1]
+    g = numpy.exp(-(x**2/float(size) + y**2/float(sizey)))
+    return g / g.sum()
+
+def blur_image(im, n, ny=None) :
+    """ blurs the image by convolving with a gaussian kernel of typical
+        size n. The optional keyword argument ny allows for a different
+        size in the y direction.
+    """
+    g = gauss_kern(n, sizey=ny)
+    improc = signal.convolve(im, g, mode='valid')
+    return(improc)
+
+
+
 
 
 if __name__ == "__main__":
@@ -68,22 +97,30 @@ if __name__ == "__main__":
     import sys
     import pylab
     import matplotlib.cm
-
-    img = image.VMI()
+    
     file=sys.argv[1]
 
     try:
-        img.read(file)
+        img = numpy.loadtxt(file)
     except IOError:
         print "Could not read file", file
         sys.exit(74)
         
-    img.swap_axes()
-    img.centre_of_gravity()
-    img.workspace_init(img.cofg, 0)
+    img = img.transpose()
 
-    dist=invert(img.workspace)
-    fig = pylab.figure()
-    #fig.colorbar()
-    pylab.imshow(dist, cmap=matplotlib.cm.gray, origin='lower')
+    cofg = image.centre_of_gravity(img)
+
+    wksp = image.workspace_init(img, cofg, 0, 1, 2, 3)
+
+    dist = invert(wksp)
+
+    dist_s=blur_image(dist, 2)
+
+    fig=pylab.figure(1)
+    pylab.subplot(1, 2, 1)
+    plt = pylab.imshow(dist, cmap=matplotlib.cm.gray, origin='lower')
+#    fig.colorbar(plt)
+    pylab.subplot(1, 2, 2)
+    plt2 = pylab.imshow(wksp, cmap=matplotlib.cm.gray, origin='lower')
+
     pylab.show()

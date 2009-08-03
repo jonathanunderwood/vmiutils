@@ -12,6 +12,8 @@ for file in sys.argv[1:]:
     # See http://www.mail-archive.com/numpy-discussion@scipy.org/msg07554.html
     print file
     image = Image.open(file)
+    print image.format, image.size, image.mode
+
     a = numpy.array(image.getdata())
 
     # For some reason row/column order is wrong, so need this:
