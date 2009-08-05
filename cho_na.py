@@ -62,18 +62,18 @@ def invert(image, S=None):
     if S == None:
         S = area_matrix(im.shape[0])
     elif S.shape[0] != im.shape[0]:
-        raise ValueError # TODO: replace with own exception
+        raise ValueError
 
     a = scipy.linalg.solve(S, im)
     return a.transpose()
 
 def invert_plreg(image, iterations, initial_guess=None, tau=None, S=None):
 
-    im = image  #.transpose   
-    
+    im = image.transpose()
+
     if S == None:
-        S = area_matrix(im.shape[0])
-    elif S.shape[0] != im.shape[0]:
+        S = area_matrix(im.shape[1])
+    elif S.shape[1] != im.shape[1]: # TODO: Should transpose S!!!
         raise ValueError # TODO: replace with own exception
 
     if tau == None:
@@ -82,19 +82,20 @@ def invert_plreg(image, iterations, initial_guess=None, tau=None, S=None):
 	raise ValueError
 
     if initial_guess == None:
-        a = numpy.zeros(image.shape)
-    elif initial_guess.shape != image.shape:
+        a = numpy.zeros(im.shape)
+    elif initial_guess.shape != im.shape:
 	raise ValueError
-    #else
-	#a = initial_guess.transpose()
+    else:
+	a = initial_guess.transpose()
 
     St = S.transpose()
     StS = St * S
 
-    for i in xrange(image.shape[0]):
-        b = St * image[i] # could do a chona inversion here instead with solve
-        
-        for j in xrange(interations):
+    for i in xrange(im.shape[0]):
+        print St.shape, im[i].shape
+        b = St * im[i]
+
+        for j in xrange(iterations):
             a[i, :] += tau * (b - (StS * a[i, :]))
             a[i] = a[i].clip(min=0.0)
 
@@ -146,7 +147,7 @@ if __name__ == "__main__":
 
     wksp = image.workspace_init(img, cofg, 0, 1, 2, 3)
 
-    #dist = invert(wksp)
+#    dist = invert(wksp)
     dist = invert_plreg(wksp, 100)
 
     dist_s=blur_image(dist, 2)
