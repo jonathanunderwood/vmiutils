@@ -55,6 +55,8 @@ def invert(image, S=None):
     polar coordinates.
     """
 
+    # Because of the column order that linalg.solve expects, we have to
+    # transpose here, and then transpose the answer back.
     im = image.transpose()
 
     if S == None:
@@ -65,6 +67,38 @@ def invert(image, S=None):
     a = scipy.linalg.solve(S, im)
     return a.transpose()
 
+def invert_plreg(image, iterations, initial_guess=None, tau=None, S=None):
+
+    im = image  #.transpose   
+    
+    if S == None:
+        S = area_matrix(im.shape[0])
+    elif S.shape[0] != im.shape[0]:
+        raise ValueError # TODO: replace with own exception
+
+    if tau == None:
+	tau = 1.0
+    elif tau <= 0 or tau >= 2/S.norm():
+	raise ValueError
+
+    if initial_guess == None:
+        a = numpy.zeros(image.shape)
+    elif initial_guess.shape != image.shape:
+	raise ValueError
+    #else
+	#a = initial_guess.transpose()
+
+    St = S.transpose()
+    StS = St * S
+
+    for i in xrange(image.shape[0]):
+        b = St * image[i] # could do a chona inversion here instead with solve
+        
+        for j in xrange(interations):
+            a[i, :] += tau * (b - (StS * a[i, :]))
+            a[i] = a[i].clip(min=0.0)
+
+    return a
 
 from scipy import signal
 
@@ -79,7 +113,7 @@ def gauss_kern(size, sizey=None):
     g = numpy.exp(-(x**2/float(size) + y**2/float(sizey)))
     return g / g.sum()
 
-def blur_image(im, n, ny=None) :
+def blur_image(im, n, ny=None):
     """ blurs the image by convolving with a gaussian kernel of typical
         size n. The optional keyword argument ny allows for a different
         size in the y direction.
@@ -112,7 +146,8 @@ if __name__ == "__main__":
 
     wksp = image.workspace_init(img, cofg, 0, 1, 2, 3)
 
-    dist = invert(wksp)
+    #dist = invert(wksp)
+    dist = invert_plreg(wksp, 100)
 
     dist_s=blur_image(dist, 2)
 
