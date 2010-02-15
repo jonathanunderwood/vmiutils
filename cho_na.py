@@ -60,8 +60,8 @@ def invert(image, S=None):
     im = image.transpose()
 
     if S == None:
-        S = area_matrix(im.shape[1])
-    elif S.shape[1] != im.shape[1]:
+        S = area_matrix(im.shape[0])
+    elif S.shape[0] != im.shape[0]:
         raise ValueError
 
     a = scipy.linalg.solve(S, im)
@@ -73,30 +73,41 @@ def invert_plreg(image, iterations, initial_guess=None, tau=None, S=None):
 
     if S == None:
         S = area_matrix(im.shape[1]).transpose()
-    elif S.shape[1] != im.shape[1]: # TODO: Should transpose S!!!
-        raise ValueError # TODO: replace with own exception
+    elif S.shape[1] != im.shape[1]:
+        raise ValueError
 
     Snorm = numpy.linalg.norm(S)
+    Snorm2 = Snorm * Snorm
 
     if tau == None:
-	tau = 1.0 / Snorm
-    elif tau <= 0 or tau >= 2 / Snorm:
+	tau = 1.0 / Snorm2
+    elif tau <= 0 or tau >= 2 / Snorm2:
 	raise ValueError
 
-    if initial_guess == None:
-        a = numpy.zeros(im.shape)
-    elif initial_guess.shape != im.shape:
-	raise ValueError
-    else:
-	a = initial_guess.transpose()
+    print "tau:", tau
 
     St = S.transpose()
     StS = numpy.dot(St, S)
 
+    if initial_guess == None:
+        a = numpy.ones(shape=im.shape, dtype=float)
+    elif initial_guess.shape != im.shape:
+	raise ValueError
+    else:
+	a = initial_guess
+
     for i in xrange(im.shape[0]):
         print i
         b = numpy.dot(St, im[i])
-        
+
+        # Scale inital guess so that each row gives the same number of hits in
+        # the corresponding synthesized image as the in the original image
+        if initial_guess == None:
+            norm = (numpy.dot(S, a[i])).sum()
+            norm = im[i].sum() / norm
+            print norm
+            a[i] *= norm
+
         for j in xrange(iterations):
             a[i] += tau * (b - numpy.dot(StS, a[i]))
             a[i] = a[i].clip(min=0.0)
@@ -143,21 +154,25 @@ if __name__ == "__main__":
         print "Could not read file", file
         sys.exit(74)
         
-    img = img.transpose()
+#    img = img.transpose()
 
     cofg = image.centre_of_gravity(img)
 
-    wksp = image.workspace_init(img, cofg, 0, 1, 2, 3)
+    wksp = image.workspace_init(img, cofg, 0)
 
-#    dist = invert(wksp)
-    dist = invert_plreg(wksp, 100000)
+    dist_simp = invert(wksp)
+#    dist = invert_plreg(wksp, 1000, initial_guess=dist_simp)
+#    dist = invert_plreg(wksp, 1000)
 
-    dist_s=blur_image(dist, 2)
+#    dist_simp=blur_image(dist_simp, 3)
 
     fig=pylab.figure(1)
-    pylab.subplot(1, 2, 1)
-    plt = pylab.imshow(dist, cmap=matplotlib.cm.gray, origin='lower')
+#    pylab.subplot(1, 3, 1)
+#    plt = pylab.imshow(dist[30:, 30:], cmap=matplotlib.cm.gray, origin='lower')
+#    plt = pylab.imshow(dist, cmap=matplotlib.cm.gray, origin='lower')
 #    fig.colorbar(plt)
+    pylab.subplot(1, 2, 1)
+    plt2 = pylab.imshow(dist_simp, cmap=matplotlib.cm.gray, origin='lower')
     pylab.subplot(1, 2, 2)
     plt2 = pylab.imshow(wksp, cmap=matplotlib.cm.gray, origin='lower')
 
