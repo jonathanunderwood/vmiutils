@@ -1,0 +1,20 @@
+import polcart
+
+class VMIPolarImage():
+    """ Class used to represent a VMI image stored in polar coordinates
+    i.e. in regularly spaced bins in (R, theta)."""
+
+    def __init__(self):
+        self.image = None
+        self.r = None
+        self.theta = None
+
+    def from_VMICartesianImage(self, cimage, radial_bins=256, 
+                               angular_bins=256, centre=None, 
+                               max_radius=None):
+
+        # TODO: Should ensure angular_bins is even so we can symmetrize
+        # easily. 
+        self.r, self.theta, self.image = polcart.cartesian_to_polar(
+            cimage.image, cimage.x, cimage.y, radial_bins, angular_bins,
+            centre, max_radius)
