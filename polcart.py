@@ -5,7 +5,7 @@ import numpy
 import scipy.interpolate as spint
 
 def cartesian_to_polar(cimage, x=None, y=None, radial_bins=256, 
-                       angular_bins=256, centre=None, max_radius=None): 
+                       angular_bins=256, centre=None, rmax=None): 
     """ Convert an image on a regularly spaced cartesian grid into a regular
     spaced grid in polar coordinates using interpolation.
     
@@ -19,90 +19,77 @@ def cartesian_to_polar(cimage, x=None, y=None, radial_bins=256,
     (does not need to be an integer). If this is set to None the midpoint x
     and y coordinates are used.
 
-    max_radius defines the maximum dist
+    rmax defines the maximum dist
     """
-    print angular_bins
     if x == None or y == None:
         xdim = cimage.shape[0]
         ydim = cimage.shape[1]
 
-        if centre == None:
-            xc = xdim * 0.5
-            yc = ydim * 0.5 
-        else:
-            xc = centre[0]
-            yc = centre[1]
-
         # Note: these are values at bin centre
-        x = numpy.arange(xdim) + 0.5 - xc
-        y = numpy.arange(ydim) + 0.5 - yc
+        x = numpy.arange(0.5 - xc, xdim)
+        y = numpy.arange(0.5 - yc, ydim)
 
-        xmax = x[-1]
-        xmin = x[0]
-        ymax = y[-1]
-        ymin = y[0]
+    xmin = x[0]
+    xmax = x[-1]
+    ymin = y[0]
+    ymax = y[-1]
+    
+    xbinw = x[1] - x[0] # bin width - assume equally spaced bins 
+    ybinw = y[1] - y[0] # bin width - assume equally spaced bins 
+    print 'binw:', xbinw, ybinw
 
+    # centre is the value of the centre coordinate, rather than the pixel
+    # number 
+    if centre == None:
+        xc = 0.5 * (xmax - xmin + xbinw)
+        yc = 0.5 * (ymax - ymin + ybinw)
     else:
-        xmax = x[-1]
-        xmin = x[0]
-        ymax = y[-1]
-        ymin = y[0]
-
-        if centre == None:
-            xc = 0.5 * (xmax - xmin)
-            yc = 0.5 * (ymax - ymin)
-
-    # Calculate bin widths in cartesian image. We assume equally spaced bin
-    # widths.
-    xbinw = x[1] - x[0]
-    ybinw = y[1] - y[0]
+        xc = centre[0]
+        yc = centre[1]
+    print 'centre:', xc, yc
 
     # Calculate minimum distance from centre to edge of image - this
-    # determines the maximum radius in the polar image 
-    xsize = min (xmax + (0.5 * xbinw) - xc, xc - xmin - (0.5 * xbinw))
-    ysize = min (ymax + (0.5 * ybinw) - yc, yc - ymin - (0.5 * ybinw))
-    max_rad = math.sqrt(xsize**2 + ysize**2)
+    # Determine the maximum radius in the polar image 
+    xsize = min(xmax + (0.5 * xbinw) - xc, abs(xmin - (0.5 * xbinw) - xc))
+    ysize = min(ymax + (0.5 * ybinw) - yc, abs(ymin - (0.5 * ybinw) - yc))
+    max_rad = min(xsize, ysize)
+    print 'max_rad', max_rad
+    print 'xmin xmax', xmin, xmax
+    print 'ymin ymax', ymin, ymax
+    
+    print 'xsize ysize', xsize, ysize
 
-    if max_radius == None:
-        max_radius = max_rad
-    elif max_radius > max_rad:
+    if rmax == None:
+        rmax = max_rad
+    elif rmax > max_rad:
         raise ValueError
 
     # Set up interpolation - cubic spline with no smoothing by default 
     interp = spint.RectBivariateSpline(x, y, cimage)
 
     # Polar image bin widths
-    theta_bin_width = (2.0 * math.pi) / (angular_bins - 1.0)
-    radial_bin_width = max_radius / (radial_bins - 1.0)
+    rbinw = rmax / (radial_bins - 1.0)
+    tbinw = (2.0 * math.pi) / (angular_bins)
 
-    # Calculate polar image values - use vectorization for efficiency
-    # Because we broadcast when using a ufunc we can use an ogrid here rather
-    # thanan mgrid
+    # Calculate polar image values using interpolation, calculating all x and
+    # y values in advance for efficiency
+    # r, theta = numpy.ogrid[0.5*rbinw:rmax-0.5*rbinw:rbinw*1j, 
+    #                        0.5*tbinw:2.0*math.pi-0.5*tbinw]
+
     r, theta = numpy.ogrid[0:radial_bins, 0:angular_bins]
-    theta = (theta + 0.5) * theta_bin_width
-    r = (r + 0.5) * radial_bin_width
+    r = (r + 0.5) * rbinw
+    theta = (theta + 0.5) * tbinw
+    # theta = (theta + 0.5) * tbinw
+    # r = (r + 0.5) * rbinw
+    _x = r * numpy.sin(theta)
+    _y = r * numpy.cos(theta)
+    pimage = interp.ev(_x.ravel(), _y.ravel()).reshape(_x.shape)
 
-    # This creates a vectorized function. We may gain efficiency by also
-    # passing in the interp object?
-    polar_pix_val = numpy.frompyfunc(
-        lambda r, theta: interp.ev(r * math.sin(theta), r * math.cos(theta)),
-        2, 1)
-
-    pimage = polar_pix_val(r, theta)
-    print 'here'
+    print radial_bins, angular_bins
+    print 'r, rbinw:', r, rbinw
+    print theta
     print pimage
     return r.flatten(), theta.flatten(), pimage
-
-    # Calculate polar image values - non-vectorized version
-    # self.pimage = numpy.empty((radial_bins, angular_bins))
-    # for r in xrange(radial_bins):
-    #     R = (r + 0.5) * radial_bin_width;
-    #     for t in xrange(angular_bins):
-    #         theta = (t + 0.5) * theta_bin_width
-    #         x = R * math.sin(theta)
-    #         y = R * math.cos(theta)
-    #         self.pimage[r, t] = interp.ev(x, y)
-
 
 def polar_to_cartesian(pimage, r=None, theta=None, xbins=None, zbins=None):
     """ Convert an image stored on a grid regularly spaced in polar
@@ -117,66 +104,56 @@ def polar_to_cartesian(pimage, r=None, theta=None, xbins=None, zbins=None):
     coordinate for the returned cartesian image. If None, these are set to be
     equal to the number of radial bins in the input polar image.
     """
-    print r.shape
     if r == None:
-        r = numpy.arange(pimage.shape[0]) + 0.5
-        
-    if theta == None:
-        theta = numpy.arange(pimage.shape[1]) + 0.5
+        r = numpy.arange(0.5, pimage.shape[0])
+    #FIXME: check if r has correct dimension if passed in
 
-    
+    if theta == None:
+        theta = numpy.arange(0.5, pimage.shape[1])
+    #FIXME: check if theta has correct dimension if passed in
 
     # If the number of bins in the cartesian image is not specified, set it to
     # be the same as the number of radial bins in the polar image
     if xbins == None:
-        xbins = pimage.shape[0]
+        xbins = 2 * pimage.shape[0]
 
     if zbins == None:
-        zbins = pimage.shape[0]
+        zbins = 2 * pimage.shape[0]
+    
+    print 'bins', xbins, zbins
+    print 'r', r
+    print 'thta',theta
+    print 'pimage',pimage
 
-    rbinw = r[1] - r[0] # Assume equally spaced radial bins
-    rmax = r[-1] + (0.5 * rbinw)
+#    rbinw = r[1] - r[0] # Assume equally spaced radial bins
+    
+    # x and y both go from -rmax to +rmax
 
-    xbinw = 2.0 * rmax / (xbins - 1)
-    zbinw = 2.0 * rmax / (zbins - 1)
+    # x = (numpy.arange(xbins) * xbinw) - rmax
+    # z = (numpy.arange(zbins) * zbinw) - rmax
 
-    x = (numpy.arange(xbins) * xbinw) - rmax
-    z = (numpy.arange(zbins) * zbinw) - rmax
+    # x = numpy.indices(-rmax, rmax, xbins)
+    # z = numpy.indices(-rmax, rmax, zbins)
 
     # Set up the interpolation
     interp = spint.RectBivariateSpline(r, theta, pimage)
 
-    # Non-vectorized
-    # ix = iy = 0
-    # for xx in x:
-    #     ix += 1
-    #     for z in z:
-    #         iz += 1
-    #         rr = math.sqrt(xx**2 + zz**2)
-    #         if rr > rmax:
-    #             cimage[ix][iy] = 0.0
-    #         else:
-    #             tt = atan2(xx, zz)
-    #             cimage[ix][iy] = interp.ev(rr, tt)
+    # x, z = numpy.ogrid[0:xbins, 0:zbins]
+    # x = (x * xbinw) - rmax
+    # z = (z * zbinw) - rmax
+    rmaxi = r[-1] # r value at centre of bin
+    xbinw = 2.0 * rmaxi / (xbins - 1)
+    zbinw = 2.0 * rmaxi / (zbins - 1)
 
+    x, z = numpy.ogrid[-rmaxi:rmaxi:xbinw*1j, -rmaxi:rmaxi:zbinw*1j]
 
-    def get_pix_val(x, z):
-        r = math.sqrt(x**2 + z**2) # FIXME: Use numpy.sqrt here?
-        if r > rmax:
-            return 0.0
-        else:
-            return interp.ev(r, math.atan2(x,z)) # FIXME: Use numpy.atan2 here?
-        
-    get_pix_val_v = numpy.frompyfunc(get_pix_val, 2, 1)
-    x, z = numpy.ogrid[0:xbins, 0:zbins]
-    x = (x * xbinw) - rmax
-    z = (z * zbinw) - rmax
+    _r = numpy.sqrt(numpy.square(x) + numpy.square(z))
+    _theta = numpy.arctan2(x, z)
+    # print xbinw, zbinw, rmaxi
+    # print x
+    # print z
+    # print _r
+    # print _theta
+    cimage = interp.ev(_r.ravel(), _theta.ravel()).reshape(_r.shape)
 
-    cimage = get_pix_val_v(x, z)
-
-    # for i in xrange(cimage.shape[0]):
-    #     for j in xrange(cimage.shape[1]):
-    #         print i, j, cimage[i,j]
-
-    print type(cimage[3,129])
     return x.flatten(), z.flatten(), cimage

@@ -8,8 +8,8 @@ class VMICartesianImage():
     """
     def __init__(self):
         self.image = None
-        self.x = None
-        self.y = None
+        self.x = None # x values at centre of bins
+        self.y = None # y values at centre of bins
     
     def from_numpy_array(self, image, x=None, y=None):
         """ Initialize from an image stored in a numpy array. If x or y are
@@ -18,13 +18,12 @@ class VMICartesianImage():
         self.image = image.copy()
 
         if x == None:
-            self.x = numpy.arange(self.image.shape[0])
-            print self.x.shape
+            self.x = numpy.arange(0.5, self.image.shape[0])
         else:
             self.x = x.copy()
 
         if y == None:
-            self.y = numpy.arange(self.image.shape[1])
+            self.y = numpy.arange(0.5, self.image.shape[1])
         else:
             self.y = y.copy()
 
@@ -48,7 +47,9 @@ class VMICartesianImage():
         # y += 0.5
         # xval = x * self.image 
         # yval = y * self.image
-        xval = self.x.transpose() * self.image 
+
+        # FIXME: THIS IS INCORRECT
+        xval = self.x * self.image 
         yval = self.y * self.image
         imsum = self.image.sum()
         return xval.sum() / imsum, yval.sum() / imsum
