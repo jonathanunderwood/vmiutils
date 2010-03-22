@@ -69,27 +69,15 @@ def cartesian_to_polar(cimage, x=None, y=None, radial_bins=256,
     tbinw = (2.0 * math.pi) / angular_bins
 
     # Calculate x and y positions corresponding to the polar bins
-    # r, theta = numpy.ogrid[0.5 * rbinw:radial_bins * rbinw:rbinw, 
-    #                        0.5 * tbinw - math.pi:angular_bins * tbinw:tbinw]
+    r, theta = numpy.ogrid[0.5 * rbinw:radial_bins * rbinw:rbinw, 
+                           0.5 * tbinw - math.pi:angular_bins * tbinw:tbinw]
 
-    # _x = r * numpy.sin(theta)
-    # _y = r * numpy.cos(theta)
+    _x = r * numpy.sin(theta)
+    _y = r * numpy.cos(theta)
 
-    # # Calculate image in polar representation
-    # pimage = interp.ev(_x.ravel(), _y.ravel()).reshape(_x.shape)
-    # return r.flatten(), theta.flatten(), pimage
-
-    r = numpy.arange(0.5 * rbinw, radial_bins * rbinw, rbinw)
-    theta = numpy.arange(0.5 * tbinw - math.pi, angular_bins * tbinw, tbinw)
-    print r.shape, theta.shape
-    _x = r * numpy.sin(theta) + xc
-    _y = r * numpy.cos(theta) + yc
-
-    import scipy.ndimage as sn
-
-    pimage=sn.map_coordinates(cimage, numpy.array([_x, _y]))
-    print "here"
-    print pimage
+    # Calculate image in polar representation
+    pimage = interp.ev(_x.ravel(), _y.ravel()).reshape(_x.shape)
+    return r.flatten(), theta.flatten(), pimage
 
 def polar_to_cartesian(pimage, r=None, theta=None, xbins=None, zbins=None):
     """ Convert an image stored on a grid regularly spaced in polar
@@ -164,3 +152,94 @@ def polar_to_cartesian(pimage, r=None, theta=None, xbins=None, zbins=None):
     print 'cimage', cimage
     print x,z 
     return x.flatten(), z.flatten(), cimage
+
+
+from scipy.interpolate import interp1d
+from scipy.ndimage import map_coordinates
+
+
+def polar2cartesian(r, theta, vals, x, y, order=3):
+
+    X, Y = np.meshgrid(x, y)
+
+    new_r = np.sqrt(X * X + Y * Y)
+    new_t = np.arctan2(X, Y)
+
+    # Use interpolation to connect array indices and coordinates 
+    ir = interp1d(r, np.arange(len(r)), bounds_error=False)
+    it = interp1d(theta, np.arange(len(theta)))
+
+    new_ir = ir(new_r.ravel())
+    new_it = it(new_t.ravel())
+
+    new_ir[new_r.ravel() > r.max()] = len(r)-1
+    new_ir[new_r.ravel() < r.min()] = 0
+
+    return map_coordinates(grid, np.array([new_ir, new_it]),
+                            order=order).reshape(new_r.shape)
+
+def cart2pol(image, x=None, y=None, radial_bins=256, 
+             angular_bins=256, centre=None, rmax=None): 
+    
+    if x == None:
+        # Note: these are values at bin centre
+        x = numpy.arange(image.shape[0]) + 0.5
+
+    if y == None:
+        # Note: these are values at bin centre
+        y = numpy.arange(image.shape[1]) + 0.5
+
+    # centre is the value of the centre coordinate, rather than the pixel
+    # number 
+    if centre == None:
+        xc = 0.5 * (x[0] + x[-1])
+        yc = 0.5 * (y[0] + y[-1])
+    else:
+        xc = centre[0]
+        yc = centre[1]
+
+    x = x - xc
+    y = y - yc
+
+    # Calculate minimum distance from centre to edge of image - this
+    # determines the maximum radius in the polar image. Specifically, rmax is
+    # defined as the value of r at the centre of the outermost radial pixel.
+    xsize = min(x[0], x[-1])
+    ysize = min(y[0], y[-1])
+    max_rad = min(xsize, ysize)
+
+    if rmax == None:
+        rmax = max_rad
+    elif rmax > max_rad:
+        raise ValueError
+
+    # Polar image bin widths
+    rbinw = rmax / (radial_bins - 0.5)
+    tbinw = (2.0 * math.pi) / angular_bins
+    
+    
+
+    # Calculate image in polar representation
+    pimage = interp.ev(_x.ravel(), _y.ravel()).reshape(_x.shape)
+    return r.flatten(), theta.flatten(), pimage
+
+def cartesian2polar(x, y, grid, r, theta, order=3):
+
+    R, T = np.meshgrid(r, theta)
+
+    new_x = R * np.sin(T)
+    new_y = R * np.cos(T)
+
+    ix = interp1d(x, np.arange(len(x)))
+    iy = interp1d(y, np.arange(len(y)))
+
+    new_ix = ix(new_x.ravel())
+    new_iy = iy(new_y.ravel())
+
+    
+#    new_ir[new_r.ravel() > r.max()] = len(r)-1
+#    new_ir[new_r.ravel() < r.min()] = 0
+
+    return map_coordinates(grid, np.array([new_iy, new_iy]),
+                            order=order).reshape(new_x.shape)
+
