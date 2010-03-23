@@ -160,14 +160,14 @@ from scipy.ndimage import map_coordinates
 
 def polar2cartesian(r, theta, vals, x, y, order=3):
 
-    X, Y = np.meshgrid(x, y)
+    X, Y = numpy.meshgrid(x, y)
 
-    new_r = np.sqrt(X * X + Y * Y)
-    new_t = np.arctan2(X, Y)
+    new_r = numpy.sqrt(X * X + Y * Y)
+    new_t = numpy.arctan2(X, Y)
 
     # Use interpolation to connect array indices and coordinates 
-    ir = interp1d(r, np.arange(len(r)), bounds_error=False)
-    it = interp1d(theta, np.arange(len(theta)))
+    ir = interp1d(r, numpy.arange(len(r)), bounds_error=False)
+    it = interp1d(theta, numpy.arange(len(theta)))
 
     new_ir = ir(new_r.ravel())
     new_it = it(new_t.ravel())
@@ -175,11 +175,12 @@ def polar2cartesian(r, theta, vals, x, y, order=3):
     new_ir[new_r.ravel() > r.max()] = len(r)-1
     new_ir[new_r.ravel() < r.min()] = 0
 
-    return map_coordinates(grid, np.array([new_ir, new_it]),
+    return map_coordinates(grid, numpy.array([new_ir, new_it]),
                             order=order).reshape(new_r.shape)
 
 def cart2pol(image, x=None, y=None, radial_bins=256, 
-             angular_bins=256, centre=None, rmax=None): 
+             angular_bins=256, centre=None, rmax=None, 
+             order=5): 
     
     if x == None:
         # Note: these are values at bin centre
@@ -204,8 +205,8 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
     # Calculate minimum distance from centre to edge of image - this
     # determines the maximum radius in the polar image. Specifically, rmax is
     # defined as the value of r at the centre of the outermost radial pixel.
-    xsize = min(x[0], x[-1])
-    ysize = min(y[0], y[-1])
+    xsize = min(abs(x[0]), x[-1])
+    ysize = min(abs(y[0]), y[-1])
     max_rad = min(xsize, ysize)
 
     if rmax == None:
@@ -221,22 +222,20 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
     r, theta = numpy.ogrid[0.5 * rbinw:radial_bins * rbinw:rbinw, 
                            0.5 * tbinw - math.pi:angular_bins * tbinw:tbinw] 
 
-    new_x = r * np.sin(theta)
-    new_y = r * np.cos(theta)
+    new_x = r * numpy.sin(theta)
+    new_y = r * numpy.cos(theta)
 
     # Need to connect array indices of image with x,y coordinates - linear
     # interpolation is a lazy way to do this!
-    ix = interp1d(x, np.arange(len(x)))
-    iy = interp1d(y, np.arange(len(y)))
+    ix = interp1d(x, numpy.arange(len(x)))
+    iy = interp1d(y, numpy.arange(len(y)))
 
     # Convert new_x and new_y to indices
     new_ix = ix(new_x.ravel())
     new_iy = iy(new_y.ravel())
 
     
-#    new_ir[new_r.ravel() > r.max()] = len(r)-1
-#    new_ir[new_r.ravel() < r.min()] = 0
-    pimage = map_coordinates(image, numpy.array([new_iy, new_iy]),
+    pimage = map_coordinates(image, numpy.array([new_ix, new_iy]),
                              order=order).reshape(new_x.shape)
 
     return r.flatten(), theta.flatten(), pimage
@@ -244,13 +243,13 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
 
 def cartesian2polar(x, y, grid, r, theta, order=3):
 
-    R, T = np.meshgrid(r, theta)
+    R, T = numpy.meshgrid(r, theta)
 
-    new_x = R * np.sin(T)
-    new_y = R * np.cos(T)
+    new_x = R * numpy.sin(T)
+    new_y = R * numpy.cos(T)
 
-    ix = interp1d(x, np.arange(len(x)))
-    iy = interp1d(y, np.arange(len(y)))
+    ix = interp1d(x, numpy.arange(len(x)))
+    iy = interp1d(y, numpy.arange(len(y)))
 
     new_ix = ix(new_x.ravel())
     new_iy = iy(new_y.ravel())
@@ -259,6 +258,6 @@ def cartesian2polar(x, y, grid, r, theta, order=3):
 #    new_ir[new_r.ravel() > r.max()] = len(r)-1
 #    new_ir[new_r.ravel() < r.min()] = 0
 
-    return map_coordinates(grid, np.array([new_iy, new_iy]),
+    return map_coordinates(grid, numpy.array([new_iy, new_iy]),
                             order=order).reshape(new_x.shape)
 

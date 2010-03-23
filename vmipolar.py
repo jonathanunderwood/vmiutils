@@ -20,6 +20,9 @@ class VMIPolarImage():
         if angular_bins == None:
             angular_bins = cimage.image.shape[1]
 
-        self.r, self.theta, self.image = polcart.cartesian_to_polar(
+        # self.r, self.theta, self.image = polcart.cartesian_to_polar(
+        #     cimage.image, cimage.x, cimage.y, radial_bins, angular_bins,
+        #     centre, max_radius)
+        self.r, self.theta, self.image = polcart.cart2pol(
             cimage.image, cimage.x, cimage.y, radial_bins, angular_bins,
             centre, max_radius)
