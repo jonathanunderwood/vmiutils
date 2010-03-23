@@ -217,11 +217,30 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
     rbinw = rmax / (radial_bins - 0.5)
     tbinw = (2.0 * math.pi) / angular_bins
     
-    
+    # Find x, y coordinates corresponding to the bins in the polar image
+    r, theta = numpy.ogrid[0.5 * rbinw:radial_bins * rbinw:rbinw, 
+                           0.5 * tbinw - math.pi:angular_bins * tbinw:tbinw] 
 
-    # Calculate image in polar representation
-    pimage = interp.ev(_x.ravel(), _y.ravel()).reshape(_x.shape)
+    new_x = r * np.sin(theta)
+    new_y = r * np.cos(theta)
+
+    # Need to connect array indices of image with x,y coordinates - linear
+    # interpolation is a lazy way to do this!
+    ix = interp1d(x, np.arange(len(x)))
+    iy = interp1d(y, np.arange(len(y)))
+
+    # Convert new_x and new_y to indices
+    new_ix = ix(new_x.ravel())
+    new_iy = iy(new_y.ravel())
+
+    
+#    new_ir[new_r.ravel() > r.max()] = len(r)-1
+#    new_ir[new_r.ravel() < r.min()] = 0
+    pimage = map_coordinates(image, numpy.array([new_iy, new_iy]),
+                             order=order).reshape(new_x.shape)
+
     return r.flatten(), theta.flatten(), pimage
+    
 
 def cartesian2polar(x, y, grid, r, theta, order=3):
 
