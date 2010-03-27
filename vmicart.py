@@ -31,7 +31,7 @@ class VMICartesianImage():
         """ Initizize from a VMIPolarImage object by interpolation onto a
         cartesian grid.
         """
-        self.x, self.y, self.image = polcart.polar_to_cartesian(
+        self.x, self.y, self.image = polcart.pol2cart(
             pimage.image, pimage.r, pimage.theta)
 
     def centre_of_gravity(self):

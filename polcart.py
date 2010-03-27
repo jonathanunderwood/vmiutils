@@ -2,84 +2,13 @@
 
 import math
 import numpy
+from scipy.interpolate import interp1d
+from scipy.ndimage import map_coordinates
+
 import scipy.interpolate as spint
 
-def cartesian_to_polar(cimage, x=None, y=None, radial_bins=256, 
-                       angular_bins=256, centre=None, rmax=None): 
-    """ Convert an image on a regularly spaced cartesian grid into a regular
-    spaced grid in polar coordinates using interpolation.
-    
-    x and y contain the x and y coordinates corresponding to each
-    bin centre. If either of these are none, bin widths are used.
 
-    radial_bins and angular_bins define the number of bins in the polar
-    representation of the image.
-
-    centre is a tuple containing the x and y coordinates of the image centre
-    (does not need to be an integer). If this is set to None the midpoint x
-    and y coordinates are used.
-
-    rmax defines the maximum radius from the image centre to consider.
-
-    Here we employ the convention that the angle (theta) is that between the
-    second axis (y-axis) and the position vector and that it lies in the range
-    [-pi,pi].
-    """
-    if x == None or y == None:
-        xdim = cimage.shape[0]
-        ydim = cimage.shape[1]
-
-        # Note: these are values at bin centre
-        x = numpy.arange(0.5 - xc, xdim)
-        y = numpy.arange(0.5 - yc, ydim)
-
-    xmin = x[0]
-    xmax = x[-1]
-    ymin = y[0]
-    ymax = y[-1]
-    
-    xbinw = x[1] - x[0] # bin width - assume equally spaced bins 
-    ybinw = y[1] - y[0] # bin width - assume equally spaced bins 
-
-    # centre is the value of the centre coordinate, rather than the pixel
-    # number 
-    if centre == None:
-        xc = 0.5 * (xmax - xmin + xbinw)
-        yc = 0.5 * (ymax - ymin + ybinw)
-    else:
-        xc = centre[0]
-        yc = centre[1]
-
-    # Calculate minimum distance from centre to edge of image - this
-    # determines the maximum radius in the polar image 
-    xsize = min(xmax + (0.5 * xbinw) - xc, abs(xmin - (0.5 * xbinw) - xc))
-    ysize = min(ymax + (0.5 * ybinw) - yc, abs(ymin - (0.5 * ybinw) - yc))
-    max_rad = min(xsize, ysize)
-
-    if rmax == None:
-        rmax = max_rad
-    elif rmax > max_rad:
-        raise ValueError
-
-    # Set up interpolation - cubic spline with no smoothing by default 
-    interp = spint.RectBivariateSpline(x - xc, y - yc, cimage)
-
-    # Polar image bin widths
-    rbinw = rmax / radial_bins
-    tbinw = (2.0 * math.pi) / angular_bins
-
-    # Calculate x and y positions corresponding to the polar bins
-    r, theta = numpy.ogrid[0.5 * rbinw:radial_bins * rbinw:rbinw, 
-                           0.5 * tbinw - math.pi:angular_bins * tbinw:tbinw]
-
-    _x = r * numpy.sin(theta)
-    _y = r * numpy.cos(theta)
-
-    # Calculate image in polar representation
-    pimage = interp.ev(_x.ravel(), _y.ravel()).reshape(_x.shape)
-    return r.flatten(), theta.flatten(), pimage
-
-def polar_to_cartesian(pimage, r=None, theta=None, xbins=None, zbins=None):
+def polar_to_cartesian(pimage, r=None, theta=None, xbins=None, ybins=None):
     """ Convert an image stored on a grid regularly spaced in polar
     coordinates to cartesian coordinates.
 
@@ -154,8 +83,6 @@ def polar_to_cartesian(pimage, r=None, theta=None, xbins=None, zbins=None):
     return x.flatten(), z.flatten(), cimage
 
 
-from scipy.interpolate import interp1d
-from scipy.ndimage import map_coordinates
 
 
 def polar2cartesian(r, theta, vals, x, y, order=3):
@@ -178,20 +105,77 @@ def polar2cartesian(r, theta, vals, x, y, order=3):
     return map_coordinates(grid, numpy.array([new_ir, new_it]),
                             order=order).reshape(new_r.shape)
 
+def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, 
+             order=3):
+
+    if r == None:
+        r = numpy.arange(0.5, image.shape[0])
+
+    if theta == None:
+        tpts = image.shape[1]
+        tbinw = 2.0 * math.pi / tpts
+        theta = numpy.arange(0.5 * tbinw - math.pi, tpts * tbinw - math.pi, 
+                             tbinw)
+
+    # If the number of bins in the cartesian image is not specified, set it to
+    # be the same as the number of radial bins in the polar image
+    if xbins == None:
+        xbins = image.shape[0]
+
+    if ybins == None:
+        ybins = image.shape[0]
+
+    xbinw = 2.0 * r[-1] / (xbins - 1)
+    ybinw = 2.0 * r[-1] / (ybins - 1)
+
+    x, y = numpy.ogrid[-r[-1]:r[-1]:xbins*1j, -r[-1]:r[-1]:ybins*1j]
+
+    print x, y, r[-1], xbinw, ybinw, xbins, ybins
+    new_r = numpy.sqrt(x * x + y * y)
+    new_t = numpy.arctan2(x, y)
+
+    ir = interp1d(r, numpy.arange(len(r)))
+    it = interp1d(theta, numpy.arange(len(theta)))
+
+    new_ir = ir(new_r.ravel())
+    new_it = it(new_t.ravel())
+
+    return x.flatten(), y.flatten(), \
+        map_coordinates(image, numpy.array([new_ir, new_it]),
+                        order=order).reshape(new_r.shape)
+
+
 def cart2pol(image, x=None, y=None, radial_bins=256, 
              angular_bins=256, centre=None, rmax=None, 
-             order=5): 
+             order=3):
+    """ Convert an image on a regularly spaced cartesian grid into a regular
+    spaced grid in polar coordinates using interpolation.
     
-    if x == None:
-        # Note: these are values at bin centre
+    x and y contain the x and y coordinates corresponding to each
+    bin centre. If either of these are none, unit bin widths are assumed.
+
+    radial_bins and angular_bins define the number of bins in the polar
+    representation of the image.
+
+    centre is a tuple containing the x and y coordinates of the image centre
+    (does not need to be an integer). If this is set to None the midpoint x
+    and y coordinates are used.
+
+    rmax defines the maximum radius from the image centre to consider.
+
+    Here we employ the convention that the angle (theta) is that between the
+    second axis (y-axis) and the position vector and that it lies in the range
+    [-pi,pi].
+    """
+    
+    if x == None: # Note: these are values at bin centre
         x = numpy.arange(image.shape[0]) + 0.5
 
-    if y == None:
-        # Note: these are values at bin centre
+    if y == None: # Note: these are values at bin centre
         y = numpy.arange(image.shape[1]) + 0.5
 
-    # centre is the value of the centre coordinate, rather than the pixel
-    # number 
+    # Note, centre is the value of the centre coordinate, rather than the
+    # pixel number
     if centre == None:
         xc = 0.5 * (x[0] + x[-1])
         yc = 0.5 * (y[0] + y[-1])
@@ -219,8 +203,9 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
     tbinw = (2.0 * math.pi) / angular_bins
     
     # Find x, y coordinates corresponding to the bins in the polar image
-    r, theta = numpy.ogrid[0.5 * rbinw:radial_bins * rbinw:rbinw, 
-                           0.5 * tbinw - math.pi:angular_bins * tbinw:tbinw] 
+    r, theta = \
+        numpy.ogrid[0.5 * rbinw:radial_bins * rbinw:rbinw, 
+                    0.5 * tbinw - math.pi:angular_bins * tbinw - math.pi:tbinw] 
 
     new_x = r * numpy.sin(theta)
     new_y = r * numpy.cos(theta)
