@@ -134,12 +134,19 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
     new_r = numpy.sqrt(x * x + y * y)
     new_t = numpy.arctan2(x, y)
 
-    ir = interp1d(r, numpy.arange(len(r)))
+    ir = interp1d(r, numpy.arange(len(r)), bounds_error=False)
     it = interp1d(theta, numpy.arange(len(theta)))
+
+    print 'theta', theta
+    print 'new_t', new_t
 
     new_ir = ir(new_r.ravel())
     new_it = it(new_t.ravel())
 
+    new_ir[new_r.ravel() > r.max()] = len(r)-1
+    new_ir[new_r.ravel() < r.min()] = 0
+
+    print 'new_ir', new_ir
     return x.flatten(), y.flatten(), \
         map_coordinates(image, numpy.array([new_ir, new_it]),
                         order=order).reshape(new_r.shape)
@@ -174,7 +181,7 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
     if y == None: # Note: these are values at bin centre
         y = numpy.arange(image.shape[1]) + 0.5
 
-    # Note, centre is the value of the centre coordinate, rather than the
+    # Centre is the value of the centre coordinate, rather than the
     # pixel number
     if centre == None:
         xc = 0.5 * (x[0] + x[-1])
@@ -218,7 +225,6 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
     # Convert new_x and new_y to indices
     new_ix = ix(new_x.ravel())
     new_iy = iy(new_y.ravel())
-
     
     pimage = map_coordinates(image, numpy.array([new_ix, new_iy]),
                              order=order).reshape(new_x.shape)
