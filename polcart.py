@@ -130,6 +130,12 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
 
     x, y = numpy.ogrid[-r[-1]:r[-1]:xbins*1j, -r[-1]:r[-1]:ybins*1j]
 
+    def fmap(out_coord):
+        x, y = out_coord # In pixel units
+        r = numpy.sqrt(x * x + y * y)
+        t = numpy.arctan2(x, y)
+        return r, t
+
     print x, y, r[-1], xbinw, ybinw, xbins, ybins
     new_r = numpy.sqrt(x * x + y * y)
     new_t = numpy.arctan2(x, y)
