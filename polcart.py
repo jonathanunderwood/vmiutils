@@ -111,9 +111,12 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
     if r == None:
         r = numpy.arange(0.5, image.shape[0])
 
+    rbinw = r[-1] / image.shape[0]
+
+    tpts = image.shape[1]
+    tbinw = 2.0 * math.pi / tpts
+
     if theta == None:
-        tpts = image.shape[1]
-        tbinw = 2.0 * math.pi / tpts
         theta = numpy.arange(0.5 * tbinw - math.pi, tpts * tbinw - math.pi, 
                              tbinw)
 
@@ -128,35 +131,26 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
     xbinw = 2.0 * r[-1] / (xbins - 1)
     ybinw = 2.0 * r[-1] / (ybins - 1)
 
-    x, y = numpy.ogrid[-r[-1]:r[-1]:xbins*1j, -r[-1]:r[-1]:ybins*1j]
+    xmin = ymin = -r[-1]
 
     def fmap(out_coord):
-        x, y = out_coord # In pixel units
+        ix, iy = out_coord # In pixel units
+        x = ix * xbinw + xmin
+        y = iy + ybinw + ymin
         r = numpy.sqrt(x * x + y * y)
+        ir = r / rbinw
         t = numpy.arctan2(x, y)
-        return r, t
+        it = (t - numpy.pi) / tbinw 
+        return ir, it
 
-    print x, y, r[-1], xbinw, ybinw, xbins, ybins
-    new_r = numpy.sqrt(x * x + y * y)
-    new_t = numpy.arctan2(x, y)
 
-    ir = interp1d(r, numpy.arange(len(r)), bounds_error=False)
-    it = interp1d(theta, numpy.arange(len(theta)))
+    import scipy.ndimage
+    cimage = scipy.ndimage.geometric_transform(image, fmap, order = 3)
 
-    print 'theta', theta
-    print 'new_t', new_t
+    x = numpy.arange(-r[-1], r[-1], xbinw)
+    y = numpy.arange(-r[-1], r[-1], ybinw)
 
-    new_ir = ir(new_r.ravel())
-    new_it = it(new_t.ravel())
-
-    new_ir[new_r.ravel() > r.max()] = len(r)-1
-    new_ir[new_r.ravel() < r.min()] = 0
-
-    print 'new_ir', new_ir
-    return x.flatten(), y.flatten(), \
-        map_coordinates(image, numpy.array([new_ir, new_it]),
-                        order=order).reshape(new_r.shape)
-
+    return x, y, cimage
 
 def cart2pol(image, x=None, y=None, radial_bins=256, 
              angular_bins=256, centre=None, rmax=None, 
