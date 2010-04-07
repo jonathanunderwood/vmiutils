@@ -125,6 +125,7 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
     if xbins == None:
         xbins = image.shape[0]
 
+
     if ybins == None:
         ybins = image.shape[0]
 
@@ -136,7 +137,7 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
     def fmap(out_coord):
         ix, iy = out_coord # In pixel units
         x = ix * xbinw + xmin
-        y = iy + ybinw + ymin
+        y = iy * ybinw + ymin
         r = numpy.sqrt(x * x + y * y)
         ir = r / rbinw
         t = numpy.arctan2(x, y)
@@ -149,6 +150,10 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
 
     x = numpy.arange(-r[-1], r[-1], xbinw)
     y = numpy.arange(-r[-1], r[-1], ybinw)
+
+    print x
+    print y
+    print cimage
 
     return x, y, cimage
 
