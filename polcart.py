@@ -111,7 +111,7 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
     if r == None:
         r = numpy.arange(0.5, image.shape[0])
 
-    rbinw = r[-1] / image.shape[0]
+    rbinw = r[-1] / (image.shape[0] - 1)
 
     tpts = image.shape[1]
     tbinw = 2.0 * math.pi / tpts
@@ -124,7 +124,6 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
     # be the same as the number of radial bins in the polar image
     if xbins == None:
         xbins = image.shape[0]
-
 
     if ybins == None:
         ybins = image.shape[0]
@@ -141,18 +140,18 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
         r = numpy.sqrt(x * x + y * y)
         ir = r / rbinw
         t = numpy.arctan2(x, y)
-        it = (t - numpy.pi) / tbinw 
+        it = (t + numpy.pi) / tbinw 
         return ir, it
 
 
     import scipy.ndimage
     cimage = scipy.ndimage.geometric_transform(image, fmap, order = 3)
 
-    x = numpy.arange(-r[-1], r[-1], xbinw)
-    y = numpy.arange(-r[-1], r[-1], ybinw)
+    x = numpy.linspace(-r[-1], r[-1], xbins)
+    y = numpy.linspace(-r[-1], r[-1], ybins)
 
-    print x
-    print y
+    # print x
+    # print y
     print cimage
 
     return x, y, cimage
