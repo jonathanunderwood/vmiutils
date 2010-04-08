@@ -194,6 +194,8 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
         xc = centre[0]
         yc = centre[1]
 
+    print 'cent', xc, yc
+
     x = x - xc
     y = y - yc
 
@@ -221,14 +223,16 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
         ir, it = out_coord # In pixel units
         r = ir * rbinw
         t = it * tbinw - numpy.pi
-        x = r * numpy.sin(t)
-        y = r * numpy.cos(t)
+        x = r * numpy.sin(t) + xc
+        y = r * numpy.cos(t) + yc
+        print x, y
         ix = x / xbinw
         iy = y / ybinw
         return ix, iy
 
     import scipy.ndimage
-    pimage = scipy.ndimage.geometric_transform(image, fmap2, order = 3)
+    pimage = scipy.ndimage.geometric_transform(
+        image, fmap2, order = 3, output_shape=(radial_bins, angular_bins))
 
 
     # Find x, y coordinates corresponding to the bins in the polar image
