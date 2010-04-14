@@ -8,102 +8,6 @@ from scipy.ndimage import map_coordinates
 import scipy.interpolate as spint
 
 
-def polar_to_cartesian(pimage, r=None, theta=None, xbins=None, ybins=None):
-    """ Convert an image stored on a grid regularly spaced in polar
-    coordinates to cartesian coordinates.
-
-    pimage contains the image data.
-
-    r and theta optionally contain the central radial and angular coordinates
-    for each bin in pimage. If None we use bin coordinates.
-
-    xbins and zbins optionally specify the number of bins in each cartesian
-    coordinate for the returned cartesian image. If None, these are set to be
-    equal to the number of radial bins in the input polar image.
-    """
-    if r == None:
-        r = numpy.arange(0.5, pimage.shape[0])
-    #FIXME: check if r has correct dimension if passed in
-
-    if theta == None:
-        tbinw = 2.0 * math.pi / pimage.shape[1]
-        #FIXME: CHECK THE LINE BELOW.
-        #theta = numpy.arange(-math.pi+0.5*tbinw, pimage.shape[1]*tbinw, tbinw)
-    #FIXME: check if theta has correct dimension if passed in
-
-    # If the number of bins in the cartesian image is not specified, set it to
-    # be the same as the number of radial bins in the polar image
-    if xbins == None:
-        xbins = pimage.shape[0]
-
-    if zbins == None:
-        zbins = pimage.shape[0]
-    
-    print 'bins', xbins, zbins
-    print 'r', r
-    print 'thta',theta
-    print 'pimage',pimage
-
-    
-    # x and y both go from -rmax to +rmax
-
-    # x = (numpy.arange(xbins) * xbinw) - rmax
-    # z = (numpy.arange(zbins) * zbinw) - rmax
-
-    # x = numpy.indices(-rmax, rmax, xbins)
-    # z = numpy.indices(-rmax, rmax, zbins)
-
-    # Set up the interpolation
-    interp = spint.RectBivariateSpline(r, theta, pimage)
-
-    # x, z = numpy.ogrid[0:xbins, 0:zbins]
-    # x = (x * xbinw) - rmax
-    # z = (z * zbinw) - rmax
-
-    rbinw = r[1] - r[0] # Assume equally spaced radial bins
-    rmax = r[-1] + (0.5 * rbinw)
-    xbinw = 2.0 * rmax / xbins
-    zbinw = 2.0 * rmax / zbins
-
-    #x, z = numpy.ogrid[-rmaxi:rmaxi:xbinw*1j, -rmaxi:rmaxi:zbinw*1j]
-    x, z = numpy.ogrid[0:xbins, 0:zbins]
-    x = ((x + 0.5) * xbinw) - rmax
-    z = ((z + 0.5) * zbinw) - rmax
-
-    _r = numpy.sqrt(numpy.square(x) + numpy.square(z))
-    _theta = numpy.arctan2(x, z)
-    print xbinw, zbinw, rmax
-    print 'x', x
-    print 'z', z
-    print '_r', _r
-    print '_theta', _theta
-    cimage = interp.ev(_r.ravel(), _theta.ravel()).reshape(_r.shape)
-    print 'cimage', cimage
-    print x,z 
-    return x.flatten(), z.flatten(), cimage
-
-
-
-
-def polar2cartesian(r, theta, vals, x, y, order=3):
-
-    X, Y = numpy.meshgrid(x, y)
-
-    new_r = numpy.sqrt(X * X + Y * Y)
-    new_t = numpy.arctan2(X, Y)
-
-    # Use interpolation to connect array indices and coordinates 
-    ir = interp1d(r, numpy.arange(len(r)), bounds_error=False)
-    it = interp1d(theta, numpy.arange(len(theta)))
-
-    new_ir = ir(new_r.ravel())
-    new_it = it(new_t.ravel())
-
-    new_ir[new_r.ravel() > r.max()] = len(r)-1
-    new_ir[new_r.ravel() < r.min()] = 0
-
-    return map_coordinates(grid, numpy.array([new_ir, new_it]),
-                            order=order).reshape(new_r.shape)
 
 def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, 
              order=3):
@@ -114,10 +18,11 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
     rbinw = r[-1] / (image.shape[0] - 1) # Assume equally spaced
 
     tpts = image.shape[1]
-    tbinw = 2.0 * math.pi / tpts # Assume equally spaced
+    tbinw = 2.0 * numpy.pi / tpts # Assume equally spaced
 
     if theta == None:
-        theta = numpy.arange(0.5 * tbinw - math.pi, tpts * tbinw - math.pi, 
+        theta = numpy.arange(0.5 * tbinw - numpy.pi, 
+                             tpts * tbinw - numpy.pi, 
                              tbinw)
 
     # If the number of bins in the cartesian image is not specified, set it to
@@ -132,20 +37,21 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
     ybinw = 2.0 * r[-1] / (ybins - 1)
 
     xmin = ymin = -r[-1]
-
+    print xmin, xbinw
     def fmap(out_coord):
-        ix, iy = out_coord # In pixel units
-        x = ix * xbinw + xmin
-        y = iy * ybinw + ymin
+        ix, iy = out_coord # Pixel array coords
+        x = (ix + 0.5) * xbinw + xmin
+        y = (iy + 0.5) * ybinw + ymin
         r = numpy.sqrt(x * x + y * y)
-        ir = r / rbinw
         t = numpy.arctan2(x, y)
-        it = (t + numpy.pi) / tbinw 
+        ir = r / rbinw - 0.5
+        it = (t + numpy.pi) / tbinw - 0.5
         return ir, it
 
 
     import scipy.ndimage
-    cimage = scipy.ndimage.geometric_transform(image, fmap, order = 3)
+    cimage = scipy.ndimage.geometric_transform(
+        image, fmap, order = order, output_shape=(xbins, ybins))
 
     x = numpy.linspace(-r[-1], r[-1], xbins)
     y = numpy.linspace(-r[-1], r[-1], ybins)
@@ -221,51 +127,32 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
 
     def fmap2(out_coord):
         ir, it = out_coord # In pixel units
-        r = ir * rbinw
-        t = it * tbinw - numpy.pi
+        # Find values of r and theta at pixel centre - need to add 0.5.
+        r = (ir + 0.5) * rbinw
+        t = (it + 0.5) * tbinw - numpy.pi
+        # Find corresponding x and y coords to pixel centre.
         x = r * numpy.sin(t) + xc
         y = r * numpy.cos(t) + yc
-        print x, y
-        ix = x / xbinw
-        iy = y / ybinw
+        # Find corresponding x and y fractional array indices.  Subtract 0.5
+        # here since the interpolation function assumes the bin value is at
+        # the value of the array index, not the bin centre.
+        ix = (x / xbinw) - 0.5
+        iy = (y / ybinw) - 0.5
+#        print ix, iy
         return ix, iy
 
     import scipy.ndimage
     pimage = scipy.ndimage.geometric_transform(
-        image, fmap2, order = 3, output_shape=(radial_bins, angular_bins))
+        image, fmap2, order = order, output_shape=(radial_bins, angular_bins))
 
 
-    # Find x, y coordinates corresponding to the bins in the polar image
-    # r, theta = \
-    #     numpy.ogrid[0.5 * rbinw:radial_bins * rbinw:rbinw, 
-    #                 0.5 * tbinw - math.pi:angular_bins * tbinw - math.pi:tbinw] 
-        
     r = numpy.linspace(0.5 * rbinw, rmax, radial_bins)
-    t = numpy.linspace(0.5 * tbinw - numpy.pi, angular_bins * tbinw -
-                       numpy.pi, angular_bins) 
-               
+    t = numpy.linspace(0.5 * tbinw - numpy.pi, 
+                       (angular_bins -0.5) * tbinw - numpy.pi, 
+                       angular_bins) 
     print r
     print t
+    print tbinw, t[1]-t[0]
     return r, t, pimage
     
-
-def cartesian2polar(x, y, grid, r, theta, order=3):
-
-    R, T = numpy.meshgrid(r, theta)
-
-    new_x = R * numpy.sin(T)
-    new_y = R * numpy.cos(T)
-
-    ix = interp1d(x, numpy.arange(len(x)))
-    iy = interp1d(y, numpy.arange(len(y)))
-
-    new_ix = ix(new_x.ravel())
-    new_iy = iy(new_y.ravel())
-
-    
-#    new_ir[new_r.ravel() > r.max()] = len(r)-1
-#    new_ir[new_r.ravel() < r.min()] = 0
-
-    return map_coordinates(grid, numpy.array([new_iy, new_iy]),
-                            order=order).reshape(new_x.shape)
 
