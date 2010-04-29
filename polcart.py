@@ -13,17 +13,15 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
              order=3):
 
     if r == None:
-        r = numpy.arange(0.5, image.shape[0])
+        r = numpy.arange(image.shape[0])
 
-    rbinw = r[-1] / (image.shape[0] - 0.5) # Assume equally spaced
+    rbinw = r[1]-r[0] # Assume equally spaced
 
     tpts = image.shape[1]
-    tbinw = 2.0 * numpy.pi / tpts # Assume equally spaced
+    tbinw = 2.0 * numpy.pi / (tpts-1) # Assume equally spaced
     print rbinw, tbinw
     if theta == None:
-        theta = numpy.arange(0.5 * tbinw - numpy.pi, 
-                             tpts * tbinw - numpy.pi, 
-                             tbinw)
+        theta = numpy.linspace(-numpy.pi, numpy.pi, tpts)
 
     # If the number of bins in the cartesian image is not specified, set it to
     # be the same as the number of radial bins in the polar image
@@ -33,20 +31,28 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
     if ybins == None:
         ybins = image.shape[0]
 
-    xbinw = 2.0 * r[-1] / (xbins - 1)
-    ybinw = 2.0 * r[-1] / (ybins - 1)
+    rmax = r[-1]
+    xbinw = 2.0 * rmax / (xbins-1)
+    ybinw = 2.0 * rmax / (ybins-1)
+    xmin = ymin = -rmax
 
-    xmin = ymin = -r[-1] - 0.5 * rbinw
-    print 'xmin, xbinw, ybinw:', xmin, xbinw, ybinw
+    print 'rmax, xmin, xbinw, ybinw:', rmax, xmin, xbinw, ybinw
+
+    # Prepend last column of image, and append first column of image so we can
+    # take into account the fact that the angular dimension wraps around when
+    # interpolating
+    #image = numpy.hstack(
+    #[image[:,-1,numpy.newaxis], image, image[:,0,numpy.newaxis]])
 
     def fmap(out_coord):
         ix, iy = out_coord # Pixel array coords
-        x = (ix + 0.5) * xbinw + xmin
-        y = (iy + 0.5) * ybinw + ymin
+        x = (ix) * xbinw + xmin
+        y = (iy) * ybinw + ymin
         r = numpy.sqrt(x * x + y * y)
         t = numpy.arctan2(x, y)
-        ir = (r / rbinw ) - 0.5
-        it = ((t + numpy.pi) / tbinw) - 0.5
+        ir = (r / rbinw )
+        it = ((t + numpy.pi) / tbinw)# + 1.0 ##### here.
+        print ix, iy, x, y, r, t, ir, it
         return ir, it
 
 
@@ -57,8 +63,8 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None,
     x = numpy.linspace(-r[-1], r[-1], xbins)
     y = numpy.linspace(-r[-1], r[-1], ybins)
 
-    # print x
-    # print y
+    print x, 'FIXME'
+    print y, 'FIXME'
     print cimage
 
     return x, y, cimage
@@ -87,10 +93,10 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
     """
     
     if x == None: # Note: these are values at bin centre
-        x = numpy.arange(0.5, image.shape[0] + 0.5)
+        x = numpy.arange(image.shape[0])
 
     if y == None: # Note: these are values at bin centre
-        y = numpy.arange(0.5, image.shape[1] + 0.5)
+        y = numpy.arange(image.shape[1])
 
     # Centre is the value of the centre coordinate, rather than the
     # pixel number
@@ -108,11 +114,15 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
 
     # Calculate minimum distance from centre to edge of image - this
     # determines the maximum radius in the polar image. Specifically, rmax is
-    # defined as the value of r at the centre of the outermost radial pixel.
+    # defined as the value of r at the outer edge of the outermost radial pixel.
+    xbinw = x[1] - x[0]
+    ybinw = y[1] - y[0]
+#    xsize = min(abs(x[0] - 0.5 * xbinw), x[-1] + 0.5 * xbinw)
+#    ysize = min(abs(y[0] - 0.5 * ybinw), y[-1] + 0.5 * ybinw)
     xsize = min(abs(x[0]), x[-1])
     ysize = min(abs(y[0]), y[-1])
     max_rad = min(xsize, ysize)
-    print 'max_rad', max_rad
+    print 'xsize, ysize, max_rad', xsize, ysize, max_rad
 
     if rmax == None:
         rmax = max_rad
@@ -120,40 +130,47 @@ def cart2pol(image, x=None, y=None, radial_bins=256,
         raise ValueError
 
     # Polar image bin widths
-    rbinw = rmax / (radial_bins - 0.5)
-    tbinw = (2.0 * math.pi) / angular_bins
+    rbinw = rmax / (radial_bins -1)
+    tbinw = 2.0 * numpy.pi / (angular_bins-1)
 
     print 'rbinw, tbinw', rbinw, tbinw
 
     # Cartesian image bin widths
-    xbinw = (x[-1] - x[0]) / (image.shape[0] - 1)
-    ybinw = (y[-1] - y[0]) / (image.shape[1] - 1)
+#    xbinw = (x[-1] - x[0]) / (image.shape[0] - 1)
+#    ybinw = (y[-1] - y[0]) / (image.shape[1] - 1)
+    xbinw = x[1] - x[0]
+    ybinw = y[1] - y[0]
+    print 'xbinw, ybinw', xbinw, ybinw
 
     def fmap2(out_coord):
         ir, it = out_coord # Pixel indices
         # Find values of r and theta at pixel centre - need to add 0.5.
-        r = (ir + 0.5) * rbinw
-        t = (it + 0.5) * tbinw - numpy.pi
-        print r, t
+        r = (ir) * rbinw
+        t = (it) * tbinw - numpy.pi
         # Find x and y coords corresponding to pixel centre.
         x = r * numpy.sin(t)
         y = r * numpy.cos(t)
         # Find corresponding x and y fractional array indices.  Subtract 0.5
         # here since the interpolation function assumes the bin value is at
         # the value of the array index, not the bin centre.
-        ix = (x + xc) / xbinw - 0.5
-        iy = (y + yc) / ybinw - 0.5
+        ix = (x + xc) / xbinw
+        iy = (y + yc) / ybinw
+#        print ir, it, r, t, x, y, ix, iy
         return ix, iy
-
+    
     import scipy.ndimage
     pimage = scipy.ndimage.geometric_transform(
         image, fmap2, order = order, output_shape=(radial_bins, angular_bins))
 
 
-    r = numpy.linspace(0.5 * rbinw, rmax, radial_bins)
-    t = numpy.linspace(0.5 * tbinw - numpy.pi, 
-                       (angular_bins -0.5) * tbinw - numpy.pi, 
-                       angular_bins) 
+    # r = numpy.linspace(0.5 * rbinw, (radial_bins-0.5)*rbinw, radial_bins)
+    # t = numpy.linspace(0.5 * tbinw - numpy.pi, 
+    #                    (angular_bins -0.5) * tbinw - numpy.pi, 
+    #                    angular_bins) 
+
+    r = numpy.linspace(0, (radial_bins-1)*rbinw, radial_bins)
+    t = numpy.linspace(-numpy.pi, numpy.pi, angular_bins)
+
     print 'r:', r
     print 't:', t
     print 'end of cart2pol'

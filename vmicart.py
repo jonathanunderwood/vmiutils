@@ -18,12 +18,12 @@ class VMICartesianImage():
         self.image = image.copy()
 
         if x == None:
-            self.x = numpy.arange(0.5, self.image.shape[0])
+            self.x = numpy.arange(self.image.shape[0])
         else:
             self.x = x.copy()
 
         if y == None:
-            self.y = numpy.arange(0.5, self.image.shape[1])
+            self.y = numpy.arange(self.image.shape[1])
         else:
             self.y = y.copy()
 

@@ -14,7 +14,7 @@ except IOError:
 
 cimage = vmicart.VMICartesianImage()
 cimage.from_numpy_array(image)
-print 'centre of gravity:', cimage.centre_of_gravity()
+#print 'centre of gravity:', cimage.centre_of_gravity()
 
 pylab.figure()
 pylab.imshow(cimage.image, origin='lower')
