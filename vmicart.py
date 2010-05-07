@@ -3,17 +3,17 @@ import polcart
 
 class VMICartesianImage():
     """ Class used to represent a VMI image stored as a cartesian
-    array. Instantiation requires passing the image data stored in a numpy
     array.
     """
     def __init__(self):
         self.image = None
-        self.x = None # x values at centre of bins
-        self.y = None # y values at centre of bins
-    
+        self.x = None
+        self.y = None
+        self.centre = None
+
     def from_numpy_array(self, image, x=None, y=None):
         """ Initialize from an image stored in a numpy array. If x or y are
-        not specified, the x and y coordinates are stored in pixel values.
+        not specified, the x and y coordinates are stored as pixel values.
         """
         self.image = image.copy()
 
@@ -26,6 +26,8 @@ class VMICartesianImage():
             self.y = numpy.arange(self.image.shape[1])
         else:
             self.y = y.copy()
+
+    
 
     def from_VMIPolarImage(self, pimage):
         """ Initizize from a VMIPolarImage object by interpolation onto a
