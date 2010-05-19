@@ -1,0 +1,46 @@
+\documentclass{article}
+\usepackage{amsmath}
+
+\title{Notes on inversion algorithms}
+\author {Jonathan G. Underwood}
+
+\begin{document}
+
+\section{Forward Abel integral expressed in spherical polar coordinates} 
+We adopt the convention that the observed image lies in the $yz$-plane, with
+$z$ designated as the axis of cylindrical symmetry.
+
+We would like to express the observed image expressed in polar coordinates,
+$F(R, \Theta)$, in terms of the distribution in spherical polar coordinates
+$f(r, \theta, \phi)\equiv f(r, \theta)$, where cylindrical symmetry is
+assumed. The Abel integral is
+\begin{equation}
+  \label{eq:1}
+  F(R, \Theta)=2\int_{|x|}^\infty
+  \frac{\rho f(r, \theta)}{\sqrt{\rho^2-x^2}}\;\mathrm{d}\rho.
+\end{equation}
+where $\rho=\sqrt{x^2+y^2}$ is the distance from the $z$-axis. We note the
+following algebraic relationships:
+\begin{gather}
+  z=R\cos\Theta\\
+  y=R\sin\Theta\\
+  r^2=x^2+y^2+z^2\\
+  \rho^2=r^2-z^2=x^2+y^2
+\end{gather}
+Since $\rho=\sqrt{r^2-z^2}$,
+\begin{equation}
+  \label{eq:2}
+  \frac{\mathrm{d}\rho}{\mathrm{d}r}=
+  \frac{r}{\sqrt{r^2-z^2}},
+\end{equation}
+such that
+\begin{equation}
+  \label{eq:3}
+  \rho\;\mathrm{d}\rho=r\;\mathrm{d}r
+\end{equation}
+
+\end{document}
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
