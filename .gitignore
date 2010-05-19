@@ -1,3 +1,7 @@
 *~
 .emacs.*
 *.pyc
+notes.aux
+notes.pdf
+notes.log
+auto
