@@ -1,12 +1,14 @@
 \documentclass{article}
 \usepackage{amsmath}
 \renewcommand{\eqref}[1]{Eq.~(\ref{#1})}
+\renewcommand{\exp}[1]{\ensuremath{\mathrm{e}^{#1}}}
 
 \title{Notes on inversion algorithms}
 \author {Jonathan G. Underwood}
 
 \begin{document}
 \maketitle
+\tableofcontents
 
 \section{Coordinate systems}
 We adopt the convention that the observed image $F(x,z)$ lies in the
@@ -107,7 +109,34 @@ noise at the centre of the inverted image, rather than along the $z$-axis
 (i.e. as $x\rightarrow0$) as is the case of the inverse of
 \eqref{eq:abel_cartesian}.
 
-
+\section{Implementation notes for pbasex}
+We use a slightly modified implementation of pbasex, using
+\eqref{eq:abel_polar}. Following GNP we expand the photofragment distribution
+as 
+\begin{equation}
+  f(r,\theta)=
+  \sum_{k=0}^{k_\mathrm{max}}
+  \sum_{l=0}^{l_\mathrm{max}}
+  c_{kl}f_{kl}(r,\theta)
+\end{equation}
+where
+\begin{equation}
+  f_{kl}(r,\theta)=
+  \exp{-(r-r_k)^2/\sigma}P_l(\cos\theta).
+\end{equation}
+The image can then be expressed as
+\begin{equation}
+  F(R, \Theta)=
+  \sum_{k=0}^{k_\mathrm{max}}
+  \sum_{l=0}^{l_\mathrm{max}}
+  c_{kl}g_{kl}(R,\Theta)
+\end{equation}
+with
+\begin{equation}
+  g_{kl}(R,\Theta)=
+  2\int_{R}^\infty
+  \frac{rf_{kl}(r, \theta)}{\sqrt{r^2-R^2}}\;\mathrm{d}r.
+\end{equation}
 \end{document}
 %%% Local Variables: 
 %%% mode: latex
