@@ -137,6 +137,26 @@ with
   2\int_{R}^\infty
   \frac{rf_{kl}(r, \theta)}{\sqrt{r^2-R^2}}\;\mathrm{d}r.
 \end{equation}
+
+The observed image is actually sampled on a grid of cartesian pixels which is
+the converted to a regular grid of $(R, \Theta)$ pixels.
+
+\begin{equation}
+  F_{ij}(R, \Theta)=
+  \sum_{k=0}^{k_\mathrm{max}}
+  \sum_{l=0}^{l_\mathrm{max}}
+  c_{kl}g_{ij;kl}(R,\Theta)
+\end{equation}
+where
+\begin{equation}
+  g_{ij;kl}(R,\Theta)=
+  2
+  \int_{i\Delta_R}^{(i+1)\Delta_R}\mathrm{d}R
+  \int_{j\Delta_\Theta}^{(j+1)\Delta_\Theta}\sin\Theta\;\mathrm{d}\Theta
+  \int_{R}^\infty
+  \frac{rf_{kl}(r, \theta)}{\sqrt{r^2-R^2}}\;\mathrm{d}r.
+\end{equation}
+
 \end{document}
 %%% Local Variables: 
 %%% mode: latex
