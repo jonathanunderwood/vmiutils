@@ -1,47 +1,159 @@
 \documentclass{article}
 \usepackage{amsmath}
+\renewcommand{\eqref}[1]{Eq.~(\ref{#1})}
+\renewcommand{\exp}[1]{\ensuremath{\mathrm{e}^{#1}}}
 
 \title{Notes on inversion algorithms}
 \author {Jonathan G. Underwood}
 
 \begin{document}
+\maketitle
+\tableofcontents
 
 \section{Coordinate systems}
-We adopt the convention that the observed image lies in the $xz$-plane, with
-$z$ designated as the axis of cylindrical symmetry. We also wish to express
-the image in polar coordinates such that
+We adopt the convention that the observed image $F(x,z)$ lies in the
+$xz$-plane, with $z$ designated as the axis of cylindrical symmetry. We also
+wish to express the image in polar coordinates, $F(R, \Theta)$ such that
+\begin{gather}
+  z=R\cos\Theta\\
+  x=R\sin\Theta\\
+  R^2=x^2+z^2
+\end{gather}
+The distribution of photofragments is most naturally expressed in polar
+coordinates, $f(r, \theta, \phi)\equiv f(r, \theta)$. We assume a cylindrical
+distribution of fragments. We choose a system of coordinates such that the $x$
+and $z$ directions are coincident to that used for the image plane.
+\begin{gather}
+  z=r\cos\theta\\
+  x=r\sin\theta\cos\phi\\
+  y=r\sin\theta\sin\phi\\
+  r^2=x^2+y^2+z^2
+\end{gather}
+It is useful to define the quantity $\rho$ representing the distance from the
+tip of the vector $\mathbf{r}$ to the $z$-axis
+\begin{gather}
+  \rho=r\sin\theta\\
+  \rho^2=x^2+y^2
+\end{gather}
+We also note the following relationships
+\begin{gather}
+  r^2=R^2+y^2\\
+  \rho^2=r^2-z^2\\
+  R=\frac{r\cos\theta}{\cos\Theta}\\
+  \tan\Theta=\frac{x}{z}=\tan\theta\cos\phi
+\end{gather}
 
-
+\section{Forward Abel integral expressed in Cartesian coordinates}
+We can express the image $F(x,z)$ in terms of the distribution expressed in
+cylindrical polar coordinates $f(\rho,z\, \phi)\equiv f(\rho, z)$ as 
+\begin{equation}
+  F(x,z)=\int_{-\infty}^{\infty}
+  f(\rho, z)\;\mathrm{d}y.
+\end{equation}
+Since $y=\sqrt{\rho^2-x^2}$,
+\begin{equation}
+  \frac{\mathrm{d}y}{\mathrm{d}\rho}
+  =\frac{\rho}{\sqrt{\rho^2-x^2}}
+\end{equation}
+and so
+\begin{equation}
+  \label{eq:abel_cartesian}
+  F(x,z)=2\int_{|x|}^{\infty}
+  \frac{\rho f(\rho, z)}{\sqrt{\rho^2-x^2}}
+  \;\mathrm{d}\rho.
+\end{equation}
 
 \section{Forward Abel integral expressed in spherical polar coordinates} 
-
-We would like to express the observed image expressed in polar coordinates,
-$F(R, \Theta)$, in terms of the distribution in spherical polar coordinates
-$f(r, \theta, \phi)\equiv f(r, \theta)$, where cylindrical symmetry is
-assumed. The Abel integral is
+We would like to express the observed image $F(R, \Theta)$ in terms of the
+distribution $f(r, \theta)$. The Abel integral is
 \begin{equation}
-  \label{eq:1}
   F(R, \Theta)=2\int_{|x|}^\infty
   \frac{\rho f(r, \theta)}{\sqrt{\rho^2-x^2}}\;\mathrm{d}\rho.
 \end{equation}
-where $\rho=\sqrt{x^2+y^2}$ is the distance from the $z$-axis. We note the
-following algebraic relationships:
-\begin{gather}
-  z=R\cos\Theta\\
-  y=R\sin\Theta\\
-  r^2=x^2+y^2+z^2\\
-  \rho^2=r^2-z^2=x^2+y^2
-\end{gather}
-Since $\rho=\sqrt{r^2-z^2}$,
+with $x=R\sin\Theta$ and $\rho=r\sin\theta$. Since $\rho=\sqrt{r^2-z^2}$,
 \begin{equation}
-  \label{eq:2}
   \frac{\mathrm{d}\rho}{\mathrm{d}r}=
   \frac{r}{\sqrt{r^2-z^2}},
 \end{equation}
 such that
 \begin{equation}
-  \label{eq:3}
   \rho\;\mathrm{d}\rho=r\;\mathrm{d}r
+\end{equation}
+and since $r=\sqrt{\rho^2+z^2}$
+\begin{equation}
+  F(R, \Theta)=
+  2\int_{\sqrt{|x|^2+z^2}}^\infty
+  \frac{rf(r, \theta)}{\sqrt{r^2-z^2-x^2}}\;\mathrm{d}r
+\end{equation}
+which can be re-expressed as
+\begin{equation}
+  \label{eq:abel_polar}
+  F(R, \Theta)=
+  2\int_{R}^\infty
+  \frac{rf(r, \theta)}{\sqrt{r^2-R^2}}\;\mathrm{d}r.
+\end{equation}
+with 
+\begin{equation}
+  \theta=\arccos\left(
+    \frac{R}{r}\cos\Theta
+  \right)
+\end{equation}
+This equation is analogous to \eqref{eq:abel_cartesian} with the equivalence
+$r\leftrightarrow\rho$ and $R\leftrightarrow x$. However, the equivalence
+$\Theta\leftrightarrow z$ is not quite so straightforward.
+
+It is readily seen that the inverse transform of \eqref{eq:abel_polar}
+diverges as $r\rightarrow0$. This has the consequence of placing inversion
+noise at the centre of the inverted image, rather than along the $z$-axis
+(i.e. as $x\rightarrow0$) as is the case of the inverse of
+\eqref{eq:abel_cartesian}.
+
+\section{Implementation notes for pbasex}
+We use a slightly modified implementation of pbasex, using
+\eqref{eq:abel_polar}. Following GNP we expand the photofragment distribution
+as 
+\begin{equation}
+  f(r,\theta)=
+  \sum_{k=0}^{k_\mathrm{max}}
+  \sum_{l=0}^{l_\mathrm{max}}
+  c_{kl}f_{kl}(r,\theta)
+\end{equation}
+where
+\begin{equation}
+  f_{kl}(r,\theta)=
+  \exp{-(r-r_k)^2/\sigma}P_l(\cos\theta).
+\end{equation}
+The image can then be expressed as
+\begin{equation}
+  F(R, \Theta)=
+  \sum_{k=0}^{k_\mathrm{max}}
+  \sum_{l=0}^{l_\mathrm{max}}
+  c_{kl}g_{kl}(R,\Theta)
+\end{equation}
+with
+\begin{equation}
+  g_{kl}(R,\Theta)=
+  2\int_{R}^\infty
+  \frac{rf_{kl}(r, \theta)}{\sqrt{r^2-R^2}}\;\mathrm{d}r.
+\end{equation}
+
+The observed image is actually sampled on a grid of cartesian pixels which is
+the converted to a regular grid of $(R, \Theta)$ pixels.
+
+\begin{equation}
+  F_{ij}(R, \Theta)=
+  \sum_{k=0}^{k_\mathrm{max}}
+  \sum_{l=0}^{l_\mathrm{max}}
+  c_{kl}g_{ij;kl}(R,\Theta)
+\end{equation}
+where
+\begin{equation}
+  g_{ij;kl}(R,\Theta)=
+  2
+  \int_{i\Delta_R}^{(i+1)\Delta_R}\mathrm{d}R
+  \int_{j\Delta_\Theta}^{(j+1)\Delta_\Theta}\sin\Theta\;\mathrm{d}\Theta
+  \int_{R}^\infty
+  \frac{rf_{kl}(r, \theta)}{\sqrt{r^2-R^2}}\;\mathrm{d}r.
 \end{equation}
 
 \end{document}
