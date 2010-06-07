@@ -8,11 +8,7 @@ def calc_basis(k, l, i, j):
     pass
 
 
-def __integrand(r, R, Theta, sigma, rk):
-    
-
-
-def calc_matrix(kmax, lmax, rmax, rbins, thetabins, oddl=True):
+def calc_matrix(kmax, lmax, rmax, Rbins, Thetabins, oddl=True):
 
     kdim = kmax + 1
     ldim = lmax + 1
@@ -20,7 +16,7 @@ def calc_matrix(kmax, lmax, rmax, rbins, thetabins, oddl=True):
     dR = rmax / Rbins
     dTheta = 2.0 * numpy.pi / Thetabins
 
-    sigma = 
+    ##sigma = 
     mtx = numpy.empty((kdim, ldim, rbins, thetabins))
 
     for k in xrange(kdim):
