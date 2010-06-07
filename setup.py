@@ -1,4 +1,4 @@
-from distutils.core import setup
+from distutils.core import setup, Extension
 
 setup(name='VMIinvert',
       version='0.1'
@@ -6,4 +6,7 @@ setup(name='VMIinvert',
       author='Jonathan G. Underwood',
       author_email='j.underwood@ucl.ac.uk',
       packages=['pbasex', 'ChoNa'],
+      ext_modules=[Extension('pbasex.basisfn', 
+                             ['pbasex/basisfn.c'],
+                             libraries=['gsl', 'gslcblas', 'm'])],
       )
