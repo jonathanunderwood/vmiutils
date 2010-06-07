@@ -1,7 +1,7 @@
 from distutils.core import setup, Extension
 
 setup(name='VMIutils',
-      version='0.1'
+      version='0.1',
       description='Programs for inverting VMI image',
       author='Jonathan G. Underwood',
       author_email='j.underwood@ucl.ac.uk',
