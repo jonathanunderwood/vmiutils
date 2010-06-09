@@ -1,7 +1,7 @@
 import sys
 import numpy
 import pylab
-import vmi
+import vmiutils as vmi
 
 file = sys.argv[1]
 
