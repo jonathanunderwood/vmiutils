@@ -2,11 +2,7 @@
 #include <math.h>
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_sf_legendre.h>
-
-/* Size of workspace used for numerical integration. */
-#define WKSPSIZE 1000
-#define EPSABS 1.0e-8
-#define EPSREL 1.0e-8
+#include <gsl/gsl_errno.h>
 
 typedef struct 
 {
@@ -28,36 +24,70 @@ int_params_init (int_params *p, int k, int l, double R, double Theta,
 static double integrand(double r, void *params)
 {
   double a, rad, ang;
-  int_params p = *(intparams *) params;
+  int_params p = *(int_params *) params;
 
   a = r - p.rk;
   rad = exp(-(a * a) / p.sigma2);
   ang = gsl_sf_legendre_Pl(p.l, p.RcosTheta / r);
 
-  return r * rad * ang / sqrt(r * r - R2);
+  return r * rad * ang / sqrt(r * r - p.R2);
 }
 
 static PyObject *
 basisfn(PyObject *self, PyObject *args)
 {
-  int k, l; /* Could use unsigned int here. */
-  double R, Theta, rk, sigma;
-  gsl_integration_workspace wksp;
+  int k, l, err, wkspsize; /* A sensible choice for wkspsize is 100000. */
+  double R, Theta, rk, sigma, result, abserr;
+  double epsabs, epsrel; /* Note: a sensible choice is epsabs = 0.0 */  
+  gsl_integration_workspace *wksp;
   gsl_function fn;
   int_params params;
 
-  if (!PyArg_ParseTuple(args, "i i d d d d", &k, &l, &R, &Theta, rk, sigma))
+  if (!PyArg_ParseTuple(args, "i i d d d d d d d", 
+			&k, &l, &R, &Theta, &rk, &sigma, 
+			&epsabs, &epsrel, &wkspsize))
     return NULL;
 
   int_params_init (&params, k, l, R, Theta, rk, sigma);
-  wksp = gsl_integration_workspace_alloc(WKSPSIZE);
+
+  wksp = gsl_integration_workspace_alloc(wkspsize);
+  if (!wksp)
+    {
+      PyErr_SetString (PyExc_MemoryError, 
+		       "Failed to allocate workspace for integration workspace");
+      return NULL;
+    }
+
   fn.function = &integrand;
   fn.params = &params;
   
-  result = gsl_integration_qagiu (fn, R, epsabs, epsrel, WKSPSIZE,
-  gsl_integration_workspace_free(&wksp);
+  err = gsl_integration_qagiu (&fn, R, epsabs, epsrel, wkspsize,
+			       wksp, &result, &abserr);
+  gsl_integration_workspace_free(wksp);
 
+  if (err == GSL_EMAXITER)
+    {
+      PyErr_SetString (PyExc_RuntimeError, 
+		       "Maximum number of integration subdivisions exceeded");
+      return NULL;
+    }
+  else if (err == GSL_EROUND)
+    {
+      PyErr_SetString (PyExc_RuntimeError, 
+		       "Failed to achieve required integration tolerance");
+      return NULL;
+    }
+  else if (err == GSL_ESING || err == GSL_EDIVERGE)
+    {
+      PyErr_SetString (PyExc_RuntimeError, "Failed to integrate");
+      return NULL;
+    }
+  else
+    {
+      return Py_BuildValue("d d", result, abserr);
+    }
 }
+
 static PyMethodDef BasisFnMethods[] = {
     {"basisfn",  basisfn, METH_VARARGS,
      "Calculate the value of a basis function."},
