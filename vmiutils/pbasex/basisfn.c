@@ -6,19 +6,19 @@
 
 typedef struct 
 {
-  int k, l;
+  int l;
   double R2, RcosTheta, rk, sigma2;
 } int_params;
 
 static void
-int_params_init (int_params *p, int k, int l, double R, double Theta,
-		 double rk, double sigma)
+int_params_init (int_params *p, const double R, const double Theta,
+		 const int l, const double rk, const double sigma)
 {
-  p->k = k;
   p->l = l;
   p->R2 = R * R;
   p->rk = rk;
   p->sigma2 = sigma * sigma;
+  p->RcosTheta = R * cos(Theta);
 }
 
 static double integrand(double r, void *params)
@@ -36,19 +36,18 @@ static double integrand(double r, void *params)
 static PyObject *
 basisfn(PyObject *self, PyObject *args)
 {
-  int k, l, err, wkspsize; /* A sensible choice for wkspsize is 100000. */
+  int l, err, wkspsize; /* A sensible choice for wkspsize is 100000. */
   double R, Theta, rk, sigma, result, abserr;
   double epsabs, epsrel; /* Note: a sensible choice is epsabs = 0.0 */  
   gsl_integration_workspace *wksp;
   gsl_function fn;
   int_params params;
 
-  if (!PyArg_ParseTuple(args, "i i d d d d d d d", 
-			&k, &l, &R, &Theta, &rk, &sigma, 
-			&epsabs, &epsrel, &wkspsize))
+  if (!PyArg_ParseTuple(args, "d d i d d d d d", 
+			&R, &Theta, &l, &rk, &sigma, &epsabs, &epsrel, &wkspsize))
     return NULL;
 
-  int_params_init (&params, k, l, R, Theta, rk, sigma);
+  int_params_init (&params, R, Theta, l, rk, sigma);
 
   wksp = gsl_integration_workspace_alloc(wkspsize);
   if (!wksp)
@@ -61,8 +60,7 @@ basisfn(PyObject *self, PyObject *args)
   fn.function = &integrand;
   fn.params = &params;
   
-  err = gsl_integration_qagiu (&fn, R, epsabs, epsrel, wkspsize,
-			       wksp, &result, &abserr);
+  err = gsl_integration_qagiu (&fn, R, epsabs, epsrel, wkspsize, wksp, &result, &abserr);
   gsl_integration_workspace_free(wksp);
 
   if (err == GSL_EMAXITER)
