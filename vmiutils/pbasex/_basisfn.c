@@ -43,7 +43,7 @@ basisfn(PyObject *self, PyObject *args)
   gsl_function fn;
   int_params params;
 
-  if (!PyArg_ParseTuple(args, "d d i d d d d d", 
+  if (!PyArg_ParseTuple(args, "ddiddddi", 
 			&R, &Theta, &l, &rk, &sigma, &epsabs, &epsrel, &wkspsize))
     return NULL;
 
@@ -93,8 +93,8 @@ static PyMethodDef BasisFnMethods[] = {
 };
 
 PyMODINIT_FUNC
-initbasisfn(void)
+init_basisfn(void)
 {
-    (void) Py_InitModule("basisfn", BasisFnMethods);
+    (void) Py_InitModule("_basisfn", BasisFnMethods);
 }
 
