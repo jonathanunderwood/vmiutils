@@ -1,3 +1,4 @@
+
 #include <Python.h>
 #include <math.h>
 #include <gsl/gsl_integration.h>
@@ -7,7 +8,7 @@
 typedef struct 
 {
   int l;
-  double R2, RcosTheta, rk, sigma2;
+  double R2, RcosTheta, rk, two_sigma2;
 } int_params;
 
 static void
@@ -17,7 +18,7 @@ int_params_init (int_params *p, const double R, const double Theta,
   p->l = l;
   p->R2 = R * R;
   p->rk = rk;
-  p->sigma2 = sigma * sigma;
+  p->two_sigma2 = 2.0 * sigma * sigma;
   p->RcosTheta = R * cos(Theta);
 }
 
@@ -27,7 +28,7 @@ static double integrand(double r, void *params)
   int_params p = *(int_params *) params;
 
   a = r - p.rk;
-  rad = exp(-(a * a) / p.sigma2);
+  rad = exp(-(a * a) / p.two_sigma2);
   ang = gsl_sf_legendre_Pl(p.l, p.RcosTheta / r);
 
   return r * rad * ang / sqrt(r * r - p.R2);
