@@ -111,18 +111,29 @@ noise at the centre of the inverted image, rather than along the $z$-axis
 \section{Implementation notes for pbasex}
 We use a slightly modified implementation of pbasex, using
 \eqref{eq:abel_polar}. Following GNP we expand the photofragment distribution
-as 
+as
 \begin{equation}
   f(r,\theta)=
   \sum_{k=0}^{k_\mathrm{max}}
   \sum_{l=0}^{l_\mathrm{max}}
   c_{kl}f_{kl}(r,\theta)
 \end{equation}
-where
+In GLP, the basis functions $f_{kl}(r,\theta)$ are defined as
 \begin{equation}
   f_{kl}(r,\theta)=
-  \exp{-(r-r_k)^2/\sigma}P_l(\cos\theta).
+  \exp{-(r-r_k)^2/\sigma'}P_l(\cos\theta).
 \end{equation}
+which departs from the standard definition of a Gaussian with $\sigma'$ in the
+exponent rather than $2\sigma^2$. In our implementation we will use the more
+standard definition
+\begin{equation}
+  f_{kl}(r,\theta)=
+  \exp{-(r-r_k)^2/2\sigma^2}P_l(\cos\theta).
+\end{equation}
+where the FWHM of the Gaussian radial function is given by
+$\mathrm{FWHM}=2\sigma\sqrt{2\ln2}$. The equivalence is clearly
+$\sigma'=2\sigma^2$.
+
 The image can then be expressed as
 \begin{equation}
   F(R, \Theta)=
@@ -139,7 +150,6 @@ with
 
 The observed image is actually sampled on a grid of cartesian pixels which is
 the converted to a regular grid of $(R, \Theta)$ pixels.
-
 \begin{equation}
   F_{ij}(R, \Theta)=
   \sum_{k=0}^{k_\mathrm{max}}
@@ -155,6 +165,15 @@ where
   \int_{R}^\infty
   \frac{rf_{kl}(r, \theta)}{\sqrt{r^2-R^2}}\;\mathrm{d}r.
 \end{equation}
+
+The GLP implementation first re-bins the image into a $256\times256$ grid of
+$(R, \Theta)$ pixels. By default, 128 radial basis functions are then used,
+$r_k$ is chosen to be $2k$, and $\sigma'$ is chosen to be 2 i.e. $\sigma=1$
+and $\mathrm{FWHM}=2.354$. In other words, the FWHM is chosen to be
+approximately equal to the basis function radial separation. We will adopt a
+similar strategy, setting $\mathrm{FWHM}=w$, where $w$ is the basis function
+radial separation given in terms of the number of radial basis functions $N_k$
+and maximum radial distance (in pixels) as $w=r_\mathrm{max}/N_k$.
 
 \end{document}
 %%% Local Variables: 
