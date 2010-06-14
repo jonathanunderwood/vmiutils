@@ -1,14 +1,7 @@
 import numpy
-import scipy.integrate
+import _basisfn as bf
 
-def calc_basis(k, l, i, j):
-    """Calculates the value of a basis function, specified by k and l indices,
-    corresponding to the point (R, Theta) in the velocity map polar image by
-    the Abel integral."""
-    pass
-
-
-def calc_matrix(kmax, lmax, rmax, Rbins, Thetabins, oddl=True):
+def calc_matrix(kmax, lmax, Rbins, Thetabins, rmax=None, sigma=None, oddl=True):
 
     kdim = kmax + 1
     ldim = lmax + 1
@@ -16,10 +9,13 @@ def calc_matrix(kmax, lmax, rmax, Rbins, Thetabins, oddl=True):
     dR = rmax / Rbins
     dTheta = 2.0 * numpy.pi / Thetabins
 
+    rwidth = rmax / kdim
+
     ##sigma = 
     mtx = numpy.empty((kdim, ldim, rbins, thetabins))
 
     for k in xrange(kdim):
+        rk = rwidth * k;
         for l in xrange(ldim):
             for i in xrange(Rbins):
                 for j in xrange(Thetabins):
