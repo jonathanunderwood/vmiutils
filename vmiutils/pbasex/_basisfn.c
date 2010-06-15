@@ -50,6 +50,9 @@ basisfn(PyObject *self, PyObject *args)
 
   int_params_init (&params, R, Theta, l, rk, sigma);
 
+  /* Turn off gsl error handler - we'll check return codes. */
+  gsl_set_error_handler_off ();
+
   wksp = gsl_integration_workspace_alloc(wkspsize);
   if (!wksp)
     {
