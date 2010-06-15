@@ -1,7 +1,16 @@
 import numpy
+import math as m
 import _basisfn as bf
 
-def calc_matrix(kmax, lmax, Rbins, Thetabins, rmax=None, sigma=None, oddl=True):
+def basisfn(R, Theta, l, rk, sigma, epsabs=0.0, epsrel=1.0e-6, wkspsize=100000):
+    try:
+        a=bf.basisfn(R, Theta, l, rk, sigma, epsabs, epsrel, wkspsize)
+    except RuntimeError:
+        print R, Theta, l, rk, sigma
+
+    return a[0]
+    
+def calc_matrix(kmax, lmax, Rbins, Thetabins, rmax, sigma=None, oddl=True):
 
     kdim = kmax + 1
     ldim = lmax + 1
@@ -11,19 +20,25 @@ def calc_matrix(kmax, lmax, Rbins, Thetabins, rmax=None, sigma=None, oddl=True):
 
     rwidth = rmax / kdim
 
-    ##sigma = 
-    mtx = numpy.empty((kdim, ldim, rbins, thetabins))
+    if sigma == None:
+        # This sets the FWHM of the radial function equal to the radial
+        # separation between radial basis functions
+        sigma = rwidth / (2.0 * m.sqrt(2.0 * m.log(2.0)))
+
+    mtx = numpy.empty((kdim, ldim, Rbins, Thetabins))
 
     for k in xrange(kdim):
+        print k
         rk = rwidth * k;
         for l in xrange(ldim):
             for i in xrange(Rbins):
+                R = i * dR
                 for j in xrange(Thetabins):
-                    R = i * dR
                     Theta = j * dTheta
-                    scipy.integrate.quad(__basis_integrand, R, scipy.infty, 
-                                         args=(R, Theta, sigma, rk)) 
-
-    mtx = mtx.reshape((kdim * ldim, rbins * thetabins))
+                    #print k, l, i, j
+                    mtx[k][l][i][j]=basisfn(R, Theta, l, rk, sigma)
+                    
+    mtx = mtx.reshape((kdim * ldim, Rbins * Thetabins))
         
     return mtx
+
