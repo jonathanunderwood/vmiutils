@@ -37,7 +37,7 @@ static double integrand(double r, void *params)
 static PyObject *
 basisfn(PyObject *self, PyObject *args)
 {
-  int l, err, wkspsize; /* A sensible choice for wkspsize is 100000. */
+  int l, status, wkspsize; /* A sensible choice for wkspsize is 100000. */
   double R, Theta, rk, sigma, result, abserr;
   double epsabs, epsrel; /* Note: a sensible choice is epsabs = 0.0 */  
   gsl_integration_workspace *wksp;
@@ -64,22 +64,22 @@ basisfn(PyObject *self, PyObject *args)
   fn.function = &integrand;
   fn.params = &params;
   
-  err = gsl_integration_qagiu (&fn, R, epsabs, epsrel, wkspsize, wksp, &result, &abserr);
+  status = gsl_integration_qagiu (&fn, R, epsabs, epsrel, wkspsize, wksp, &result, &abserr);
   gsl_integration_workspace_free(wksp);
 
-  if (err == GSL_EMAXITER)
+  if (status == GSL_EMAXITER)
     {
       PyErr_SetString (PyExc_RuntimeError, 
 		       "Maximum number of integration subdivisions exceeded");
       return NULL;
     }
-  else if (err == GSL_EROUND)
+  else if (status == GSL_EROUND)
     {
       PyErr_SetString (PyExc_RuntimeError, 
 		       "Failed to achieve required integration tolerance");
       return NULL;
     }
-  else if (err == GSL_ESING || err == GSL_EDIVERGE)
+  else if (status == GSL_ESING || status == GSL_EDIVERGE)
     {
       PyErr_SetString (PyExc_RuntimeError, "Failed to integrate");
       return NULL;
