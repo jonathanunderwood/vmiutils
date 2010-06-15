@@ -5,6 +5,8 @@ notes.aux
 notes.pdf
 notes.log
 notes.toc
+notes.rel
+notes.dvi
 auto
 build/
 dist/
