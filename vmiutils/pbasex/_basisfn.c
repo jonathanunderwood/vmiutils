@@ -88,12 +88,16 @@ basisfn(PyObject *self, PyObject *args)
     }
 }
 
+/* Module function table. Each entry specifies the name of the function exported
+   by the module and the corresponding C function. */
 static PyMethodDef BasisFnMethods[] = {
     {"basisfn",  basisfn, METH_VARARGS,
      "Calculate the value of a basis function."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
+/* Module initialization function, must be caled initNAME, where NAME is the
+   compiled module name, in this case _basisfn. */
 PyMODINIT_FUNC
 init_basisfn(void)
 {
