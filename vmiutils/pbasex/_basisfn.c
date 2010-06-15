@@ -67,26 +67,24 @@ basisfn(PyObject *self, PyObject *args)
   status = gsl_integration_qagiu (&fn, R, epsabs, epsrel, wkspsize, wksp, &result, &abserr);
   gsl_integration_workspace_free(wksp);
 
-  if (status == GSL_EMAXITER)
+  switch (status)
     {
+    case GSL_SUCCESS:
+      return Py_BuildValue("d d", result, abserr);
+    case GSL_EMAXITER:
       PyErr_SetString (PyExc_RuntimeError, 
 		       "Maximum number of integration subdivisions exceeded");
       return NULL;
-    }
-  else if (status == GSL_EROUND)
-    {
+    case GSL_EROUND:
       PyErr_SetString (PyExc_RuntimeError, 
 		       "Failed to achieve required integration tolerance");
       return NULL;
-    }
-  else if (status == GSL_ESING || status == GSL_EDIVERGE)
-    {
-      PyErr_SetString (PyExc_RuntimeError, "Failed to integrate");
+    case GSL_ESING:
+      PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: singularity found");
       return NULL;
-    }
-  else
-    {
-      return Py_BuildValue("d d", result, abserr);
+    case GSL_EDIVERGE:
+      PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: divergent or slowly convergent");
+      return NULL;
     }
 }
 
