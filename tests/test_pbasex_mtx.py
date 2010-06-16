@@ -1,3 +1,4 @@
 import vmiutils.pbasex as pb
 
-a=pb.calc_matrix(128, 2, 256, 256, 256)
+a=pb.calc_matrix(4, 2, 8, 8)
+print a
