@@ -20,9 +20,6 @@ def calc_matrix(kmax, lmax, Rbins, Thetabins, sigma=None, oddl=True,
     Thetabins specifies the number of angular bins in the image to be
     inverted.
 
-    rmax specifies the largest radial value to consider. This is used to
-    determine the centre positions of the Gaussian radial functions.
-
     sigma specifes the width of the Gaussian radial basis functions. This is
     defined according to the normal convention for Gaussian functions
     i.e. FWHM=2*sigma*sqrt(2*ln2), and NOT as defined in the Garcia, Lahon,
