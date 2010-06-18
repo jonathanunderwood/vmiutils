@@ -62,6 +62,9 @@ def calc_matrix(kmax, lmax, Rbins, Thetabins, sigma=None, oddl=True,
         print k
         rk = rwidth * k;
         for l in xrange(ldim):
+            if __odd(l) && oddl == False:
+                mtx[k, l, :, :] = 0.0
+                continue
             for i in xrange(Rbins):
                 R = i # Redundant, but aids readability
                 for j in xrange(midTheta):
@@ -72,16 +75,18 @@ def calc_matrix(kmax, lmax, Rbins, Thetabins, sigma=None, oddl=True,
                     except RuntimeError:
                         print R, Theta, l, rk, sigma
                         sys.exit(1)
-
-                    mtx[k, l, i, j]=result[0]
-
-                # Use symmetry to calculate remaining values
-                if __odd(Thetabins):
-                    mtx[k, l, i, midTheta + 1:Thetabins] = mtx[k, l, i, midTheta - 1::-1] 
-                else:
-                    mtx[k, l, i, midTheta + 1:Thetabins] = mtx[k, l, i, midTheta::-1] 
-
-    mtx = mtx.reshape((kdim * ldim, Rbins * Thetabins))
+                        
+                        mtx[k, l, i, j]=result[0]
+                        
+                        # Use symmetry to calculate remaining values
+                        if __odd(Thetabins):
+                            mtx[k, l, i, midTheta + 1:Thetabins] = \
+                                mtx[k, l, i, midTheta - 1::-1] 
+                        else:
+                            mtx[k, l, i, midTheta + 1:Thetabins] = \
+                                mtx[k, l, i, midTheta::-1] 
+                            
+                mtx = mtx.reshape((kdim * ldim, Rbins * Thetabins))
         
     return mtx
 
