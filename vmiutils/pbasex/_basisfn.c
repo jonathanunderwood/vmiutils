@@ -71,17 +71,21 @@ basisfn(PyObject *self, PyObject *args)
     {
     case GSL_SUCCESS:
       return Py_BuildValue("d d", result, abserr);
+
     case GSL_EMAXITER:
       PyErr_SetString (PyExc_RuntimeError, 
 		       "Maximum number of integration subdivisions exceeded");
       return NULL;
+
     case GSL_EROUND:
       PyErr_SetString (PyExc_RuntimeError, 
 		       "Failed to achieve required integration tolerance");
       return NULL;
+
     case GSL_ESING:
       PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: singularity found");
       return NULL;
+
     case GSL_EDIVERGE:
       PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: divergent or slowly convergent");
       return NULL;
