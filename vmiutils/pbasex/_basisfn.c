@@ -1,4 +1,3 @@
-
 #include <Python.h>
 #include <math.h>
 #include <gsl/gsl_integration.h>
@@ -69,7 +68,7 @@ basisfn(PyObject *self, PyObject *args)
   switch (status)
     {
     case GSL_SUCCESS:
-      return Py_BuildValue("d d", result, abserr);
+      break;
 
     case GSL_EMAXITER:
       PyErr_SetString (PyExc_RuntimeError, 
@@ -88,7 +87,13 @@ basisfn(PyObject *self, PyObject *args)
     case GSL_EDIVERGE:
       PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: divergent or slowly convergent");
       return NULL;
+
+    default:
+      PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: Unknown error");
+      return NULL;
     }
+
+  return Py_BuildValue("d d", result, abserr);
 }
 
 /* Module function table. Each entry specifies the name of the function exported
