@@ -4,6 +4,12 @@
 #include <gsl/gsl_sf_legendre.h>
 #include <gsl/gsl_errno.h>
 
+/* Exceptions for this module. */
+static PyObject *MaxIterError;
+static PyObject *RoundError;
+static PyObject *SingularError;
+static PyObject *DivergeError;
+
 typedef struct 
 {
   int l;
@@ -71,21 +77,20 @@ basisfn(PyObject *self, PyObject *args)
       break;
 
     case GSL_EMAXITER:
-      PyErr_SetString (PyExc_RuntimeError, 
+      PyErr_SetString (MaxIterError, 
 		       "Maximum number of integration subdivisions exceeded");
       return NULL;
 
     case GSL_EROUND:
-      PyErr_SetString (PyExc_RuntimeError, 
-		       "Failed to achieve required integration tolerance");
+      PyErr_SetString (RoundError, "Failed to achieve required integration tolerance");
       return NULL;
 
     case GSL_ESING:
-      PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: singularity found");
+      PyErr_SetString (SingularError, "Failed to integrate: singularity found");
       return NULL;
 
     case GSL_EDIVERGE:
-      PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: divergent or slowly convergent");
+      PyErr_SetString (DivergeError, "Failed to integrate: divergent or slowly convergent");
       return NULL;
 
     default:
@@ -109,6 +114,27 @@ static PyMethodDef BasisFnMethods[] = {
 PyMODINIT_FUNC
 init_basisfn(void)
 {
-    (void) Py_InitModule("_basisfn", BasisFnMethods);
+  PyObject *mod;
+
+  mod = Py_InitModule("_basisfn", BasisFnMethods);
+  if (mod == NULL)
+    return;
+
+  /* Exceptions. */
+  MaxIterError = PyErr_NewException("_basisfn.MaxIterError", NULL, NULL);
+  Py_INCREF(MaxIterError);
+  PyModule_AddObject(mod, "MaxIterError", MaxIterError);
+
+  RoundError = PyErr_NewException("_basisfn.RoundError", NULL, NULL);
+  Py_INCREF(RoundError);
+  PyModule_AddObject(mod, "RoundError", RoundError);
+
+  SingularError = PyErr_NewException("_basisfn.SingularError", NULL, NULL);
+  Py_INCREF(SingularError);
+  PyModule_AddObject(mod, "SingularError", SingularError);
+
+  DivergeError = PyErr_NewException("_basisfn.DivergeError", NULL, NULL);
+  Py_INCREF(DivergeError);
+  PyModule_AddObject(mod, "DivergeError", DivergeError);
 }
 
