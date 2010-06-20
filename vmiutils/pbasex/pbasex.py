@@ -62,7 +62,7 @@ def calc_matrix(kmax, lmax, Rbins, Thetabins, sigma=None, oddl=True,
         print k
         rk = rwidth * k;
         for l in xrange(ldim):
-            if __odd(l) && oddl == False:
+            if __odd(l) and oddl == False:
                 mtx[k, l, :, :] = 0.0
                 continue
             for i in xrange(Rbins):
