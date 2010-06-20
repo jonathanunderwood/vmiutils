@@ -46,7 +46,10 @@ basisfn(PyObject *self, PyObject *args)
 
   if (!PyArg_ParseTuple(args, "ddiddddi", 
 			&R, &Theta, &l, &rk, &sigma, &epsabs, &epsrel, &wkspsize))
-    return NULL;
+    {
+      PyErr_SetString (PyExc_RuntimeError, "Incorrect arguments to function");
+      return NULL;
+    }
 
   int_params_init (&params, R, Theta, l, rk, sigma);
 
@@ -55,11 +58,7 @@ basisfn(PyObject *self, PyObject *args)
 
   wksp = gsl_integration_workspace_alloc(wkspsize);
   if (!wksp)
-    {
-      PyErr_SetString (PyExc_MemoryError, 
-		       "Failed to allocate workspace for integration workspace");
-      return NULL;
-    }
+    return PyErr_NoMemory();
 
   fn.function = &integrand;
   fn.params = &params;
