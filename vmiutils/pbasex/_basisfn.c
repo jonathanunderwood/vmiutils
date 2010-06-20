@@ -51,10 +51,7 @@ basisfn(PyObject *self, PyObject *args)
 
   if (!PyArg_ParseTuple(args, "ddiddddi", 
 			&R, &Theta, &l, &rk, &sigma, &epsabs, &epsrel, &wkspsize))
-    {
-      PyErr_SetString (PyExc_RuntimeError, "Incorrect arguments to function");
-      return NULL;
-    }
+    return PyErr_BadArgument ();
 
   int_params_init (&params, R, Theta, l, rk, sigma);
 
