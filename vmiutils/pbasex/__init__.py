@@ -1,1 +1,1 @@
-from pbasex import calc_matrix
+from pbasex import PbasexMatrix
