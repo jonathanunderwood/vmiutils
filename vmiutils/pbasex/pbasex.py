@@ -83,6 +83,10 @@ class PbasexMatrix():
         mtx = numpy.empty((kdim, ldim, Rbins, Thetabins))
 
     # Thoughts on removing the loop overhead here - use meshgrid and vectorize?
+        mtx2 = numpy.fromfunction(
+            lambda k, l, i, j: basisfn(i, j * dTheta, l, rwidth * k, sigma,
+                                       epsabs, epsrel, wkspsize), 
+            (kdim, ldim, Rbins, midTheta))
 
         for k in xrange(kdim):
             rk = rwidth * k;
@@ -123,6 +127,14 @@ class PbasexMatrix():
                                 mtx[k, l, i, midTheta::-1] 
 
         self.matrix = mtx.reshape((kdim * ldim, Rbins * Thetabins))
+
+        if _odd(Thetabins):
+            mtx2[:, :, :, midTheta + 1:Thetabins] = mtx2[:, :, :, midTheta - 1::-1] 
+        else:
+            mtx2[:, :, :, midTheta + 1:Thetabins] = mtx2[:, :, :, midTheta::-1] 
+
+        print mtx2
+
         self.kmax = kmax
         self.lmax = lmax
         self.oddl = oddl

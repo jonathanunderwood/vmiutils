@@ -98,6 +98,79 @@ basisfn(PyObject *self, PyObject *args)
   return Py_BuildValue("d d", result, abserr);
 }
 
+static PyObject *
+matrix(PyObject *self, PyObject *args)
+{
+  int lmax, kmax, Rbins, Thetabins;
+  double sigma, epsabs, epsrel; /* Note: a sensible choice is epsabs = 0.0 */   
+  int status, wkspsize; /* A sensible choice for wkspsize is 100000. */
+  int ldim, kdim;
+  int dims[4];
+  double result, abserr;
+  gsl_integration_workspace *wksp;
+  gsl_function fn;
+  int_params params;
+
+  if (!PyArg_ParseTuple(args, "iiiiiidddi", 
+			&kmax, &lmax, &Rbins, &Thetabins, &sigma, &epsabs, &epsrel, &wkspsize))
+    return PyErr_BadArgument ();
+
+  kdim = kmax + 1;
+  ldim = lmax + 1;
+
+  dims[0] = kdim;
+  dims[1] = ldim;
+  dims[2] = Rbins;
+  dims[3] = Thetabins;
+
+  matrix = PyArray_SimpleNew (4, dims, NPY_DOUBLE);
+
+
+  int_params_init (&params, R, Theta, l, rk, sigma);
+
+  /* Turn off gsl error handler - we'll check return codes. */
+  gsl_set_error_handler_off ();
+
+  wksp = gsl_integration_workspace_alloc(wkspsize);
+  if (!wksp)
+    return PyErr_NoMemory();
+
+  fn.function = &integrand;
+  fn.params = &params;
+  
+  status = gsl_integration_qagiu (&fn, R, epsabs, epsrel, wkspsize, wksp, &result, &abserr);
+  gsl_integration_workspace_free(wksp);
+
+  switch (status)
+    {
+    case GSL_SUCCESS:
+      break;
+
+    case GSL_EMAXITER:
+      PyErr_SetString (MaxIterError, 
+		       "Maximum number of integration subdivisions exceeded");
+      return NULL;
+
+    case GSL_EROUND:
+      PyErr_SetString (RoundError, "Failed to achieve required integration tolerance");
+      return NULL;
+
+    case GSL_ESING:
+      PyErr_SetString (SingularError, "Failed to integrate: singularity found");
+      return NULL;
+
+    case GSL_EDIVERGE:
+      PyErr_SetString (DivergeError, "Failed to integrate: divergent or slowly convergent");
+      return NULL;
+
+    default:
+      PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: Unknown error");
+      return NULL;
+    }
+
+  return Py_BuildValue("d d", result, abserr);
+}
+
 /* Module function table. Each entry specifies the name of the function exported
    by the module and the corresponding C function. */
 static PyMethodDef BasisFnMethods[] = {
