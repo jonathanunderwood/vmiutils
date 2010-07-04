@@ -7,6 +7,3 @@ a=pb.PbasexMatrix()
 a.calc_matrix(1, 0, 4, 4)
 print a.matrix
 
-b=pb.PbasexMatrix()
-b.calc_matrix2(1, 0, 4, 4)
-print b.matrix
