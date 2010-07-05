@@ -116,11 +116,11 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
 
     rbw = r[1] - r[0] # Assume equally spaced
 
-    tpts = image.shape[1]
-    thetabw = theta[1] - theta[0] # Assume equally spaced
-
     if theta == None:
         theta = numpy.linspace(-numpy.pi, numpy.pi, tpts)
+
+    tpts = image.shape[1]
+    thetabw = theta[1] - theta[0] # Assume equally spaced
 
     # If the number of bins in the cartesian image is not specified, set it to
     # be the same as the number of radial bins in the polar image
