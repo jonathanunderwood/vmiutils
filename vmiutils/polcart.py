@@ -1,7 +1,7 @@
 import numpy
 import scipy.ndimage
 
-def __pol2cart_1(out_coord, xbw, ybw, rmax, rbw, thetabw):
+def _pol2cart_1(out_coord, xbw, ybw, rmax, rbw, thetabw):
     ix, iy = out_coord
     x = ix * xbw - rmax
     y = iy * ybw - rmax
@@ -11,7 +11,7 @@ def __pol2cart_1(out_coord, xbw, ybw, rmax, rbw, thetabw):
     it = (t + numpy.pi) / thetabw
     return ir, it
 
-def __cart2pol_1(out_coord, rbw, thetabw, xbw, ybw, xc, yc):
+def _cart2pol_1(out_coord, rbw, thetabw, xbw, ybw, xc, yc):
     ir, it = out_coord
     r = ir * rbw
     t = it * thetabw - numpy.pi
@@ -84,7 +84,7 @@ def cart2pol(image, x=None, y=None, centre=None,
 
     if convention == 1:
         pimage = scipy.ndimage.geometric_transform(
-            image, __cart2pol_1, order = order,
+            image, _cart2pol_1, order = order,
             extra_arguments=(rbw, thetabw, xbw, ybw, xc, yc),
             output_shape=(radial_bins, angular_bins)
             )
@@ -146,7 +146,7 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, convention,
 
     if convention == 1:
         cimage = scipy.ndimage.geometric_transform(
-            image, __pol2cart_1, order=order, 
+            image, _pol2cart_1, order=order, 
             extra_arguments=(xbw, ybw, rmax, rbw, thetabw),
             output_shape=(xbins, ybins)
             )
