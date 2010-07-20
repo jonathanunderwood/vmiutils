@@ -34,7 +34,7 @@ static double integrand(double r, void *params)
 static PyObject *
 basisfn(PyObject *self, PyObject *args)
 {
-  int l, status, wkspsize; /* A sensible choice for wkspsize is 100000. */
+  int l, status, wkspsize; /* Suggest wkspsize = 100000. */
   double R, Theta, rk, sigma, result, abserr;
   double epsabs, epsrel, tol; /* Suggest epsabs = 0.0, epsrel = tol = 1.0e-7 */
   gsl_integration_workspace *wksp;
@@ -255,6 +255,7 @@ matrix(PyObject *self, PyObject *args)
 			 that here. */
 		      if (ThetabinsOdd && j == midTheta)
 			continue;
+
 		      elementp = PyArray_GETPTR4(matrix, k, l, R, Thetabins - j - 1);
 		      if (!elementp)
 			{
