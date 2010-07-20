@@ -179,10 +179,16 @@ matrix(PyObject *self, PyObject *args)
 
   params.two_sigma2 = 2.0 * sigma * sigma;
 
-  /* We create a matrix for Theta=0..2Pi inclusive of both endpoints, despite
-     the redundancy of the 2Pi endpoint. We also use the symmetry of the
-     Legendre polynomials P_L(cos(theta))=P_L(cos(2Pi-theta)) to calculate the
-     points in the range Pi..2Pi from those in the range 0..Pi. */
+  /* We create a matrix for Theta = -Pi..Pi inclusive of both endpoints, despite
+     the redundancy of the last (or first) endpoint. We use the symmetry of the
+     Legendre polynomials P_L(cos(theta))=P_L(cos(-theta)) to calculate the
+     points in the range 0..Pi from those in the range -Pi..0. 
+
+     If Thetabins is an odd number, there will be a point at theta = 0, for
+     which we don't need to use the symmetry condition. If Thetabins is an even
+     number, then there won't be a point at Theta = 0. midTheta defines the last
+     point for which we need to do the calculation in either case.
+  */
   dTheta = 2.0 * M_PI / (Thetabins - 1);
   midTheta = Thetabins / 2; /* Intentionally round down. */
   
@@ -214,8 +220,9 @@ matrix(PyObject *self, PyObject *args)
 		  double result, abserr;
 		  void *elementp;
 		  PyObject *valp;
+		  double Theta = -M_PI + j * dTheta;
 
-		  params.RcosTheta = R * cos (j * dTheta);
+		  params.RcosTheta = R * cos (Theta);
 
 		  status = gsl_integration_qagiu (&fn, (double) R, epsabs, epsrel, wkspsize, 
 						  wksp, &result, &abserr);
@@ -251,8 +258,9 @@ matrix(PyObject *self, PyObject *args)
 			}
 			
 		      /* Symmetry of Legendre polynomials is such that
-			 P_L(cos(theta))=P_L(cos(2Pi-theta)), so we can exploit
-			 that here. */
+			 P_L(cos(Theta))=P_L(cos(-Theta)), so we can exploit
+			 that here unless Theta = 0, in which case it's not
+			 needed. */
 		      if (ThetabinsOdd && j == midTheta)
 			continue;
 
