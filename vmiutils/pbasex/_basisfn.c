@@ -149,10 +149,10 @@ matrix(PyObject *self, PyObject *args)
     }
 	
   /* Create numpy array to hold the matrix. */
-  dims[0] = kdim;
-  dims[1] = ldim;
-  dims[2] = Rbins;
-  dims[3] = Thetabins;
+  dims[0] = (npy_intp) kdim;
+  dims[1] = (npy_intp) ldim;
+  dims[2] = (npy_intp) Rbins;
+  dims[3] = (npy_intp) Thetabins;
 
   matrix = PyArray_SimpleNew (4, dims, NPY_DOUBLE);
 
