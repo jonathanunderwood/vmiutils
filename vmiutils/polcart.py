@@ -1,7 +1,7 @@
 import numpy
 import scipy.ndimage
 
-def _pol2cart_1(out_coord, xbw, ybw, rmax, rbw, thetabw):
+def __pol2cart(out_coord, xbw, ybw, rmax, rbw, thetabw):
     ix, iy = out_coord
     x = ix * xbw - rmax
     y = iy * ybw - rmax
@@ -11,7 +11,7 @@ def _pol2cart_1(out_coord, xbw, ybw, rmax, rbw, thetabw):
     it = (t + numpy.pi) / thetabw
     return ir, it
 
-def _cart2pol_1(out_coord, rbw, thetabw, xbw, ybw, xc, yc):
+def __cart2pol(out_coord, rbw, thetabw, xbw, ybw, xc, yc):
     ir, it = out_coord
     r = ir * rbw
     t = it * thetabw - numpy.pi
@@ -22,8 +22,7 @@ def _cart2pol_1(out_coord, rbw, thetabw, xbw, ybw, xc, yc):
     return ix, iy
 
 def cart2pol(image, x=None, y=None, centre=None, 
-             radial_bins=256, angular_bins=256, rmax=None, convention=0,
-             order=3):
+             radial_bins=256, angular_bins=256, rmax=None, order=3):
     """ Convert an image on a regularly spaced cartesian grid into a regular
     spaced grid in polar coordinates using interpolation.
     
@@ -39,10 +38,9 @@ def cart2pol(image, x=None, y=None, centre=None,
 
     rmax defines the maximum radius from the image centre to consider.
 
-    convention specifies the way in which theta is defined. 
-
-    If convention=1, theta is the angle between the second axis (y-axis) and
-    the position vector and lies in the range [-pi,pi].
+    We employ the convention that the angle (theta) is that between the second
+    axis (y-axis) and the position vector and that it lies in the range
+    [-pi,pi].
 
     A tuple (r, theta, pimage) is returned, with r and theta containing the
     coordinates of each bin in the polar image pimage.
@@ -82,22 +80,18 @@ def cart2pol(image, x=None, y=None, centre=None,
     xbw = x[1] - x[0]
     ybw = y[1] - y[0]
 
-    if convention == 1:
-        pimage = scipy.ndimage.geometric_transform(
-            image, _cart2pol_1, order = order,
-            extra_arguments=(rbw, thetabw, xbw, ybw, xc, yc),
-            output_shape=(radial_bins, angular_bins)
-            )
-        t = numpy.linspace(-numpy.pi, numpy.pi, angular_bins)
-    else:
-        raise NotImplementedError
-    
+    pimage = scipy.ndimage.geometric_transform(
+        image, __cart2pol, order = order,
+        extra_arguments=(rbw, thetabw, xbw, ybw, xc, yc),
+        output_shape=(radial_bins, angular_bins)
+        )
+
     r = numpy.linspace(0.0, (radial_bins - 1) * rbw, radial_bins)
+    t = numpy.linspace(-numpy.pi, numpy.pi, angular_bins)
 
     return r, t, pimage
 
-def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, convention,
-             order=3):
+def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
     """ Convert an image on a regularly spaced polar grid into a regular
     spaced grid in cartesian coordinates using interpolation.
     
@@ -107,10 +101,9 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, convention,
     xbins and ybins define the number of bins in the returned cartesian
     representation of the image.
 
-    convention specifies the way in which theta is defined. 
-
-    If convention=1, theta is the angle between the second axis (y-axis) and
-    the position vector and lies in the range [-pi,pi].
+    We employ the convention that the angle (theta) is that between the second
+    axis (y-axis) and the position vector and that it lies in the range
+    [-pi,pi].
 
     A tuple (x, y, cimage) is returned, with x and y containing the
     coordinates of each bin in the cartesian image cimage.
@@ -124,10 +117,7 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, convention,
     rbw = r[1] - r[0] # Assume equally spaced
 
     if theta == None:
-        if convention == 1:
-            theta = numpy.linspace(-numpy.pi, numpy.pi, tpts)
-        else:
-            raise NotImplementedError
+        theta = numpy.linspace(-numpy.pi, numpy.pi, tpts)
 
     tpts = image.shape[1]
     thetabw = theta[1] - theta[0] # Assume equally spaced
@@ -144,15 +134,12 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, convention,
     xbw = 2.0 * rmax / (xbins - 1)
     ybw = 2.0 * rmax / (ybins - 1)
 
-    if convention == 1:
-        cimage = scipy.ndimage.geometric_transform(
-            image, _pol2cart_1, order=order, 
-            extra_arguments=(xbw, ybw, rmax, rbw, thetabw),
-            output_shape=(xbins, ybins)
-            )
-    else:
-        raise NotImplementedError
-    
+    cimage = scipy.ndimage.geometric_transform(
+        image, __pol2cart, order=order, 
+        extra_arguments=(xbw, ybw, rmax, rbw, thetabw),
+        output_shape=(xbins, ybins)
+        )
+
     x = numpy.linspace(-rmax, rmax, xbins)
     y = numpy.linspace(-rmax, rmax, ybins)
 
