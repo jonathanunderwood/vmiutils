@@ -5,11 +5,14 @@ import math as m
 import logging
 from _basisfn import *
 
+# Set up logging and create a null handler in case the application doesn't
+# provide a log handler
+logger = logging.getLogger('vmiutils.pbasex.matrix')
+
 class __NullHandler(logging.Handler):
     def emit(self, record):
         pass
 
-logger = logging.getLogger('vmiutils.pbasex.pbasex')
 __null_handler = __NullHandler()
 logger.addHandler(__null_handler)
 
