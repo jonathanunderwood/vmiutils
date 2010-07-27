@@ -9,4 +9,5 @@ setup(name='VMIutils',
       ext_modules=[Extension('vmiutils.pbasex._basisfn', 
                              ['vmiutils/pbasex/_basisfn.c'],
                              libraries=['gsl', 'gslcblas', 'm'])],
+      scripts=['scripts/pbmatrix'],
       )
