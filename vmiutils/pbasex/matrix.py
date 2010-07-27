@@ -72,7 +72,6 @@ class PbasexMatrix():
         else:
             oddl = 0
 
-
         while True:
             try:
                 mtx = matrix(kmax, lmax, Rbins, Thetabins, sigma, oddl, 
@@ -119,17 +118,4 @@ class PbasexMatrix():
             setattr(self, object, pickle.load(fd))
 
         fd.close()
-        print 'ding', self.kmax
 
-    def invert_image(self, image):
-        pass
-
-class PBasexFit():
-    def __init__(self):
-        coef = None
-
-    
-## How to reshape, reminder
-# kdim = kmax + 1
-# ldim = lmax + 1
-# self.matrix = mtx.reshape((kdim * ldim, Rbins * Thetabins)) 
