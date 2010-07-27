@@ -36,7 +36,7 @@ class PbasexMatrix():
         self.__dumpobjs = ['kmax', 'lmax', 'oddl', 'Rbins', 'Thetabins', 'matrix',
                            'epsabs', 'epsrel', 'tolerance']
 
-    def calc_matrix(self, kmax, lmax, Rbins, Thetabins, sigma=None, oddl=True,
+    def calc_matrix(self, Rbins, Thetabins, kmax, lmax, sigma=None, oddl=True,
                     epsabs=0.0, epsrel=1.0e-7, tolerance=1.0e-7, wkspsize=100000):
         """Calculates an inversion matrix.
 
