@@ -38,7 +38,8 @@ parser = argparse.ArgumentParser(
 subparsers = parser.add_subparsers()
 
 # calculate sub-command
-parser_calc = subparsers.add_parser('calc')
+parser_calc = subparsers.add_parser('calc',
+                                    help='Calculate a Pbasex matrix and store in a file')
 parser_calc.set_defaults(func=calc)
 parser_calc.add_argument('Rbins', type=int, 
                     help='Number of radial bins in polar image')
@@ -64,7 +65,8 @@ parser_calc.add_argument('--wkspsize', type=int, default=100000,
                     help='Maximum number of divisions in numerical integration')
 
 # info sub-command
-parser_info = subparsers.add_parser('info')
+parser_info = subparsers.add_parser('info', 
+                                    help='Extract parameters from a Pbasex matrix file')
 parser_info.set_defaults(func=info)
 parser_info.add_argument('filename',
                          help='Pbasex matrix file to query parameters from')
