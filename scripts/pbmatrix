@@ -10,10 +10,10 @@ logger = logging.getLogger('pbmatrix')
 
 # Define functions that will be called by the sub-commands
 def calc(args):
-    if args.no_oddl == True:
+    if args.no_oddl is True:
         oddl = False
     else:
-        oddl=True
+        oddl = True
 
     mtx = pb.PbasexMatrix()
     mtx.calc_matrix(args.Rbins, args.Thetabins, args.kmax, args.lmax, args.sigma,
