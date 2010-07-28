@@ -1,45 +1,75 @@
 #!/usr/bin/python
-
-import vmiutils.pbasex as pb
+import sys
 import argparse
+import logging
+import vmiutils.pbasex as pb
+
+# Set up logging - output all log message to stdout
+logging.basicConfig()
+logger = logging.getLogger('pbmatrix')
+
+# Define functions that will be called by the sub-commands
+def calc(args):
+    if args.no_oddl == True:
+        oddl = False
+    else:
+        oddl=True
+
+    mtx = pb.PbasexMatrix()
+    mtx.calc_matrix(args.Rbins, args.Thetabins, args.kmax, args.lmax, args.sigma,
+                    oddl, args.epsabs, args.epsrel, args.tol, args.wkspsize)
+    mtx.dump(args.filename)
+
+def info(args):
+    try:
+        mtx = pb.PbasexMatrix()
+        mtx.load(args.filename)
+        mtx.print_params()
+    except IOError:
+        logger.error('File not found')
+        sys.exit(1)
+    except:
+        logger.error('File not a valid matrix file')
+        sys.exit(1)
 
 parser = argparse.ArgumentParser(
-    description='Calculate a PBasex inversion matrix and save to a file')
+    description='Utility for calculating and manipulating Pbasex matrices')
 
-parser.add_argument('Rbins', type=int, 
+subparsers = parser.add_subparsers()
+
+# calculate sub-command
+parser_calc = subparsers.add_parser('calc')
+parser_calc.set_defaults(func=calc)
+parser_calc.add_argument('Rbins', type=int, 
                     help='Number of radial bins in polar image')
-parser.add_argument('Thetabins', type=int, 
+parser_calc.add_argument('Thetabins', type=int, 
                     help='Number of angular bins in polar image')
-parser.add_argument('kmax', type=int, 
+parser_calc.add_argument('kmax', type=int, 
                     help='Maximum index of radial fitting functions')
-parser.add_argument('lmax', type=int,
+parser_calc.add_argument('lmax', type=int,
                     help='Maximum order of Legendre polynomial in fitting functions')
-parser.add_argument('filename', 
+parser_calc.add_argument('filename', 
                     help='Name of file to store matrix')
-parser.add_argument('--no-oddl', action='store_true', 
+parser_calc.add_argument('--no-oddl', action='store_true', 
                     help='Specify whether to include odd order Legendre Polynomials')
-parser.add_argument('--sigma', type=float, default=None,
+parser_calc.add_argument('--sigma', type=float, default=None,
                     help='The value of sigma in the radial functions')
-parser.add_argument('--epsabs', type=float, default=0.0,
+parser_calc.add_argument('--epsabs', type=float, default=0.0,
                     help='Absolute integration tolerance for numerical integration')
-parser.add_argument('--epsrel', type=float, default=1.0e-7,
+parser_calc.add_argument('--epsrel', type=float, default=1.0e-7,
                     help='Relative integration tolerance for numerical integration')
-parser.add_argument('--tol', type=float, default=1.0e-7,
+parser_calc.add_argument('--tol', type=float, default=1.0e-7,
                     help='Maximum acceptable relative error returned from numerical integration')
-parser.add_argument('--wkspsize', type=int, default=100000,
+parser_calc.add_argument('--wkspsize', type=int, default=100000,
                     help='Maximum number of divisions in numerical integration')
 
+# info sub-command
+parser_info = subparsers.add_parser('info')
+parser_info.set_defaults(func=info)
+parser_info.add_argument('filename',
+                         help='Pbasex matrix file to query parameters from')
+
 args = parser.parse_args()
-
-if args.no_oddl == True:
-    oddl = False
-else:
-    oddl=True
-
-mtx = pb.PbasexMatrix()
-mtx.calc_matrix(args.Rbins, args.Thetabins, args.kmax, args.lmax, args.sigma,
-                oddl, args.epsabs, args.epsrel, args.tol, args.wkspsize)
-mtx.dump(args.filename)
-
+args.func(args)
 
 
