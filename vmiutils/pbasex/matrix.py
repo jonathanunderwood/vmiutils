@@ -118,11 +118,12 @@ class PbasexMatrix():
 
     def load(self, file):
         fd = open(file, 'r')
-
-        for object in self.__attribs:
-            setattr(self, object, pickle.load(fd))
-
-        fd.close()
+        
+        try:
+            for object in self.__attribs:
+                setattr(self, object, pickle.load(fd))
+        finally:
+            fd.close()
 
     def print_params(self):
         for object in self.__attribs:
