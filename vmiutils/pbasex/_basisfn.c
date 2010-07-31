@@ -32,75 +32,41 @@ static double integrand(double r, void *params)
 }
 
 static PyObject *
-basisfn(PyObject *self, PyObject *args)
+basisfn_full(PyObject *self, PyObject *args)
 {
-  int l, status, wkspsize; /* Suggest wkspsize = 100000. */
-  double R, Theta, rk, sigma, result, abserr;
-  double epsabs, epsrel, tol; /* Suggest epsabs = 0.0, epsrel = tol = 1.0e-7 */
-  gsl_integration_workspace *wksp;
-  gsl_function fn;
-  int_params params;
+  int l;
+  double r, rk, sigma, theta, rad, ang, a, s;
 
-  if (!PyArg_ParseTuple(args, "ddidddddi", 
-			&R, &Theta, &l, &rk, &sigma, &epsabs, &epsrel, &tol, &wkspsize))
+  if (!PyArg_ParseTuple(args, "iidddd", &r, &rk, &sigma, &l, &theta));
     {
       PyErr_SetString (PyExc_TypeError, "Bad argument");
       return NULL;
     }
 
-  /* Set up integration parameters. */
-  params.l = l;
-  params.R2 = R * R;
-  params.rk = rk;
-  params.two_sigma2 = 2.0 * sigma * sigma;
-  params.RcosTheta = R * cos(Theta);
+  a = r - rk;
+  s = 2.0 * sigma * sigma;
+  rad = exp(-(a * a) / s);
+  ang = gsl_sf_legendre_Pl(l, cos(theta));
 
-  /* Turn off gsl error handler - we'll check return codes. */
-  gsl_set_error_handler_off ();
+  return Py_BuildValue("d", rad * ang);
+}
 
-  wksp = gsl_integration_workspace_alloc(wkspsize);
-  if (!wksp)
-    return PyErr_NoMemory();
+static PyObject *
+basisfn_radial(PyObject *self, PyObject *args)
+{
+  double r, rk, sigma, rad, a, s;
 
-  fn.function = &integrand;
-  fn.params = &params;
-  
-  status = gsl_integration_qagiu (&fn, R, epsabs, epsrel, wkspsize, wksp, &result, &abserr);
-  gsl_integration_workspace_free(wksp);
-
-  if (fabs(abserr / result) > tol)
+  if (!PyArg_ParseTuple(args, "ddd", &r, &rk, &sigma));
     {
-      PyErr_SetString (ToleranceError, "Failed to achieve desired integration tolerance");
+      PyErr_SetString (PyExc_TypeError, "Bad argument");
       return NULL;
     }
 
-  switch (status)
-    {
-    case GSL_SUCCESS:
-      return Py_BuildValue("d d", result, abserr);
+  a = r - rk;
+  s = 2.0 * sigma * sigma;
+  rad = exp(-(a * a) / s);
 
-    case GSL_EMAXITER:
-      PyErr_SetString (MaxIterError, 
-		       "Maximum number of integration subdivisions exceeded");
-      return NULL;
-
-    case GSL_EROUND:
-      PyErr_SetString (RoundError, "Failed to achieve required integration tolerance");
-      return NULL;
-
-    case GSL_ESING:
-      PyErr_SetString (SingularError, "Failed to integrate: singularity found");
-      return NULL;
-
-    case GSL_EDIVERGE:
-      PyErr_SetString (DivergeError, "Failed to integrate: divergent or slowly convergent");
-      return NULL;
-
-    default:
-      PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: Unknown error");
-      return NULL;
-    }
-
+  return Py_BuildValue("d", rad);
 }
 
 static PyObject *
@@ -319,8 +285,10 @@ matrix(PyObject *self, PyObject *args)
 /* Module function table. Each entry specifies the name of the function exported
    by the module and the corresponding C function. */
 static PyMethodDef BasisFnMethods[] = {
-    {"basisfn",  basisfn, METH_VARARGS,
-     "Calculate the value of a basis function."},
+    {"basisfn_full",  basisfn_full, METH_VARARGS,
+     "Returns the value of a basis function."},
+    {"basisfn_radial",  basisfn_radial, METH_VARARGS,
+     "Returns the value of the radial part of a basis function."},
     {"matrix",  matrix, METH_VARARGS,
      "Returns an inversion matrix of basis functions."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
