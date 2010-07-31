@@ -81,6 +81,7 @@ class VMIPolarImage():
         self.image = None
         self.r = None
         self.theta = None
+        self.rfactor = None
 
     def from_VMICartesianImage(self, cimage, radial_bins=None, 
                                angular_bins=None, max_radius=None):
@@ -94,6 +95,8 @@ class VMIPolarImage():
         """
         self.r, self.theta, self.image = \
             cimage.polar_rep(radial_bins, angular_bins, max_radius)
+
+        self.rfactor = self.r[1] - self.r[0]
 
     def cartesian_rep(self, xbins=None, ybins=None):
         """ Returns a tuple (x, y, image) containing the coordinates and
