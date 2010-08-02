@@ -17,7 +17,7 @@ def calc(args):
 
     mtx = pb.PbasexMatrix()
     mtx.calc_matrix(args.Rbins, args.Thetabins, args.kmax, args.lmax, args.sigma,
-                    oddl, args.epsabs, args.epsrel, args.tol, args.wkspsize)
+                    oddl, args.epsabs, args.epsrel, args.wkspsize)
     mtx.dump(args.filename)
 
 def info(args):
