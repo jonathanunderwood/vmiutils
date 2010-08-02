@@ -73,7 +73,7 @@ static PyObject *
 matrix(PyObject *self, PyObject *args)
 {
   int lmax, kmax, Rbins, Thetabins;
-  double sigma, epsabs, epsrel, tol; /* Suggest epsabs = 0.0, epsrel = tol = 1.0e-7 */   
+  double sigma, epsabs, epsrel; /* Suggest epsabs = 0.0, epsrel = 1.0e-7 */   
   double rwidth, dTheta;
   int wkspsize; /* Suggest: wkspsize = 100000. */
   int ldim, kdim, midTheta, k;
@@ -85,8 +85,8 @@ matrix(PyObject *self, PyObject *args)
   int_params params;
   gsl_integration_qaws_table *table;
 
-  if (!PyArg_ParseTuple(args, "iiiidHdddi", 
-			&kmax, &lmax, &Rbins, &Thetabins, &sigma, &oddl, &epsabs, &epsrel, &tol, &wkspsize))
+  if (!PyArg_ParseTuple(args, "iiiidHddi", 
+			&kmax, &lmax, &Rbins, &Thetabins, &sigma, &oddl, &epsabs, &epsrel, &wkspsize))
     {
       PyErr_SetString (PyExc_TypeError, "Bad argument");
       return NULL;
