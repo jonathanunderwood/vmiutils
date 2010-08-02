@@ -25,10 +25,10 @@ static double integrand(double r, void *params)
   int_params p = *(int_params *) params;
 
   a = r - p.rk;
-  rad = exp(-(a * a) / p.two_sigma2);
-  ang = gsl_sf_legendre_Pl(p.l, p.RcosTheta / r);
+  rad = exp (-(a * a) / p.two_sigma2);
+  ang = gsl_sf_legendre_Pl (p.l, p.RcosTheta / r);
 
-  return r * rad * ang / sqrt(r * r - p.R2);
+  return r * rad * ang;
 }
 
 static PyObject *
@@ -83,6 +83,7 @@ matrix(PyObject *self, PyObject *args)
   gsl_integration_workspace *wksp;
   gsl_function fn;
   int_params params;
+  gsl_integration_qaws_table *table;
 
   if (!PyArg_ParseTuple(args, "iiiidHdddi", 
 			&kmax, &lmax, &Rbins, &Thetabins, &sigma, &oddl, &epsabs, &epsrel, &tol, &wkspsize))
@@ -135,6 +136,14 @@ matrix(PyObject *self, PyObject *args)
       return PyErr_NoMemory();
     }
 
+  table = gsl_integration_qaws_table_alloc(-0.5, 0.0, 0.0, 0.0);
+  if (!table)
+    {
+      gsl_integration_workspace_free(wksp);
+      Py_DECREF(matrix);
+      return PyErr_NoMemory();
+    }
+
   fn.function = &integrand;
   fn.params = &params;
 
@@ -172,15 +181,15 @@ matrix(PyObject *self, PyObject *args)
     {
       int l;
       params.rk = k * rwidth;
-      for (l=0; l <= lmax; l+=linc)
+      for (l = 0; l <= lmax; l += linc)
 	{
 	  int R;
 	  params.l = l;
-	  for (R=0; R<Rbins; R++)
+	  for (R = 0; R < Rbins; R++)
 	    {
 	      int j;
-	      params.R2 = R * R;
-	      for (j=0; j<=midTheta; j++)
+	      params.R2 = (double) (R * R);
+	      for (j = 0; j <= midTheta; j++)
 		{
 		  int status;
 		  double result, abserr;
@@ -190,11 +199,12 @@ matrix(PyObject *self, PyObject *args)
 
 		  params.RcosTheta = R * cos (Theta);
 
-		  status = gsl_integration_qagiu (&fn, (double) R, epsabs, epsrel, wkspsize, 
-						  wksp, &result, &abserr);
-
-		  if (fabs(abserr / result) > tol)
+		  status = gsl_integration_qaws (&fn, (double) R, 300.0, table, epsabs, epsrel, wkspsize,
+		  				  wksp, &result, &abserr);
+		  
+		  if (result > tol && abserr / result > tol)
 		    {
+		      printf("abserr: %g result: %g\n", abserr, result);
 		      PyErr_SetString (ToleranceError, "Failed to achieve desired integration tolerance");
 		      goto fail;
 		    }
@@ -210,7 +220,11 @@ matrix(PyObject *self, PyObject *args)
 			  goto fail;
 			}
 		      
-		      elementp = PyArray_GETPTR4(matrix, k, l, R, j);
+		      if (oddl)
+			elementp = PyArray_GETPTR4(matrix, k, l, R, j);
+		      else
+			elementp = PyArray_GETPTR4(matrix, k, l  / 2, R, j);
+
 		      if (!elementp)
 			{
 			  PyErr_SetString (PyExc_RuntimeError, "Failed to get pointer to matrix element");
@@ -230,7 +244,11 @@ matrix(PyObject *self, PyObject *args)
 		      if (ThetabinsOdd && j == midTheta)
 			continue;
 
-		      elementp = PyArray_GETPTR4(matrix, k, l, R, Thetabins - j - 1);
+		      if (oddl)
+			elementp = PyArray_GETPTR4(matrix, k, l, R, Thetabins - j - 1);
+		      else
+			elementp = PyArray_GETPTR4(matrix, k, l / 2, R, Thetabins - j - 1);
+
 		      if (!elementp)
 			{
 			  PyErr_SetString (PyExc_RuntimeError, "Failed to get pointer to matrix element");
@@ -250,18 +268,22 @@ matrix(PyObject *self, PyObject *args)
 		      goto fail;
 		      
 		    case GSL_EROUND:
-		      PyErr_SetString (RoundError, "Failed to achieve required integration tolerance");
+		      printf("k:%d l:%d R:%d Theta: %f\n", k, l, R, Theta);
+		      PyErr_SetString (RoundError, "Failed to integrate: round-off error");
 		      goto fail;
 		      
 		    case GSL_ESING:
+		      printf("k:%d l:%d R:%d Theta: %f\n", k, l, R, Theta);
 		      PyErr_SetString (SingularError, "Failed to integrate: singularity found");
 		      goto fail;
 		      
 		    case GSL_EDIVERGE:
+		      printf("k:%d l:%d R:%d Theta: %f\n", k, l, R, Theta);
 		      PyErr_SetString (DivergeError, "Failed to integrate: divergent or slowly convergent");
 		      goto fail;
 		      
 		    default:
+		      printf("k:%d l:%d R:%d Theta: %f\n", k, l, R, Theta);
 		      PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: Unknown error");
 		      goto fail;
 		    }	
@@ -272,14 +294,16 @@ matrix(PyObject *self, PyObject *args)
     }
 
   gsl_integration_workspace_free(wksp);
+  gsl_integration_qaws_table_free(table);
 
   return matrix;
 
  fail:  
   gsl_integration_workspace_free(wksp);
+  gsl_integration_qaws_table_free(table);
   Py_DECREF(matrix);
-  return NULL;
 
+  return NULL;
 }
 
 /* Module function table. Each entry specifies the name of the function exported
