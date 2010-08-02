@@ -202,13 +202,6 @@ matrix(PyObject *self, PyObject *args)
 		  status = gsl_integration_qaws (&fn, (double) R, 300.0, table, epsabs, epsrel, wkspsize,
 		  				  wksp, &result, &abserr);
 		  
-		  if (result > tol && abserr / result > tol)
-		    {
-		      printf("abserr: %g result: %g\n", abserr, result);
-		      PyErr_SetString (ToleranceError, "Failed to achieve desired integration tolerance");
-		      goto fail;
-		    }
-
 		  switch (status)
 		    {
 		    case GSL_SUCCESS:

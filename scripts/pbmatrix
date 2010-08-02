@@ -59,8 +59,6 @@ parser_calc.add_argument('--epsabs', type=float, default=0.0,
                     help='Absolute integration tolerance for numerical integration')
 parser_calc.add_argument('--epsrel', type=float, default=1.0e-7,
                     help='Relative integration tolerance for numerical integration')
-parser_calc.add_argument('--tol', type=float, default=1.0e-7,
-                    help='Maximum acceptable relative error returned from numerical integration')
 parser_calc.add_argument('--wkspsize', type=int, default=100000,
                     help='Maximum number of divisions in numerical integration')
 

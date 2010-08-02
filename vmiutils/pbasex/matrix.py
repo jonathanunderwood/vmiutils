@@ -31,15 +31,14 @@ class PbasexMatrix():
         self.Thetabins = None
         self.epsabs = None
         self.epsrel = None
-        self.tolerance = None
 
         # This private attribute is a list containing the variables that should be
         # saved to a file when self.dump is called and read when self.load is called.
         self.__attribs = ['Rbins', 'Thetabins', 'kmax', 'lmax', 'oddl',
-                           'epsabs', 'epsrel', 'tolerance',  'matrix']
+                           'epsabs', 'epsrel', 'matrix']
 
     def calc_matrix(self, Rbins, Thetabins, kmax, lmax, sigma=None, oddl=True,
-                    epsabs=0.0, epsrel=1.0e-7, tolerance=1.0e-7, wkspsize=100000):
+                    epsabs=0.0, epsrel=1.0e-7, wkspsize=100000):
         """Calculates an inversion matrix.
 
         kmax determines the number of radial basis functions (from k=0..kmax).
@@ -80,7 +79,7 @@ class PbasexMatrix():
         while True:
             try:
                 mtx = matrix(kmax, lmax, Rbins, Thetabins, sigma, oddl, 
-                             epsabs, epsrel, tolerance, wkspsize)
+                             epsabs, epsrel, wkspsize)
                 break
             except MaxIterError:
                 logger.info("Maximum integration iterations exceeded")
@@ -106,7 +105,6 @@ class PbasexMatrix():
         self.Thetabins = Thetabins
         self.epsabs = epsabs
         self.epsrel = epsrel
-        self.tolerance = tolerance
 
     def dump(self, file):
         fd = open(file, 'w')
