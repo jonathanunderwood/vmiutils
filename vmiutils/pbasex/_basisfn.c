@@ -6,6 +6,8 @@
 #include <gsl/gsl_sf_legendre.h>
 #include <gsl/gsl_errno.h>
 
+#define __SMALL 1.0e-30
+
 /* Exceptions for this module. */
 static PyObject *MaxIterError;
 static PyObject *RoundError;
@@ -21,14 +23,19 @@ typedef struct
 
 static double integrand(double r, void *params)
 {
-  double a, rad, ang;
+  double a, rad, ang, val;
   int_params p = *(int_params *) params;
 
   a = r - p.rk;
   rad = exp (-(a * a) / p.two_sigma2);
   ang = gsl_sf_legendre_Pl (p.l, p.RcosTheta / r);
 
-  return r * rad * ang;
+  val = r * rad * ang;
+
+  if (fabs(val) > __SMALL)
+    return val;
+  else 
+    return 0.0;
 }
 
 static PyObject *
@@ -347,3 +354,4 @@ init_basisfn(void)
   PyModule_AddObject(mod, "ToleranceError", ToleranceError);
 }
 
+#undef __SMALL
