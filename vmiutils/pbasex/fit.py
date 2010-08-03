@@ -115,11 +115,11 @@ class PbasexFit():
             return r, spec
 
         def dump(self, file):
-                    fd = open(file, 'r')
-        
-        try:
-            for object in self.__attribs:
-                setattr(self, object, pickle.load(fd))
-        finally:
-            fd.close()
+            fd = open(file, 'r')
+                    
+            try:
+                for object in self.__attribs:
+                    setattr(self, object, pickle.load(fd))
+            finally:
+                fd.close()
 
