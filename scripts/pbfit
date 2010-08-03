@@ -1,0 +1,31 @@
+#!/usr/bin/python
+
+import argparse
+import logging
+import numpy
+import vmiutils as vmi
+import vmiutils.pbasex as pb
+
+logging.basicConfig()
+logger = logging.getLogger('pbfit')
+
+parser = argparse.ArgumentParser(
+    description='Utility for inverting a VMI image using a PBASEX matrix')
+
+parser.add_argument('vmi_file', help='Name of file containing VMI image')
+parser.add_argument('matrix_file', help='Name of file containing PBASEX matrix')
+
+args = parser.parse_args()
+
+mtx = PbasexMatrix()
+mtx.load(args.matrix_file)
+
+vmicart = vmi.VMICartesianImage()
+vmicart.from_numpy_array(numpy.load(args.vmi_file))
+vmicart.set_centre(vmicart.centre_of_gravity)
+
+vmipolar = VMIPolarImage()
+vmipolar.from_VMICartesianImage(vmicart, radial_bins=mtx.Rbins, angular_bins=mtx.Thetabins)
+
+fit = PbasexFit()
+fit.fit_data(vmipolar, mtx)
