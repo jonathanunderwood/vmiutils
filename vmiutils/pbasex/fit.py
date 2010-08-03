@@ -6,7 +6,7 @@ from _basisfn import *
 # Note: the way the matrix is calculated and stored is such that the indices
 # are in the order matrix[k, l, Rbin, Thetabin]
 
-class PBasexFit():
+class PbasexFit():
     def __init__(self):
         self.coefs = None
         self.kmax = None
@@ -15,6 +15,8 @@ class PBasexFit():
         self.sigma = None
         self.rkspacing = None
         self.rfactor = None
+        self.__attribs = ['coefs', 'kmax', 'lmax', 'oddl', 'sigma',
+                          'rkspacing', 'rfactor']
 
     def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None):
         if not isinstance(image, vmi.VMIPolarImage):
@@ -111,5 +113,13 @@ class PBasexFit():
                     spec[i] += basisfn_radial (r[i], rk, self.sigma)
 
             return r, spec
+
+        def dump(self, file):
+                    fd = open(file, 'r')
         
-        
+        try:
+            for object in self.__attribs:
+                setattr(self, object, pickle.load(fd))
+        finally:
+            fd.close()
+
