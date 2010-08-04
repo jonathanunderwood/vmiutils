@@ -1,3 +1,8 @@
+/* TODO: 
+   Use a better type than unsigned short for boolenas
+   Use epsabs, rather than setting val=o in integrand for small values
+*/
+
 /* Note that Python.h must be included before any other header files. */
 #include <Python.h>
 #include <numpy/ndarrayobject.h>
