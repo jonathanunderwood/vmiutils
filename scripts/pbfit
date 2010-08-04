@@ -29,7 +29,7 @@ vmicart.set_centre(vmicart.centre_of_gravity())
 print 'here2'
 
 vmipolar = vmi.VMIPolarImage()
-vmipolar.from_VMICartesianImage(vmicart, radial_bins=mtx.Rbins, angular_bins=mtx.Thetabins)
+vmipolar.from_VMICartesianImage(vmicart, Rbins=mtx.Rbins, Thetabins=mtx.Thetabins)
 print 'here3'
 
 fit = pb.PbasexFit()
