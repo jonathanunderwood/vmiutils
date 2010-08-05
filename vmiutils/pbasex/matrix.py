@@ -25,6 +25,7 @@ class PbasexMatrix():
     def __init__(self):
         self.matrix = None
         self.kmax = None
+        self.sigma = None
         self.lmax = None
         self.oddl = None
         self.Rbins = None
@@ -34,7 +35,7 @@ class PbasexMatrix():
 
         # This private attribute is a list containing the variables that should be
         # saved to a file when self.dump is called and read when self.load is called.
-        self.__attribs = ['Rbins', 'Thetabins', 'kmax', 'lmax', 'oddl',
+        self.__attribs = ['Rbins', 'Thetabins', 'kmax', 'sigma', 'lmax', 'oddl',
                            'epsabs', 'epsrel', 'matrix']
 
     def calc_matrix(self, Rbins, Thetabins, kmax, lmax, sigma=None, oddl=True,
@@ -68,8 +69,12 @@ class PbasexMatrix():
         numerical integration of the basis functions.
         """
 
-        if sigma == None:
-            sigma = -1.0
+        if sigma is None:
+            # If sigma is not specified, we calculate the spacing between the
+            # centers of the Gaussian radial functions and set the FWHM of the
+            # Gaussians equal to the Gaussian separation
+            spacing = float(Rbins) / (kmax + 1) 
+            sigma = spacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
 
         while True:
             try:
@@ -94,6 +99,7 @@ class PbasexMatrix():
 
         self.matrix = mtx
         self.kmax = kmax
+        self.sigma = sigma
         self.lmax = lmax
         self.oddl = oddl
         self.Rbins = Rbins

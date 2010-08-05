@@ -86,7 +86,7 @@ matrix(PyObject *self, PyObject *args)
 {
   int lmax, kmax, Rbins, Thetabins;
   double sigma, epsabs, epsrel; /* Suggest epsabs = 0.0, epsrel = 1.0e-7 */   
-  double rwidth, dTheta;
+  double rspacing, dTheta;
   int wkspsize; /* Suggest: wkspsize = 100000. */
   int ldim, kdim, midTheta, k;
   unsigned short int oddl, ThetabinsOdd, linc;
@@ -159,10 +159,7 @@ matrix(PyObject *self, PyObject *args)
   fn.function = &integrand;
   fn.params = &params;
 
-  rwidth = ((double) Rbins) / kdim;
-
-  if (sigma < 0)
-    sigma = rwidth / (2.0 * sqrt(2.0 * log(2.0)));
+  rspacing = ((double) Rbins) / kdim;
 
   params.two_sigma2 = 2.0 * sigma * sigma;
 
@@ -192,7 +189,7 @@ matrix(PyObject *self, PyObject *args)
   for (k=0; k<=kmax; k++)
     {
       int l;
-      params.rk = k * rwidth;
+      params.rk = k * rspacing;
       for (l = 0; l <= lmax; l += linc)
 	{
 	  int R;
