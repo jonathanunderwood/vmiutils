@@ -211,8 +211,9 @@ matrix(PyObject *self, PyObject *args)
 
 		  params.RcosTheta = R * cos (Theta);
 
-		  status = gsl_integration_qaws (&fn, (double) R, 300.0, table, epsabs, epsrel, wkspsize,
-		  				  wksp, &result, &abserr);
+		  status = gsl_integration_qaws (&fn, (double) R, 300.0, table,
+						 epsabs, epsrel, wkspsize,
+						 wksp, &result, &abserr);
 		  
 		  switch (status)
 		    {
@@ -232,13 +233,15 @@ matrix(PyObject *self, PyObject *args)
 
 		      if (!elementp)
 			{
-			  PyErr_SetString (PyExc_RuntimeError, "Failed to get pointer to matrix element");
+			  PyErr_SetString (PyExc_RuntimeError, 
+					   "Failed to get pointer to matrix element");
 			  goto fail;
 			}
 		      
 		      if (PyArray_SETITEM(matrix, elementp, valp))
 			{
-			  PyErr_SetString (PyExc_RuntimeError, "Failed to set value of matrix element");
+			  PyErr_SetString (PyExc_RuntimeError, 
+					   "Failed to set value of matrix element");
 			  goto fail;
 			}
 			
@@ -256,13 +259,15 @@ matrix(PyObject *self, PyObject *args)
 
 		      if (!elementp)
 			{
-			  PyErr_SetString (PyExc_RuntimeError, "Failed to get pointer to matrix element");
+			  PyErr_SetString (PyExc_RuntimeError, 
+					   "Failed to get pointer to matrix element");
 			  goto fail;
 			}
 		      
 		      if (PyArray_SETITEM(matrix, elementp, valp))
 			{
-			  PyErr_SetString (PyExc_RuntimeError, "Failed to set value of matrix element");
+			  PyErr_SetString (PyExc_RuntimeError, 
+					   "Failed to set value of matrix element");
 			  goto fail;
 			}
 		      break;
