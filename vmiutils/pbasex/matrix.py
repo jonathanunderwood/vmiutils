@@ -71,11 +71,6 @@ class PbasexMatrix():
         if sigma == None:
             sigma = -1.0
 
-        if oddl:
-            oddl = 1
-        else:
-            oddl = 0
-
         while True:
             try:
                 mtx = matrix(kmax, lmax, Rbins, Thetabins, sigma, oddl, 
