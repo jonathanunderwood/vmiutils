@@ -1,6 +1,7 @@
 import logging
+import numpy.linalg
 import vmiutils as vmi
-import vmiutils.pbasex.matrix as pbm
+import matrix as pbm
 from _basisfn import *
 
 # Note: the way the matrix is calculated and stored is such that the indices
@@ -15,8 +16,9 @@ class PbasexFit():
         self.sigma = None
         self.rkspacing = None
         self.rfactor = None
+        self.rmax = None
         self.__attribs = ['coefs', 'kmax', 'lmax', 'oddl', 'sigma',
-                          'rkspacing', 'rfactor']
+                          'rkspacing', 'rfactor', 'rmax']
 
     def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None):
         if not isinstance(image, vmi.VMIPolarImage):
@@ -37,7 +39,7 @@ class PbasexFit():
         elif oddl is None:
             mtx = matrix.matrix
             oddl = matrix.oddl
-        
+
         if lmax is not None:
             if lmax > matrix.lmax:
                 logger.error('requested lmax greater than that of supplied matrix')
@@ -57,11 +59,11 @@ class PbasexFit():
 
         kdim = matrix.kmax + 1
         Thetabins = matrix.Thetabins
-        Rbin = matrix.Rbins
+        Rbins = matrix.Rbins
 
         if section == 'whole':
             # Fit the whole image
-            mtx = mtx((kdim * ldim, Rbins * Thetabins)) 
+            mtx = mtx.reshape((kdim * ldim, Rbins * Thetabins)) 
             img = image.image.reshape(Rbins * Thetabins)
         elif section == 'negative':
             # Fit only the part of the image in the region Theta = -Pi..0
@@ -86,33 +88,67 @@ class PbasexFit():
         else:
             raise NotImplementedError
         
-        coef, resid, rank, s = numpy.lstsq(mtx, img)
+        coef, resid, rank, s = numpy.linalg.lstsq(mtx.transpose(), img)
         # TODO: do something with resid
 
         self.coef = coef.reshape((kdim, ldim))
-        self.kmax = kmax
+        self.kmax = matrix.kmax
         self.lmax = lmax
         self.oddl = oddl
         self.sigma = matrix.sigma
-        self.rkspacing = Rbins / kdim
-        self.rfactor = image.rfactor
+
+        # rmax is the maximum radial bin number we can sensibly consider
+        # i.e. without extrapolating outside the input data
+        self.rmax = Rbins - 1
+
+        # rkspacing holds the spacing between the centres of adjacent Gaussian
+        # radial basis functions
+        self.rkspacing = float(Rbins) / kdim
+
+        # rfactor holds the scaling factor to convert from radial bin number
+        # in the polar image to actual position in the original image 
+        self.rscale = image.R[1] - image.R[0]
+
         self.fit_done = True
 
-        def calc_radial_spectrum(self, nbins):
-            if self.fit_done is False:
-                logger.error('no fit done')
-                raise AttributeError
-            
-            spec = numpy.zeros(nbins)
-            r = numpy.empty(nbins)
+    def calc_radial_spectrum(self, npoints=500, rmax=None):
+        """Calculate a raidal spectrum from the parameters of a fit. Returns a
+        tuple (r, intensity) containing the r values and the corresponding
+        intensities. 
 
-            for i in xrange(nbins):
-                r[i] = i * self.rspacing
-                for k in xrange(self.kmax + 1):
-                    rk = k * self.rkspacing
-                    spec[i] += basisfn_radial (r[i], rk, self.sigma)
+        npoints determines the number of points in the returned spectrum.
 
-            return r, spec
+        rmax is the maximum radius to consider, i.e. the spectrum is
+        claculated for r=0..rmax. Note: rmax is the desired radial value and
+        not the bin number. If rmax is None (default) then the maximum radius
+        in the input image is used."""
+
+        if self.fit_done is False:
+            logger.error('no fit done')
+            raise AttributeError
+        
+        if rmax is None:
+            rmax = self.rmax
+        elif rmax > self.rmax:
+            logger.error('rmax exceeds that of original data')
+            raise ValueError
+        print self.rmax
+
+        step = float(rmax) / (npoints - 1)
+
+        spec = numpy.zeros(npoints)
+        r = numpy.empty(npoints)
+
+        for i in xrange(npoints):
+            rbin = i * step
+            r[i] = rbin * self.rscale
+            for k in xrange(self.kmax + 1):
+                rk = float(k * self.rkspacing)
+                spec[i] += self.coef[k, 0] * basisfn_radial (rbin, rk, self.sigma)
+            spec[i] *= r[i] * r[i]
+
+
+        return r, spec
 
         def dump(self, file):
             fd = open(file, 'r')

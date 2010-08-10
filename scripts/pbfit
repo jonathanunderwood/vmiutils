@@ -25,7 +25,9 @@ vmicart = vmi.VMICartesianImage()
 vmicart.from_numpy_array(numpy.loadtxt(args.vmi_file))
 print 'here1a'
 
-vmicart.set_centre(vmicart.centre_of_gravity())
+centre = vmicart.centre_of_gravity()
+print centre
+vmicart.set_centre(centre)
 print 'here2'
 
 vmipolar = vmi.VMIPolarImage()
@@ -34,3 +36,10 @@ print 'here3'
 
 fit = pb.PbasexFit()
 fit.fit_data(vmipolar, mtx)
+
+r, i = fit.calc_radial_spectrum(500)
+
+import pylab
+pylab.figure()
+pylab.plot(r, i)
+pylab.show()
