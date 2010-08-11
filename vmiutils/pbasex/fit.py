@@ -170,12 +170,12 @@ class PbasexFit():
             rbin = i * rstep
             r[i] = rbin * self.rscale
             for j in xrange(thetabins):
-                theta[i] = -numpy.pi + j * thetastep
+                theta[j] = -numpy.pi + j * thetastep
                 for k in xrange(self.kmax + 1):
                     rk = float(k * self.rkspacing)
                     for l in xrange(self.lmax + 1):
                         dist[i, j] += self.coef[k, l] * \
-                            basisfn_full (rbin, rk, self.sigma, l, theta[i])
+                            basisfn_full (rbin, rk, self.sigma, l, theta[j])
 
         return r, theta, dist
 
