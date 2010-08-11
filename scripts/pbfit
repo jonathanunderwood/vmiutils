@@ -44,8 +44,7 @@ r, i = fit.calc_radial_spectrum(500)
 #pylab.plot(r, i)
 #pylab.show()
 
-r, theta, dist = fit.calc_distribution()
-
+import pylab
 pylab.figure()
 pylab.imshow(dist, cmap=pylab.cm.gist_gray)
 pylab.show()
