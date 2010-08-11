@@ -17,12 +17,12 @@ class VMICartesianImage():
         """
         self.image = image.copy()
 
-        if x == None:
+        if x is None:
             self.x = numpy.arange(self.image.shape[0])
         else:
             self.x = x.copy()
 
-        if y == None:
+        if y is None:
             self.y = numpy.arange(self.image.shape[1])
         else:
             self.y = y.copy()
@@ -39,29 +39,28 @@ class VMICartesianImage():
         """
         self.x, self.y, self.image = pimage.cartesian_rep()
 
-    def polar_rep(self, radial_bins=None, angular_bins=None, max_radius=None):
+    def polar_rep(self, Rbins=None, Thetabins=None, Rmax=None):
         """ Returns a tuple (r, theta, pimage) containing the coordinates and
         polar representation of the image.
         """
-        if self.image == None:
+        if self.image is None:
             raise ValueError ## FIXME
 
-        if self.centre == None:
+        if self.centre is None:
             raise ValueError ## FIXME
 
-        if radial_bins == None:
-            radial_bins = min(self.image.shape[0], self.image.shape[1]) 
+        if Rbins is None:
+            Rbins = min(self.image.shape[0], self.image.shape[1]) 
 
-        if angular_bins == None:
-            angular_bins = min(self.image.shape[0], self.image.shape[1]) 
+        if Thetabins is None:
+            Thetabins = min(self.image.shape[0], self.image.shape[1]) 
 
         return polcart.cart2pol(self.image, self.x, self.y, self.centre, 
-                                radial_bins, angular_bins, max_radius)
+                                Rbins, Thetabins, Rmax)
 
     def centre_of_gravity(self):
-        """ Returns a tuple representing the coordinates corresponding to the
-        centre of gravity of the image.
-        """
+        """Returns a tuple representing the coordinates corresponding to the
+        centre of gravity of the image."""
         xval = self.x * self.image 
         yval = self.y[:,numpy.newaxis] * self.image
         return xval.sum() / self.image.sum(), yval.sum() / self.image.sum()
@@ -79,24 +78,40 @@ class VMIPolarImage():
 
     def __init__(self):
         self.image = None
-        self.r = None
-        self.theta = None
-        self.rfactor = None
+        self.R = None
+        self.Theta = None
 
-    def from_VMICartesianImage(self, cimage, radial_bins=None, 
-                               angular_bins=None, max_radius=None):
+    def from_numpy_array(self, image, R=None, Theta=None):
+        """ Initialize from a polar image stored in a numpy array. If R or Theta are
+        not specified, the R and Theta coordinates are stored as pixel values.
+        """
+        self.image = image.copy()
+
+        if R is None:
+            self.R = numpy.arange(self.image.shape[0])
+        else:
+            self.R = R.copy()
+
+        if Theta is None:
+            self.Theta = numpy.linspace(-numpy.pi, numpy.pi, self.image.shape[1])
+        else:
+            self.Theta = Theta.copy()
+
+    def from_VMICartesianImage(self, cimage, Rbins=None, 
+                               Thetabins=None, Rmax=None):
         """Calculate a polar represenation of a VMICartesianImage instance.
 
         cimage is a VMICartesianImage instance.
 
-        radial_bins and angular_bins specify the desired number of bins in the
+        Rbins and Thetabins specify the desired number of bins in the
         polar representation. If these are none, the number of bins in the
         cartesian image is used.
         """
-        self.r, self.theta, self.image = \
-            cimage.polar_rep(radial_bins, angular_bins, max_radius)
+        self.R, self.Theta, self.image = \
+            cimage.polar_rep(Rbins, Thetabins, Rmax)
 
-        self.rfactor = self.r[1] - self.r[0]
+        self.Rbins = self.R.shape[0]
+        self.Thetabins = self.Theta.shape[0]
 
     def cartesian_rep(self, xbins=None, ybins=None):
         """ Returns a tuple (x, y, image) containing the coordinates and
@@ -105,10 +120,10 @@ class VMIPolarImage():
         number of bins in each direction will be equal to the number of radial
         bins in the polar image.
         """
-        if xbins == None:
+        if xbins is None:
             xbins = self.image.shape[0]
 
-        if ybins == None:
+        if ybins is None:
             ybins = self.image.shape[0]
 
-        return polcart.pol2cart(self.image, self.r, self.theta, xbins, ybins)
+        return polcart.pol2cart(self.image, self.R, self.Theta, xbins, ybins)

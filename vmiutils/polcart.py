@@ -22,7 +22,7 @@ def __cart2pol(out_coord, rbw, thetabw, xbw, ybw, xc, yc):
     return ix, iy
 
 def cart2pol(image, x=None, y=None, centre=None, 
-             radial_bins=256, angular_bins=256, rmax=None, order=3):
+             radial_bins=256, angular_bins=256, rmax=None, order=5):
     """ Convert an image on a regularly spaced cartesian grid into a regular
     spaced grid in polar coordinates using interpolation.
     
@@ -36,7 +36,9 @@ def cart2pol(image, x=None, y=None, centre=None,
     (does not need to be an integer). If this is set to None the midpoint x
     and y coordinates are used.
 
-    rmax defines the maximum radius from the image centre to consider.
+    rmax defines the maximum radius from the image centre to consider. If rmax
+    is None, rmax is set to be the smallest of the distances from the image
+    centre to the edge of the cartesian grid.
 
     We employ the convention that the angle (theta) is that between the second
     axis (y-axis) and the position vector and that it lies in the range
@@ -48,13 +50,13 @@ def cart2pol(image, x=None, y=None, centre=None,
     order specifies the interpolation order.
     """
     
-    if x == None:
+    if x is None:
         x = numpy.arange(image.shape[0])
 
-    if y == None:
+    if y is None:
         y = numpy.arange(image.shape[1])
 
-    if centre == None:
+    if centre is None:
         xc = 0.5 * (x[0] + x[-1])
         yc = 0.5 * (y[0] + y[-1])
     else:
@@ -67,7 +69,7 @@ def cart2pol(image, x=None, y=None, centre=None,
     ysize = min(abs(y[0] - yc), y[-1] - yc)
     max_rad = min(xsize, ysize)
 
-    if rmax == None:
+    if rmax is None:
         rmax = max_rad
     elif rmax > max_rad:
         raise ValueError
@@ -81,17 +83,17 @@ def cart2pol(image, x=None, y=None, centre=None,
     ybw = y[1] - y[0]
 
     pimage = scipy.ndimage.geometric_transform(
-        image, __cart2pol, order = order,
+        image, __cart2pol, order=order,
         extra_arguments=(rbw, thetabw, xbw, ybw, xc, yc),
         output_shape=(radial_bins, angular_bins)
         )
 
-    r = numpy.linspace(0.0, (radial_bins - 1) * rbw, radial_bins)
+    r = numpy.linspace(0.0, rmax, radial_bins)
     t = numpy.linspace(-numpy.pi, numpy.pi, angular_bins)
 
     return r, t, pimage
 
-def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
+def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=5):
     """ Convert an image on a regularly spaced polar grid into a regular
     spaced grid in cartesian coordinates using interpolation.
     
@@ -111,12 +113,12 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
     order specifies the interpolation order.
     """
 
-    if r == None:
+    if r is None:
         r = numpy.arange(image.shape[0])
 
     rbw = r[1] - r[0] # Assume equally spaced
 
-    if theta == None:
+    if theta is None:
         theta = numpy.linspace(-numpy.pi, numpy.pi, tpts)
 
     tpts = image.shape[1]
@@ -124,10 +126,10 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
 
     # If the number of bins in the cartesian image is not specified, set it to
     # be the same as the number of radial bins in the polar image
-    if xbins == None:
+    if xbins is None:
         xbins = image.shape[0]
 
-    if ybins == None:
+    if ybins is None:
         ybins = image.shape[0]
 
     rmax = r[-1]

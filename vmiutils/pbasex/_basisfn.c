@@ -1,3 +1,10 @@
+/* TODO: 
+   Use a better type than unsigned short for boolenas
+   Use epsabs, rather than setting val=o in integrand for small values
+   Call basisfn_full from integrand rather than duplicate code. Also make
+   integrand_full inline for efficiency. Or make it a macro.
+*/
+
 /* Note that Python.h must be included before any other header files. */
 #include <Python.h>
 #include <numpy/ndarrayobject.h>
@@ -7,6 +14,7 @@
 #include <gsl/gsl_errno.h>
 
 #define __SMALL 1.0e-30
+#define __UPPERBOUNDFACTOR 20
 
 /* Exceptions for this module. */
 static PyObject *MaxIterError;
@@ -44,9 +52,9 @@ basisfn_full(PyObject *self, PyObject *args)
   int l;
   double r, rk, sigma, theta, rad, ang, a, s;
 
-  if (!PyArg_ParseTuple(args, "iidddd", &r, &rk, &sigma, &l, &theta));
+  if (!PyArg_ParseTuple(args, "dddid", &r, &rk, &sigma, &l, &theta))
     {
-      PyErr_SetString (PyExc_TypeError, "Bad argument");
+      PyErr_SetString (PyExc_TypeError, "Bad argument to basisfn_full");
       return NULL;
     }
 
@@ -63,9 +71,9 @@ basisfn_radial(PyObject *self, PyObject *args)
 {
   double r, rk, sigma, rad, a, s;
 
-  if (!PyArg_ParseTuple(args, "ddd", &r, &rk, &sigma));
+  if (!PyArg_ParseTuple(args, "ddd", &r, &rk, &sigma))
     {
-      PyErr_SetString (PyExc_TypeError, "Bad argument");
+      PyErr_SetString (PyExc_TypeError, "Bad argument to basisfn_radial");
       return NULL;
     }
 
@@ -81,7 +89,7 @@ matrix(PyObject *self, PyObject *args)
 {
   int lmax, kmax, Rbins, Thetabins;
   double sigma, epsabs, epsrel; /* Suggest epsabs = 0.0, epsrel = 1.0e-7 */   
-  double rwidth, dTheta;
+  double rkspacing, dTheta;
   int wkspsize; /* Suggest: wkspsize = 100000. */
   int ldim, kdim, midTheta, k;
   unsigned short int oddl, ThetabinsOdd, linc;
@@ -95,7 +103,7 @@ matrix(PyObject *self, PyObject *args)
   if (!PyArg_ParseTuple(args, "iiiidHddi", 
 			&kmax, &lmax, &Rbins, &Thetabins, &sigma, &oddl, &epsabs, &epsrel, &wkspsize))
     {
-      PyErr_SetString (PyExc_TypeError, "Bad argument");
+      PyErr_SetString (PyExc_TypeError, "Bad argument to matrix");
       return NULL;
     }
 
@@ -154,10 +162,7 @@ matrix(PyObject *self, PyObject *args)
   fn.function = &integrand;
   fn.params = &params;
 
-  rwidth = ((double) Rbins) / kdim;
-
-  if (sigma < 0)
-    sigma = rwidth / (2.0 * sqrt(2.0 * log(2.0)));
+  rkspacing = ((double) Rbins) / kdim;
 
   params.two_sigma2 = 2.0 * sigma * sigma;
 
@@ -187,7 +192,11 @@ matrix(PyObject *self, PyObject *args)
   for (k=0; k<=kmax; k++)
     {
       int l;
-      params.rk = k * rwidth;
+      double upper_bound;
+      
+      params.rk = k * rkspacing;
+      upper_bound = params.rk + __UPPER_BOUND_FACTOR * sigma;
+
       for (l = 0; l <= lmax; l += linc)
 	{
 	  int R;
@@ -205,10 +214,20 @@ matrix(PyObject *self, PyObject *args)
 		  double Theta = -M_PI + j * dTheta;
 
 		  params.RcosTheta = R * cos (Theta);
-
-		  status = gsl_integration_qaws (&fn, (double) R, 300.0, table, epsabs, epsrel, wkspsize,
-		  				  wksp, &result, &abserr);
 		  
+		  if (upper_bound > R)
+		    {
+		      status = gsl_integration_qaws (&fn, (double) R, upper_bound, table,
+						     epsabs, epsrel, wkspsize,
+						     wksp, &result, &abserr);
+		    }
+		  else 
+		    {
+		      status = 0;
+		      result = 0.0;
+		      abserr = 0.0;
+		    }
+
 		  switch (status)
 		    {
 		    case GSL_SUCCESS:
@@ -227,13 +246,15 @@ matrix(PyObject *self, PyObject *args)
 
 		      if (!elementp)
 			{
-			  PyErr_SetString (PyExc_RuntimeError, "Failed to get pointer to matrix element");
+			  PyErr_SetString (PyExc_RuntimeError, 
+					   "Failed to get pointer to matrix element");
 			  goto fail;
 			}
 		      
 		      if (PyArray_SETITEM(matrix, elementp, valp))
 			{
-			  PyErr_SetString (PyExc_RuntimeError, "Failed to set value of matrix element");
+			  PyErr_SetString (PyExc_RuntimeError, 
+					   "Failed to set value of matrix element");
 			  goto fail;
 			}
 			
@@ -251,13 +272,15 @@ matrix(PyObject *self, PyObject *args)
 
 		      if (!elementp)
 			{
-			  PyErr_SetString (PyExc_RuntimeError, "Failed to get pointer to matrix element");
+			  PyErr_SetString (PyExc_RuntimeError, 
+					   "Failed to get pointer to matrix element");
 			  goto fail;
 			}
 		      
 		      if (PyArray_SETITEM(matrix, elementp, valp))
 			{
-			  PyErr_SetString (PyExc_RuntimeError, "Failed to set value of matrix element");
+			  PyErr_SetString (PyExc_RuntimeError, 
+					   "Failed to set value of matrix element");
 			  goto fail;
 			}
 		      break;
@@ -325,7 +348,7 @@ init_basisfn(void)
 {
   PyObject *mod;
 
-  /* This is needed for the nump API. */
+  /* This is needed for the numpy API. */
   import_array();
 
   mod = Py_InitModule("_basisfn", BasisFnMethods);
@@ -355,3 +378,4 @@ init_basisfn(void)
 }
 
 #undef __SMALL
+#undef __UPPER_BOUND_FACTOR 
