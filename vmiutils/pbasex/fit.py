@@ -132,7 +132,6 @@ class PbasexFit():
         elif rmax > self.rmax:
             logger.error('rmax exceeds that of original data')
             raise ValueError
-        print self.rmax
 
         step = float(rmax) / (npoints - 1)
 
@@ -147,8 +146,40 @@ class PbasexFit():
                 spec[i] += self.coef[k, 0] * basisfn_radial (rbin, rk, self.sigma)
             spec[i] *= r[i] * r[i]
 
-
         return r, spec
+
+    def calc_distribution(self, rmax=None, rbins=512, thetabins=512):
+        if self.fit_done is False:
+            logger.error('no fit done')
+            raise AttributeError
+        
+        if rmax is None:
+            rmax = self.rmax
+        elif rmax > self.rmax:
+            logger.error('rmax exceeds that of original data')
+            raise ValueError
+
+        rstep = float(rmax) / (rbins - 1)
+        thetastep = 2.0 * numpy.pi / (thetabins - 1)
+
+        dist = numpy.zeros((rbins, thetabins))
+        r = numpy.empty(rbins)
+        theta = numpy.empty(thetabins)
+
+        for i in xrange(rbins):
+            rbin = i * rstep
+            r[i] = rbin * self.rscale
+            for j in xrange(thetabins):
+                theta[i] = -numpy.pi + j * thetastep
+                for k in xrange(self.kmax + 1):
+                    rk = float(k * self.rkspacing)
+                    for l in xrange(self.lmax + 1):
+                        dist[i, j] += self.coef[k, l] * \
+                            basisfn_full (rbin, rk, self.sigma, l, theta[i])
+
+        return r, theta, dist
+
+
 
         def dump(self, file):
             fd = open(file, 'r')
