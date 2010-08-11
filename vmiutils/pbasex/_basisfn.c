@@ -14,7 +14,7 @@
 #include <gsl/gsl_errno.h>
 
 #define __SMALL 1.0e-30
-#define __UPPERBOUNDFACTOR 20
+#define __UPPER_BOUND_FACTOR 20.0
 
 /* Exceptions for this module. */
 static PyObject *MaxIterError;
