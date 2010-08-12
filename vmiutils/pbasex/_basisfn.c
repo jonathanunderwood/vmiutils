@@ -329,6 +329,72 @@ matrix(PyObject *self, PyObject *args)
   return NULL;
 }
 
+static PyObject *
+calc_distribution(PyObject *self, PyObject *args)
+{
+  PyObject *coef;
+  PyOject *dist;
+  int rbins, thetabins;
+  double rmax;
+  npy_intp dims[2];
+
+  if (!PyArg_ParseTuple(args, "ii", 
+			&rbins, &thetabins))
+    {
+      PyErr_SetString (PyExc_TypeError, "Bad argument to calc_distribution");
+      return NULL;
+    }
+
+  dims[0] = (npy_intp) rbins;
+  dims[1] = (npy_intp) thetabins;
+
+  dist = PyArray_SimpleNew (2, dims, NPY_DOUBLE);
+  if (!dist)
+    return PyErr_NoMemory();
+
+  rstep = rmax / (rbins - 1);
+  thetastep = 2.0 * M_PI/ (thetabins - 1);
+
+  for (i = 0; i < rbins; i++)
+    {
+      double r = i * rstep;
+      int j;
+      for (j = 0; j < thetabins; j++)
+	{
+	  double theta = j * thetastep;
+	  double val = 0;
+	  int k;
+	  for (k = 0; k <= kmax; k++)
+	    {
+	      double rk = k * rkspacing;
+	      int l;
+	      for (l = 0; l < lmax; l++)
+		{
+		  double b = basisfn_full (r, rk, sigma, l, theta);
+		  void *idxp;
+		  PyObject *cvalp;
+
+		  idxp = PyArray_GETPTR2(coef, k, l);
+		  if (!elementp)
+		    {
+		      PyErr_SetString (PyExc_RuntimeError, 
+				       "Failed to get pointer to matrix indices");
+		      goto fail;
+		    }
+
+		  if (PyArray_GETITEM(coef, idxp, cvalp))
+		    {
+		      PyErr_SetString (PyExc_RuntimeError, 
+				       "Failed to get coefficent value");
+		      goto fail;
+		    }
+
+		  val = cvalp * b;
+
+		  
+
+}
+
 /* Module function table. Each entry specifies the name of the function exported
    by the module and the corresponding C function. */
 static PyMethodDef BasisFnMethods[] = {
