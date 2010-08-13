@@ -148,6 +148,22 @@ class PbasexFit():
 
         return r, spec
 
+    def calc_distribution2(self, rmax=None, rbins=512, thetabins=512):
+        if self.fit_done is False:
+            logger.error('no fit done')
+            raise AttributeError
+        
+        if rmax is None:
+            rmax = self.rmax
+        elif rmax > self.rmax:
+            logger.error('rmax exceeds that of original data')
+            raise ValueError
+        
+        dist = calc_distribution(rmax, rbins, thetabins, self.coef, self.kmax,
+                                 self.rkspacing, self.sigma, self.lmax)
+        print 'returning'
+        return dist
+
     def calc_distribution(self, rmax=None, rbins=512, thetabins=512):
         if self.fit_done is False:
             logger.error('no fit done')

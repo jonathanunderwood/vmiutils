@@ -37,14 +37,21 @@ print 'here3'
 fit = pb.PbasexFit()
 fit.fit_data(vmipolar, mtx)
 
-r, i = fit.calc_radial_spectrum(500)
+#r, i = fit.calc_radial_spectrum(500)
 
 #import pylab
 #pylab.figure()
 #pylab.plot(r, i)
 #pylab.show()
 
+dist = fit.calc_distribution2()
+p = vmi.VMIPolarImage()
+p.from_numpy_array(dist)
+c = vmi.VMICartesianImage()
+c.from_VMIPolarImage(p)
+print 'plotting'
 import pylab
-pylab.figure()
-pylab.imshow(dist, cmap=pylab.cm.gist_gray)
+f=pylab.figure()
+p=pylab.imshow(c.image, cmap=pylab.cm.gist_gray)
+f.colorbar(p)
 pylab.show()

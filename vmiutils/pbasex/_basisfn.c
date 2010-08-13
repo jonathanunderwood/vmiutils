@@ -46,6 +46,20 @@ static double integrand(double r, void *params)
     return 0.0;
 }
 
+// MAKE THIS INLINE
+static double
+calc_basisfn (const double r, const double rk, const double sigma, 
+	      const int l, const double theta)
+{
+  double a = r - rk;
+  double s = 2.0 * sigma * sigma;
+  double rad = exp(-(a * a) / s);
+  double ang = gsl_sf_legendre_Pl(l, cos(theta));
+
+  return rad * ang;
+}
+
+
 static PyObject *
 basisfn_full(PyObject *self, PyObject *args)
 {
@@ -333,13 +347,13 @@ static PyObject *
 calc_distribution(PyObject *self, PyObject *args)
 {
   PyObject *coef;
-  PyOject *dist;
-  int rbins, thetabins;
-  double rmax;
+  PyObject *dist;
+  int rbins, thetabins, i, kmax, lmax;
+  double rmax, rstep, thetastep, rkstep, sigma;
   npy_intp dims[2];
 
-  if (!PyArg_ParseTuple(args, "ii", 
-			&rbins, &thetabins))
+  if (!PyArg_ParseTuple(args, "diiOiddi", 
+			&rmax, &rbins, &thetabins, &coef, &kmax, &rkstep, &sigma, &lmax))
     {
       PyErr_SetString (PyExc_TypeError, "Bad argument to calc_distribution");
       return NULL;
@@ -363,36 +377,68 @@ calc_distribution(PyObject *self, PyObject *args)
 	{
 	  double theta = j * thetastep;
 	  double val = 0;
+	  PyObject *valp;
+	  void *idxp;
 	  int k;
+	  
 	  for (k = 0; k <= kmax; k++)
 	    {
-	      double rk = k * rkspacing;
+	      double rk = k * rkstep;
 	      int l;
-	      for (l = 0; l < lmax; l++)
+
+	      for (l = 0; l <= lmax; l++)
 		{
-		  double b = basisfn_full (r, rk, sigma, l, theta);
-		  void *idxp;
-		  PyObject *cvalp;
+		  double b = calc_basisfn (r, rk, sigma, l, theta);
+		  double *cvalp;
 
-		  idxp = PyArray_GETPTR2(coef, k, l);
-		  if (!elementp)
+		  cvalp = (double *) PyArray_GETPTR2(coef, k, l);
+		  if (!cvalp)
 		    {
 		      PyErr_SetString (PyExc_RuntimeError, 
-				       "Failed to get pointer to matrix indices");
+				       "Failed to get pointer to coefficient");
 		      goto fail;
 		    }
 
-		  if (PyArray_GETITEM(coef, idxp, cvalp))
-		    {
-		      PyErr_SetString (PyExc_RuntimeError, 
-				       "Failed to get coefficent value");
-		      goto fail;
-		    }
+		  val += (*cvalp) * b;
+		}
+	    }
 
-		  val = cvalp * b;
+	  valp = Py_BuildValue("d", val);
+	  if (!valp)
+	    {
+	      PyErr_SetString (PyExc_RuntimeError, 
+			       "Failed to create python object for dist value");
+	      goto fail;
+	    }
 
-		  
+	  idxp = PyArray_GETPTR2(dist, i, j);
+	  if (!idxp)
+	    {
+	      PyErr_SetString (PyExc_RuntimeError, 
+			       "Failed to get pointer to dist element");
+	      goto fail;
+	    }
 
+	  if (PyArray_SETITEM(dist, idxp, valp))
+	    {
+	      PyErr_SetString (PyExc_RuntimeError, 
+			       "Failed to set value of dist element");
+	      goto fail;
+	    }
+
+	}
+    }
+
+  printf ("loop done\n");
+
+  Py_DECREF(coef);
+  printf ("DECREF done\n");
+  return dist;
+
+ fail:
+  Py_DECREF(dist);
+  Py_DECREF(coef);
+  return NULL;
 }
 
 /* Module function table. Each entry specifies the name of the function exported
@@ -404,6 +450,8 @@ static PyMethodDef BasisFnMethods[] = {
      "Returns the value of the radial part of a basis function."},
     {"matrix",  matrix, METH_VARARGS,
      "Returns an inversion matrix of basis functions."},
+    {"calc_distribution",  calc_distribution, METH_VARARGS,
+     "Returns a simulated distribution from fit coefficients."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
