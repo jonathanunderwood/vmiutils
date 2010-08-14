@@ -29,6 +29,18 @@ typedef struct
   double R2, RcosTheta, rk, two_sigma2;
 } int_params;
 
+static inline double
+calc_basisfn (const double r, const double rk, const double sigma, 
+	      const int l, const double theta)
+{
+  double a = r - rk;
+  double s = 2.0 * sigma * sigma;
+  double rad = exp(-(a * a) / s);
+  double ang = gsl_sf_legendre_Pl(l, cos(theta));
+
+  return rad * ang;
+}
+
 static double integrand(double r, void *params)
 {
   double a, rad, ang, val;
@@ -45,20 +57,6 @@ static double integrand(double r, void *params)
   else 
     return 0.0;
 }
-
-// MAKE THIS INLINE
-static double
-calc_basisfn (const double r, const double rk, const double sigma, 
-	      const int l, const double theta)
-{
-  double a = r - rk;
-  double s = 2.0 * sigma * sigma;
-  double rad = exp(-(a * a) / s);
-  double ang = gsl_sf_legendre_Pl(l, cos(theta));
-
-  return rad * ang;
-}
-
 
 static PyObject *
 basisfn_full(PyObject *self, PyObject *args)
