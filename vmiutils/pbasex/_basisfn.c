@@ -29,18 +29,6 @@ typedef struct
   double R2, RcosTheta, rk, two_sigma2;
 } int_params;
 
-static inline double
-calc_basisfn (const double r, const double rk, const double sigma, 
-	      const int l, const double theta)
-{
-  double a = r - rk;
-  double s = 2.0 * sigma * sigma;
-  double rad = exp(-(a * a) / s);
-  double ang = gsl_sf_legendre_Pl(l, cos(theta));
-
-  return rad * ang;
-}
-
 static double integrand(double r, void *params)
 {
   double a, rad, ang, val;
@@ -347,7 +335,7 @@ calc_distribution(PyObject *self, PyObject *args)
   PyObject *coef;
   PyObject *dist;
   int rbins, thetabins, i, kmax, lmax;
-  double rmax, rstep, thetastep, rkstep, sigma;
+  double rmax, rstep, thetastep, rkstep, sigma, s;
   npy_intp dims[2];
 
   if (!PyArg_ParseTuple(args, "diiOiddi", 
@@ -366,11 +354,13 @@ calc_distribution(PyObject *self, PyObject *args)
 
   rstep = rmax / (rbins - 1);
   thetastep = 2.0 * M_PI/ (thetabins - 1);
+  s = 2.0 * sigma * sigma;
 
   for (i = 0; i < rbins; i++)
     {
       double r = i * rstep;
       int j;
+
       for (j = 0; j < thetabins; j++)
 	{
 	  double theta = j * thetastep;
@@ -382,11 +372,13 @@ calc_distribution(PyObject *self, PyObject *args)
 	  for (k = 0; k <= kmax; k++)
 	    {
 	      double rk = k * rkstep;
+	      double a = r - rk;
+	      double rad = exp(-(a * a) / s);
 	      int l;
 
 	      for (l = 0; l <= lmax; l++)
 		{
-		  double b = calc_basisfn (r, rk, sigma, l, theta);
+		  double ang = gsl_sf_legendre_Pl(l, cos(theta));
 		  double *cvalp;
 
 		  cvalp = (double *) PyArray_GETPTR2(coef, k, l);
@@ -397,7 +389,7 @@ calc_distribution(PyObject *self, PyObject *args)
 		      goto fail;
 		    }
 
-		  val += (*cvalp) * b;
+		  val += (*cvalp) * rad * ang;
 		}
 	    }
 
