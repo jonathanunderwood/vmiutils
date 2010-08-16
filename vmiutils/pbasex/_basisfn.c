@@ -352,6 +352,21 @@ calc_distribution(PyObject *self, PyObject *args)
   if (!dist)
     return PyErr_NoMemory();
 
+  rarr = PyArray_SimpleNew (1, &(dims[0]), NPY_DOUBLE);
+  if (!rarr)
+    {
+      Py_DECREF(dist);
+      return PyErr_NoMemory();
+    }
+
+  thetaarr = PyArray_SimpleNew (1, &(dims[1]), NPY_DOUBLE);
+  if (!rarr)
+    {
+      Py_DECREF(dist);
+      Py_DECREF(rarr);
+      return PyErr_NoMemory();
+    }
+
   rstep = rmax / (rbins - 1);
   thetastep = 2.0 * M_PI/ (thetabins - 1);
   s = 2.0 * sigma * sigma;
