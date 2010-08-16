@@ -159,10 +159,9 @@ class PbasexFit():
             logger.error('rmax exceeds that of original data')
             raise ValueError
         
-        dist = calc_distribution(rmax, rbins, thetabins, self.coef, self.kmax,
+        r, theta, dist = calc_distribution(rmax, rbins, thetabins, self.coef, self.kmax,
                                  self.rkspacing, self.sigma, self.lmax)
-        print 'returning'
-        return dist
+        return r, theta, dist
 
     def calc_distribution(self, rmax=None, rbins=512, thetabins=512):
         if self.fit_done is False:

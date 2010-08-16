@@ -333,7 +333,7 @@ static PyObject *
 calc_distribution(PyObject *self, PyObject *args)
 {
   PyObject *coef;
-  PyObject *dist;
+  PyObject *dist, *r_arr, *theta_arr, *retvalp;
   int rbins, thetabins, i, kmax, lmax;
   double rmax, rstep, thetastep, rkstep, sigma, s;
   npy_intp dims[2];
@@ -352,18 +352,18 @@ calc_distribution(PyObject *self, PyObject *args)
   if (!dist)
     return PyErr_NoMemory();
 
-  rarr = PyArray_SimpleNew (1, &(dims[0]), NPY_DOUBLE);
-  if (!rarr)
+  r_arr = PyArray_SimpleNew (1, &(dims[0]), NPY_DOUBLE);
+  if (!r_arr)
     {
       Py_DECREF(dist);
       return PyErr_NoMemory();
     }
 
-  thetaarr = PyArray_SimpleNew (1, &(dims[1]), NPY_DOUBLE);
-  if (!rarr)
+  theta_arr = PyArray_SimpleNew (1, &(dims[1]), NPY_DOUBLE);
+  if (!theta_arr)
     {
       Py_DECREF(dist);
-      Py_DECREF(rarr);
+      Py_DECREF(r_arr);
       return PyErr_NoMemory();
     }
 
@@ -375,15 +375,64 @@ calc_distribution(PyObject *self, PyObject *args)
     {
       double r = i * rstep;
       int j;
+      PyObject *valp;
+      void *idxp;
+
+      valp = Py_BuildValue("d", r);
+      if (!valp)
+	{
+	  PyErr_SetString (PyExc_RuntimeError, 
+			   "Failed to create python object for r value");
+	  goto fail;
+	}
+
+      idxp = PyArray_GETPTR1(r_arr, i);
+      if (!idxp)
+	{
+	  PyErr_SetString (PyExc_RuntimeError, 
+			   "Failed to get pointer to r_arr element");
+	  goto fail;
+	}
+
+      if (PyArray_SETITEM(r_arr, idxp, valp))
+	{
+	  PyErr_SetString (PyExc_RuntimeError, 
+			   "Failed to set value of r_arr element");
+	  goto fail;
+	}
 
       for (j = 0; j < thetabins; j++)
 	{
 	  double theta = j * thetastep;
 	  double val = 0;
-	  PyObject *valp;
-	  void *idxp;
 	  int k;
-	  
+
+	  if (i == 0)
+	    {
+	      valp = Py_BuildValue("d", theta);
+	      if (!valp)
+		{
+		  PyErr_SetString (PyExc_RuntimeError, 
+				   "Failed to create python object for theta value");
+		  goto fail;
+		}
+
+	      idxp = PyArray_GETPTR1(theta_arr, j);
+	      if (!idxp)
+		{
+		  PyErr_SetString (PyExc_RuntimeError, 
+				   "Failed to get pointer to theta_arr element");
+		  goto fail;
+		}
+
+	      if (PyArray_SETITEM(theta_arr, idxp, valp))
+		{
+		  PyErr_SetString (PyExc_RuntimeError, 
+				   "Failed to set value of r_arr element");
+		  goto fail;
+		}
+	    }
+
 	  for (k = 0; k <= kmax; k++)
 	    {
 	      double rk = k * rkstep;
@@ -434,10 +483,8 @@ calc_distribution(PyObject *self, PyObject *args)
 	}
     }
 
-  printf ("loop done\n");
-
-  printf ("DECREF done\n");
-  return dist;
+  retvalp = Py_BuildValue("OOO", r_arr, theta_arr, dist);
+  return retvalp;
 
  fail:
   Py_DECREF(dist);

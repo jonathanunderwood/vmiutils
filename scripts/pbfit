@@ -44,7 +44,7 @@ fit.fit_data(vmipolar, mtx)
 #pylab.plot(r, i)
 #pylab.show()
 
-dist = fit.calc_distribution2()
+r, theta, dist = fit.calc_distribution2()
 p = vmi.VMIPolarImage()
 p.from_numpy_array(dist)
 c = vmi.VMICartesianImage()
