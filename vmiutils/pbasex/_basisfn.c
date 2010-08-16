@@ -421,13 +421,11 @@ calc_distribution(PyObject *self, PyObject *args)
 
   printf ("loop done\n");
 
-  Py_DECREF(coef);
   printf ("DECREF done\n");
   return dist;
 
  fail:
   Py_DECREF(dist);
-  Py_DECREF(coef);
   return NULL;
 }
 
