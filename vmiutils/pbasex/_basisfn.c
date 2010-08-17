@@ -1,8 +1,6 @@
 /* TODO: 
    Use a better type than unsigned short for boolenas
    Use epsabs, rather than setting val=o in integrand for small values
-   Call basisfn_full from integrand rather than duplicate code. Also make
-   integrand_full inline for efficiency. Or make it a macro.
 */
 
 /* Note that Python.h must be included before any other header files. */
