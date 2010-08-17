@@ -404,7 +404,7 @@ calc_distribution(PyObject *self, PyObject *args)
       for (j = 0; j < thetabins; j++)
 	{
 	  double theta = j * thetastep;
-	  double val = 0;
+	  double val = 0.0;
 	  int k;
 
 	  if (i == 0)
