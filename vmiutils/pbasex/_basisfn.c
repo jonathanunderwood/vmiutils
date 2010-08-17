@@ -488,6 +488,120 @@ calc_distribution(PyObject *self, PyObject *args)
 
  fail:
   Py_DECREF(dist);
+  Py_DECREF(r_arr);
+  Py_DECREF(theta_arr);
+  return NULL;
+}
+
+static PyObject *
+calc_spectrum(PyObject *self, PyObject *args)
+{
+  PyObject *coef;
+  PyObject *spec, *r_arr, *retvalp;
+  int rbins, i, kmax;
+  double rmax, rstep, rkstep, sigma, s;
+
+  if (!PyArg_ParseTuple(args, "diOidd", 
+			&rmax, &rbins, &coef, &kmax, &rkstep, &sigma))
+    {
+      PyErr_SetString (PyExc_TypeError, "Bad argument to calc_distribution");
+      return NULL;
+    }
+
+  spec = PyArray_SimpleNew (1, &rbins, NPY_DOUBLE);
+  if (!spec)
+    return PyErr_NoMemory();
+
+  r_arr = PyArray_SimpleNew (1, &rbins, NPY_DOUBLE);
+  if (!r_arr)
+    {
+      Py_DECREF(spec);
+      return PyErr_NoMemory();
+    }
+
+  rstep = rmax / (rbins - 1);
+  s = 2.0 * sigma * sigma;
+
+  for (i = 0; i < rbins; i++)
+    {
+      double r = i * rstep;
+      int k;
+      PyObject *valp;
+      void *idxp;
+      double val = 0.0;
+
+      valp = Py_BuildValue("d", r);
+      if (!valp)
+	{
+	  PyErr_SetString (PyExc_RuntimeError, 
+			   "Failed to create python object for r value");
+	  goto fail;
+	}
+
+      idxp = PyArray_GETPTR1(r_arr, i);
+      if (!idxp)
+	{
+	  PyErr_SetString (PyExc_RuntimeError, 
+			   "Failed to get pointer to r_arr element");
+	  goto fail;
+	}
+
+      if (PyArray_SETITEM(r_arr, idxp, valp))
+	{
+	  PyErr_SetString (PyExc_RuntimeError, 
+			   "Failed to set value of r_arr element");
+	  goto fail;
+	}
+
+      for (k = 0; k <= kmax; k++)
+	{
+	  double rk = k * rkstep;
+	  double a = r - rk;
+	  double rad = exp(-(a * a) / s);
+	  double *cvalp;
+	  
+	  cvalp = (double *) PyArray_GETPTR2(coef, k, 0);
+	  if (!cvalp)
+	    {
+	      PyErr_SetString (PyExc_RuntimeError, 
+			       "Failed to get pointer to coefficient");
+	      goto fail;
+	    }
+
+	  val += (*cvalp) * rad;
+	}
+
+      valp = Py_BuildValue("d", val);
+      if (!valp)
+	{
+	  PyErr_SetString (PyExc_RuntimeError, 
+			   "Failed to create python object for spec value");
+	  goto fail;
+	}
+
+      idxp = PyArray_GETPTR1(spec, i);
+      if (!idxp)
+	{
+	  PyErr_SetString (PyExc_RuntimeError, 
+			   "Failed to get pointer to spec element");
+	  goto fail;
+	}
+
+      if (PyArray_SETITEM(spec, idxp, valp))
+	{
+	  PyErr_SetString (PyExc_RuntimeError, 
+			   "Failed to set value of spec element");
+	  goto fail;
+	}
+
+    }
+  
+  retvalp = Py_BuildValue("OO", r_arr, spec);
+  return retvalp;
+
+ fail:
+  Py_DECREF(spec);
+  Py_DECREF(r_arr);
   return NULL;
 }
 
@@ -500,8 +614,10 @@ static PyMethodDef BasisFnMethods[] = {
      "Returns the value of the radial part of a basis function."},
     {"matrix",  matrix, METH_VARARGS,
      "Returns an inversion matrix of basis functions."},
+    {"calc_spectrum",  calc_distribution, METH_VARARGS,
+     "Returns a simulated angular integrated radial spectrum from fit coefficients."},
     {"calc_distribution",  calc_distribution, METH_VARARGS,
-     "Returns a simulated distribution from fit coefficients."},
+     "Returns a simulated distribution polar image from fit coefficients."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
