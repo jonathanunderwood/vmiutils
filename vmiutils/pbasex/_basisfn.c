@@ -614,7 +614,7 @@ static PyMethodDef BasisFnMethods[] = {
      "Returns the value of the radial part of a basis function."},
     {"matrix",  matrix, METH_VARARGS,
      "Returns an inversion matrix of basis functions."},
-    {"calc_spectrum",  calc_distribution, METH_VARARGS,
+    {"calc_spectrum",  calc_spectrum, METH_VARARGS,
      "Returns a simulated angular integrated radial spectrum from fit coefficients."},
     {"calc_distribution",  calc_distribution, METH_VARARGS,
      "Returns a simulated distribution polar image from fit coefficients."},
