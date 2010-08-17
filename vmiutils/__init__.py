@@ -1,1 +1,1 @@
-from vmi import VMICartesianImage, VMIPolarImage
+from image import VMICartesianImage, VMIPolarImage
