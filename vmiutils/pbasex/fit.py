@@ -136,7 +136,7 @@ class PbasexFit():
         return calc_spectrum(rmax, npoints, self.coef, self.kmax, 
                              self.rkspacing, self.sigma)
 
-    def calc_distribution2(self, rmax=None, rbins=512, thetabins=512):
+    def calc_distribution(self, rmax=None, rbins=512, thetabins=512):
         if self.fit_done is False:
             logger.error('no fit done')
             raise AttributeError
@@ -151,45 +151,12 @@ class PbasexFit():
                                  self.rkspacing, self.sigma, self.lmax)
         return r, theta, dist
 
-    def calc_distribution(self, rmax=None, rbins=512, thetabins=512):
-        if self.fit_done is False:
-            logger.error('no fit done')
-            raise AttributeError
+    def dump(self, file):
+        fd = open(file, 'r')
         
-        if rmax is None:
-            rmax = self.rmax
-        elif rmax > self.rmax:
-            logger.error('rmax exceeds that of original data')
-            raise ValueError
-
-        rstep = float(rmax) / (rbins - 1)
-        thetastep = 2.0 * numpy.pi / (thetabins - 1)
-
-        dist = numpy.zeros((rbins, thetabins))
-        r = numpy.empty(rbins)
-        theta = numpy.empty(thetabins)
-
-        for i in xrange(rbins):
-            rbin = i * rstep
-            r[i] = rbin * self.rscale
-            for j in xrange(thetabins):
-                theta[j] = -numpy.pi + j * thetastep
-                for k in xrange(self.kmax + 1):
-                    rk = float(k * self.rkspacing)
-                    for l in xrange(self.lmax + 1):
-                        dist[i, j] += self.coef[k, l] * \
-                            basisfn_full (rbin, rk, self.sigma, l, theta[j])
-
-        return r, theta, dist
-
-
-
-        def dump(self, file):
-            fd = open(file, 'r')
-                    
-            try:
-                for object in self.__attribs:
-                    setattr(self, object, pickle.load(fd))
-            finally:
-                fd.close()
+        try:
+            for object in self.__attribs:
+                setattr(self, object, pickle.load(fd))
+        finally:
+            fd.close()
 
