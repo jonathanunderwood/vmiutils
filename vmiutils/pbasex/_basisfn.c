@@ -67,24 +67,6 @@ basisfn_full(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-basisfn_radial(PyObject *self, PyObject *args)
-{
-  double r, rk, sigma, rad, a, s;
-
-  if (!PyArg_ParseTuple(args, "ddd", &r, &rk, &sigma))
-    {
-      PyErr_SetString (PyExc_TypeError, "Bad argument to basisfn_radial");
-      return NULL;
-    }
-
-  a = r - rk;
-  s = 2.0 * sigma * sigma;
-  rad = exp(-(a * a) / s);
-
-  return Py_BuildValue("d", rad);
-}
-
-static PyObject *
 matrix(PyObject *self, PyObject *args)
 {
   int lmax, kmax, Rbins, Thetabins;
@@ -613,8 +595,6 @@ calc_spectrum(PyObject *self, PyObject *args)
 static PyMethodDef BasisFnMethods[] = {
     {"basisfn_full",  basisfn_full, METH_VARARGS,
      "Returns the value of a basis function."},
-    {"basisfn_radial",  basisfn_radial, METH_VARARGS,
-     "Returns the value of the radial part of a basis function."},
     {"matrix",  matrix, METH_VARARGS,
      "Returns an inversion matrix of basis functions."},
     {"calc_spectrum",  calc_spectrum, METH_VARARGS,
