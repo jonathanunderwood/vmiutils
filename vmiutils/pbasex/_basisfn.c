@@ -500,6 +500,7 @@ calc_spectrum(PyObject *self, PyObject *args)
   PyObject *spec, *r_arr, *retvalp;
   int rbins, i, kmax;
   double rmax, rstep, rkstep, sigma, s;
+  npy_intp rbins_np;
 
   if (!PyArg_ParseTuple(args, "diOidd", 
 			&rmax, &rbins, &coef, &kmax, &rkstep, &sigma))
@@ -508,11 +509,13 @@ calc_spectrum(PyObject *self, PyObject *args)
       return NULL;
     }
 
-  spec = PyArray_SimpleNew (1, &rbins, NPY_DOUBLE);
+  rbins_np = (npy_intp) rbins;
+
+  spec = PyArray_SimpleNew (1, &rbins_np, NPY_DOUBLE);
   if (!spec)
     return PyErr_NoMemory();
 
-  r_arr = PyArray_SimpleNew (1, &rbins, NPY_DOUBLE);
+  r_arr = PyArray_SimpleNew (1, &rbins_np, NPY_DOUBLE);
   if (!r_arr)
     {
       Py_DECREF(spec);
@@ -568,7 +571,7 @@ calc_spectrum(PyObject *self, PyObject *args)
 	      goto fail;
 	    }
 
-	  val += (*cvalp) * rad;
+	  val += (*cvalp) * rad * r * r;
 	}
 
       valp = Py_BuildValue("d", val);

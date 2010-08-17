@@ -133,7 +133,7 @@ class PbasexFit():
             logger.error('rmax exceeds that of original data')
             raise ValueError
 
-        return calc_spectrum(rmax, npoints, self.coef, self.kmax, 
+        return calc_spectrum(float(rmax), npoints, self.coef, self.kmax, 
                              self.rkspacing, self.sigma)
 
     def calc_distribution(self, rmax=None, rbins=512, thetabins=512):
@@ -148,7 +148,7 @@ class PbasexFit():
             raise ValueError
         
         r, theta, dist = calc_distribution(rmax, rbins, thetabins, self.coef, self.kmax,
-                                 self.rkspacing, self.sigma, self.lmax)
+                                           self.rkspacing, self.sigma, self.lmax)
         return r, theta, dist
 
     def dump(self, file):

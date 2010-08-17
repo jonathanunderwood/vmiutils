@@ -19,25 +19,24 @@ args = parser.parse_args()
 
 mtx = pb.PbasexMatrix()
 mtx.load(args.matrix_file)
-print 'here1'
+logger.debug("matrix loaded")
 
 vmicart = vmi.VMICartesianImage()
 vmicart.from_numpy_array(numpy.loadtxt(args.vmi_file))
-print 'here1a'
+logger.debug("image loaded and converted to cartesian image")
 
 centre = vmicart.centre_of_gravity()
-print centre
 vmicart.set_centre(centre)
-print 'here2'
+logger.info('image centre: {0}'.format(centre))
 
 vmipolar = vmi.VMIPolarImage()
 vmipolar.from_VMICartesianImage(vmicart, Rbins=mtx.Rbins, Thetabins=mtx.Thetabins)
-print 'here3'
+logger.debug('image converted to polar coordinates')
 
 fit = pb.PbasexFit()
 fit.fit_data(vmipolar, mtx)
-
-r, i = fit.calc_radial_spectrum(500)
+logger.debug('data fit')
+r, i = fit.calc_radial_spectrum(750)
 
 import pylab
 pylab.figure()
