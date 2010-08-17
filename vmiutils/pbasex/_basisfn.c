@@ -47,7 +47,7 @@ static double integrand(double r, void *params)
 }
 
 static PyObject *
-basisfn_full(PyObject *self, PyObject *args)
+basisfn(PyObject *self, PyObject *args)
 {
   int l;
   double r, rk, sigma, theta, rad, ang, a, s;
@@ -593,7 +593,7 @@ calc_spectrum(PyObject *self, PyObject *args)
 /* Module function table. Each entry specifies the name of the function exported
    by the module and the corresponding C function. */
 static PyMethodDef BasisFnMethods[] = {
-    {"basisfn_full",  basisfn_full, METH_VARARGS,
+    {"basisfn",  basisfn, METH_VARARGS,
      "Returns the value of a basis function."},
     {"matrix",  matrix, METH_VARARGS,
      "Returns an inversion matrix of basis functions."},
