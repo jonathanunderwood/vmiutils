@@ -21,8 +21,8 @@ class PbasexFit():
                           'rkspacing', 'rfactor', 'rmax']
 
     def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None):
-        if not isinstance(image, vmi.VMIPolarImage):
-            logger.error("image is not an instance of VMIPolarImage")
+        if not isinstance(image, vmi.PolarImage):
+            logger.error("image is not an instance of PolarImage")
             raise TypeError
         elif not isinstance(matrix, pbm.PbasexMatrix):
             logger.error('matrix is not an instance of PbasexMatrix')

@@ -21,7 +21,7 @@ mtx = pb.PbasexMatrix()
 mtx.load(args.matrix_file)
 logger.debug("matrix loaded")
 
-vmicart = vmi.VMICartesianImage()
+vmicart = vmi.CartesianImage()
 vmicart.from_numpy_array(numpy.loadtxt(args.vmi_file))
 logger.debug("image loaded and converted to cartesian image")
 
@@ -29,8 +29,8 @@ centre = vmicart.centre_of_gravity()
 vmicart.set_centre(centre)
 logger.info('image centre: {0}'.format(centre))
 
-vmipolar = vmi.VMIPolarImage()
-vmipolar.from_VMICartesianImage(vmicart, Rbins=mtx.Rbins, Thetabins=mtx.Thetabins)
+vmipolar = vmi.PolarImage()
+vmipolar.from_CartesianImage(vmicart, Rbins=mtx.Rbins, Thetabins=mtx.Thetabins)
 logger.debug('image converted to polar coordinates')
 
 fit = pb.PbasexFit()
@@ -44,10 +44,10 @@ pylab.plot(r, i)
 pylab.show()
 
 # r, theta, dist = fit.calc_distribution2()
-# p = vmi.VMIPolarImage()
+# p = vmi.PolarImage()
 # p.from_numpy_array(dist)
-# c = vmi.VMICartesianImage()
-# c.from_VMIPolarImage(p)
+# c = vmi.CartesianImage()
+# c.from_PolarImage(p)
 # print 'plotting'
 # import pylab
 # f=pylab.figure()

@@ -1,7 +1,7 @@
 import numpy
 import polcart
 
-class VMICartesianImage():
+class CartesianImage():
     """ Class used to represent a VMI image stored as a cartesian
     array.
     """
@@ -33,8 +33,8 @@ class VMICartesianImage():
         """
         self.centre = centre
 
-    def from_VMIPolarImage(self, pimage):
-        """ Initizize from a VMIPolarImage object by interpolation onto a
+    def from_PolarImage(self, pimage):
+        """ Initizize from a PolarImage object by interpolation onto a
         cartesian grid.
         """
         self.x, self.y, self.image = pimage.cartesian_rep()
@@ -72,7 +72,7 @@ class VMICartesianImage():
         yc = 0.5 * (self.y[-1] - self.y[0])
         return xc, yc
 
-class VMIPolarImage():
+class PolarImage():
     """ Class used to represent a VMI image stored in polar coordinates
     i.e. in regularly spaced bins in (r, theta)."""
 
@@ -97,11 +97,11 @@ class VMIPolarImage():
         else:
             self.Theta = Theta.copy()
 
-    def from_VMICartesianImage(self, cimage, Rbins=None, 
+    def from_CartesianImage(self, cimage, Rbins=None, 
                                Thetabins=None, Rmax=None):
-        """Calculate a polar represenation of a VMICartesianImage instance.
+        """Calculate a polar represenation of a CartesianImage instance.
 
-        cimage is a VMICartesianImage instance.
+        cimage is a CartesianImage instance.
 
         Rbins and Thetabins specify the desired number of bins in the
         polar representation. If these are none, the number of bins in the
