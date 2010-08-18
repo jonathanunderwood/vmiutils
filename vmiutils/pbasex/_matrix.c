@@ -312,7 +312,7 @@ matrix(PyObject *self, PyObject *args)
 
 /* Module function table. Each entry specifies the name of the function exported
    by the module and the corresponding C function. */
-static PyMethodDef BasisFnMethods[] = {
+static PyMethodDef MatrixMethods[] = {
     {"basisfn",  basisfn, METH_VARARGS,
      "Returns the value of a basis function."},
     {"matrix",  matrix, METH_VARARGS,
@@ -323,14 +323,14 @@ static PyMethodDef BasisFnMethods[] = {
 /* Module initialization function, must be caled initNAME, where NAME is the
    compiled module name, in this case _basisfn. */
 PyMODINIT_FUNC
-init_basisfn(void)
+init_matrix(void)
 {
   PyObject *mod;
 
   /* This is needed for the numpy API. */
   import_array();
 
-  mod = Py_InitModule("_basisfn", BasisFnMethods);
+  mod = Py_InitModule("_matrix", MatrixMethods);
   if (mod == NULL)
     return;
 

@@ -5,7 +5,7 @@ import numpy
 import pickle
 import math as m
 import logging
-from _basisfn import *
+from _matrix import *
 
 # Set up logging and create a null handler in case the application doesn't
 # provide a log handler
