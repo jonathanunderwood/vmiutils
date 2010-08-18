@@ -2,7 +2,7 @@ import logging
 import numpy.linalg
 import vmiutils as vmi
 import matrix as pbm
-from _basisfn import *
+from _fit import *
 
 # Note: the way the matrix is calculated and stored is such that the indices
 # are in the order matrix[k, l, Rbin, Thetabin]
