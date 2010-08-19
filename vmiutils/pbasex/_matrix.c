@@ -127,7 +127,7 @@ matrix(PyObject *self, PyObject *args)
   wksp = gsl_integration_workspace_alloc(wkspsize);
   if (!wksp)
     {
-      Py_DECREF(matrix);
+      PyArray_XDECREF(matrix);
       return PyErr_NoMemory();
     }
 
@@ -135,7 +135,7 @@ matrix(PyObject *self, PyObject *args)
   if (!table)
     {
       gsl_integration_workspace_free(wksp);
-      Py_DECREF(matrix);
+      PyArray_XDECREF(matrix);
       return PyErr_NoMemory();
     }
 
@@ -304,7 +304,7 @@ matrix(PyObject *self, PyObject *args)
  fail:  
   gsl_integration_workspace_free(wksp);
   gsl_integration_qaws_table_free(table);
-  Py_DECREF(matrix);
+  PyArray_XDECREF(matrix);
 
   return NULL;
 }
