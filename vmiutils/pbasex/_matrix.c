@@ -121,13 +121,17 @@ matrix(PyObject *self, PyObject *args)
   if (!matrix)
     return PyErr_NoMemory();
 
+  /* This forces the python runtime to allocate all the memory for matrix rather
+     than gradually as it is accessed. Not strictly necessary.*/
+  PyArray_FILLWBYTE(matrix, 0);
+
   /* Turn off gsl error handler - we'll check return codes. */
   gsl_set_error_handler_off ();
 
   wksp = gsl_integration_workspace_alloc(wkspsize);
   if (!wksp)
     {
-      PyArray_XDECREF(matrix);
+      Py_DECREF(matrix);
       return PyErr_NoMemory();
     }
 
@@ -135,7 +139,7 @@ matrix(PyObject *self, PyObject *args)
   if (!table)
     {
       gsl_integration_workspace_free(wksp);
-      PyArray_XDECREF(matrix);
+      Py_DECREF(matrix);
       return PyErr_NoMemory();
     }
 
@@ -228,6 +232,7 @@ matrix(PyObject *self, PyObject *args)
 			{
 			  PyErr_SetString (PyExc_RuntimeError, 
 					   "Failed to get pointer to matrix element");
+			  Py_DECREF(valp);
 			  goto fail;
 			}
 		      
@@ -235,34 +240,44 @@ matrix(PyObject *self, PyObject *args)
 			{
 			  PyErr_SetString (PyExc_RuntimeError, 
 					   "Failed to set value of matrix element");
+			  Py_DECREF(valp);
+			  Py_DECREF(elementp);
 			  goto fail;
 			}
-			
+
+		      Py_DECREF(elementp);
+
 		      /* Symmetry of Legendre polynomials is such that
 			 P_L(cos(Theta))=P_L(cos(-Theta)), so we can exploit
 			 that here unless Theta = 0, in which case it's not
 			 needed. */
-		      if (ThetabinsOdd && j == midTheta)
-			continue;
-
-		      if (oddl)
-			elementp = PyArray_GETPTR4(matrix, k, l, R, Thetabins - j - 1);
-		      else
-			elementp = PyArray_GETPTR4(matrix, k, l / 2, R, Thetabins - j - 1);
-
-		      if (!elementp)
+		      if (!(ThetabinsOdd && j == midTheta))
 			{
-			  PyErr_SetString (PyExc_RuntimeError, 
-					   "Failed to get pointer to matrix element");
-			  goto fail;
+			  if (oddl)
+			    elementp = PyArray_GETPTR4(matrix, k, l, R, Thetabins - j - 1);
+			  else
+			    elementp = PyArray_GETPTR4(matrix, k, l / 2, R, Thetabins - j - 1);
+			  
+			  if (!elementp)
+			    {
+			      PyErr_SetString (PyExc_RuntimeError, 
+					       "Failed to get pointer to matrix element");
+			      Py_DECREF(valp);
+			      goto fail;
+			    }
+			  
+			  if (PyArray_SETITEM(matrix, elementp, valp))
+			    {
+			      PyErr_SetString (PyExc_RuntimeError, 
+					       "Failed to set value of matrix element");
+			      Py_DECREF(valp);
+			      Py_DECREF(elementp);
+			      goto fail;
+			    }
+			  Py_DECREF(elementp);
 			}
-		      
-		      if (PyArray_SETITEM(matrix, elementp, valp))
-			{
-			  PyErr_SetString (PyExc_RuntimeError, 
-					   "Failed to set value of matrix element");
-			  goto fail;
-			}
+		      Py_DECREF(valp);
+
 		      break;
 
 		    case GSL_EMAXITER:
@@ -304,7 +319,7 @@ matrix(PyObject *self, PyObject *args)
  fail:  
   gsl_integration_workspace_free(wksp);
   gsl_integration_qaws_table_free(table);
-  PyArray_XDECREF(matrix);
+  Py_DECREF(matrix);
 
   return NULL;
 }
