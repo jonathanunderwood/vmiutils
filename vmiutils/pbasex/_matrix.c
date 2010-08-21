@@ -249,8 +249,9 @@ matrix(PyObject *self, PyObject *args)
 
 		      /* Symmetry of Legendre polynomials is such that
 			 P_L(cos(Theta))=P_L(cos(-Theta)), so we can exploit
-			 that here unless Theta = 0, in which case it's not
-			 needed. */
+			 that here unless Theta = 0 (which only occurs if
+			 Thetabins is odd), in which case it's not needed.
+		      */
 		      if (!(ThetabinsOdd && j == midTheta))
 			{
 			  if (oddl)
@@ -340,7 +341,6 @@ matrix2(PyObject *self, PyObject *args)
   gsl_function fn;
   int_params params;
   gsl_integration_qaws_table *table;
-  int index = -1;
 
   if (!PyArg_ParseTuple(args, "iiiidHddi", 
 			&kmax, &lmax, &Rbins, &Thetabins, &sigma, &oddl, &epsabs, &epsrel, &wkspsize))
@@ -461,28 +461,17 @@ matrix2(PyObject *self, PyObject *args)
 		      abserr = 0.0;
 		    }
 
-		  index++;
-
 		  switch (status)
 		    {
+		      unsigned int index;
 		    case GSL_SUCCESS:
+		      index = j + Thetabins * (R + Rbins * (l + ldim *(k)));
 		      matrix[index] = result;
 
 		      /* Symmetry of Legendre polynomials is such that
 			 P_L(cos(Theta))=P_L(cos(-Theta)), so we can exploit
-			 that here unless Theta = 0, in which case it's not
-			 needed. 
-
-			 Note on how we worked out the indexing: for odd l,
-
-			 index = (k * kdim) + (l * ldim) + (R * Rbins) + j
-
-			 for positive negative theta, while for positive theta
-
-			 index' = (k * kdim) + (l * ldim) + (R * Rbins) +
-			           Thetabins - j - 1
-
-			 and so the difference is Thetabins - 2j -1
+			 that here unless Theta = 0 (which only occurs if
+			 Thetabins is odd), in which case it's not needed.
 		      */
 		      if (!(ThetabinsOdd && j == midTheta))
 			matrix[index + Thetabins - (2 * j) - 1] = result;
