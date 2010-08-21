@@ -78,8 +78,8 @@ class PbasexMatrix():
 
         while True:
             try:
-                mtx = matrix(kmax, lmax, Rbins, Thetabins, sigma, oddl, 
-                             epsabs, epsrel, wkspsize)
+                mtx = matrix2(kmax, lmax, Rbins, Thetabins, sigma, oddl, 
+                              epsabs, epsrel, wkspsize)
                 break
             except MaxIterError:
                 logger.info("Maximum integration iterations exceeded")
