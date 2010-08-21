@@ -66,6 +66,7 @@ calc_distribution(PyObject *self, PyObject *args)
 	{
 	  PyErr_SetString (PyExc_RuntimeError, 
 			   "Failed to get pointer to r_arr element");
+	  Py_DECREF(valp);
 	  goto fail;
 	}
 
@@ -73,8 +74,13 @@ calc_distribution(PyObject *self, PyObject *args)
 	{
 	  PyErr_SetString (PyExc_RuntimeError, 
 			   "Failed to set value of r_arr element");
+	  Py_DECREF(valp);
+	  Py_DECREF(idxp);
 	  goto fail;
 	}
+
+      Py_DECREF(valp);
+      Py_DECREF(idxp);
 
       for (j = 0; j < thetabins; j++)
 	{
@@ -97,6 +103,7 @@ calc_distribution(PyObject *self, PyObject *args)
 		{
 		  PyErr_SetString (PyExc_RuntimeError, 
 				   "Failed to get pointer to theta_arr element");
+		  Py_DECREF(valp);
 		  goto fail;
 		}
 
@@ -104,8 +111,12 @@ calc_distribution(PyObject *self, PyObject *args)
 		{
 		  PyErr_SetString (PyExc_RuntimeError, 
 				   "Failed to set value of r_arr element");
+		  Py_DECREF(valp);
+		  Py_DECREF(idxp);
 		  goto fail;
 		}
+	      Py_DECREF(valp);
+	      Py_DECREF(idxp);
 	    }
 
 	  for (k = 0; k <= kmax; k++)
@@ -129,6 +140,7 @@ calc_distribution(PyObject *self, PyObject *args)
 		    }
 
 		  val += (*cvalp) * rad * ang;
+		  Py_DECREF(cvalp);
 		}
 	    }
 
@@ -145,6 +157,7 @@ calc_distribution(PyObject *self, PyObject *args)
 	    {
 	      PyErr_SetString (PyExc_RuntimeError, 
 			       "Failed to get pointer to dist element");
+	      Py_DECREF(valp);
 	      goto fail;
 	    }
 
@@ -152,6 +165,8 @@ calc_distribution(PyObject *self, PyObject *args)
 	    {
 	      PyErr_SetString (PyExc_RuntimeError, 
 			       "Failed to set value of dist element");
+	      Py_DECREF(idxp);
+	      Py_DECREF(valp);
 	      goto fail;
 	    }
 
@@ -221,6 +236,7 @@ calc_spectrum(PyObject *self, PyObject *args)
 	{
 	  PyErr_SetString (PyExc_RuntimeError, 
 			   "Failed to get pointer to r_arr element");
+	  Py_DECREF(valp);
 	  goto fail;
 	}
 
@@ -228,8 +244,12 @@ calc_spectrum(PyObject *self, PyObject *args)
 	{
 	  PyErr_SetString (PyExc_RuntimeError, 
 			   "Failed to set value of r_arr element");
+	  Py_DECREF(idxp);
+	  Py_DECREF(valp);
 	  goto fail;
 	}
+      Py_DECREF(idxp);
+      Py_DECREF(valp);
 
       for (k = 0; k <= kmax; k++)
 	{
@@ -247,6 +267,7 @@ calc_spectrum(PyObject *self, PyObject *args)
 	    }
 
 	  val += (*cvalp) * rad * r * r;
+	  Py_DECREF(cvalp);
 	}
 
       valp = Py_BuildValue("d", val);
@@ -262,6 +283,7 @@ calc_spectrum(PyObject *self, PyObject *args)
 	{
 	  PyErr_SetString (PyExc_RuntimeError, 
 			   "Failed to get pointer to spec element");
+	  Py_DECREF(valp);
 	  goto fail;
 	}
 
@@ -269,9 +291,12 @@ calc_spectrum(PyObject *self, PyObject *args)
 	{
 	  PyErr_SetString (PyExc_RuntimeError, 
 			   "Failed to set value of spec element");
+	  Py_DECREF(idxp);
+	  Py_DECREF(valp);
 	  goto fail;
 	}
-
+      Py_DECREF(idxp);
+      Py_DECREF(valp);
     }
   
   retvalp = Py_BuildValue("OO", r_arr, spec);
