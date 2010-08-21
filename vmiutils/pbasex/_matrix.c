@@ -207,7 +207,7 @@ matrix(PyObject *self, PyObject *args)
 		    }
 		  else 
 		    {
-		      status = 0;
+		      status = GSL_SUCCESS;
 		      result = 0.0;
 		      abserr = 0.0;
 		    }
@@ -456,7 +456,7 @@ matrix2(PyObject *self, PyObject *args)
 		    }
 		  else 
 		    {
-		      status = 0;
+		      status = GSL_SUCCESS;
 		      result = 0.0;
 		      abserr = 0.0;
 		    }
