@@ -37,11 +37,11 @@ fit = pb.PbasexFit()
 fit.fit_data(vmipolar, mtx)
 logger.debug('data fit')
 
-# r, i = fit.calc_radial_spectrum(750)
-# import pylab
-# pylab.figure()
-# pylab.plot(r, i)
-# pylab.show()
+r, i = fit.calc_radial_spectrum(750)
+import pylab
+pylab.figure()
+pylab.plot(r, i)
+pylab.show()
 
 # r, theta, dist = fit.calc_distribution()
 # p = vmi.PolarImage()
@@ -57,9 +57,9 @@ logger.debug('data fit')
 
 x, y, dist = fit.cartesian_distribution()
 print 'plotting'
-import pylab
+#import pylab
 f=pylab.figure()
-p=pylab.imshow(dist, cmap=pylab.cm.gist_gray)
+p=pylab.imshow(dist.clip(min=0.0), cmap=pylab.cm.gist_gray)
 f.colorbar(p)
 pylab.show()
 
