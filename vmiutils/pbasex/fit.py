@@ -91,7 +91,15 @@ class PbasexFit():
         coef, resid, rank, s = numpy.linalg.lstsq(mtx.transpose(), img)
         # TODO: do something with resid
 
-        self.coef = coef.reshape((kdim, ldim))
+
+        coef = coef.reshape((kdim, ldim))
+        for i in xrange(coef.shape[0]):
+            if coef[i, 0] < 0.0:
+                coef[i, :] = 0.0
+            else:
+                coef[i, 1:] /= coef[i, 0]
+
+        self.coef = coef
         self.kmax = matrix.kmax
         self.lmax = lmax
         self.oddl = oddl
