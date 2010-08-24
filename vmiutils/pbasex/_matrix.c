@@ -38,9 +38,12 @@ static double integrand(double r, void *params)
 
   val = r * rad * ang;
 
+  /* Round small values to 0 otherwise the integration error becomes dominated
+     by the numerical error in exp such that the relative error is huge and the
+     integration fails. */
   if (fabs(val) > __SMALL)
     return val;
-  else 
+  else
     return 0.0;
 }
 
@@ -453,6 +456,7 @@ matrix2(PyObject *self, PyObject *args)
 		      status = gsl_integration_qaws (&fn, (double) R, upper_bound, table,
 						     epsabs, epsrel, wkspsize,
 						     wksp, &result, &abserr);
+		      printf("result: %g abserr:%g\n", result, abserr);
 		    }
 		  else 
 		    {
@@ -500,6 +504,7 @@ matrix2(PyObject *self, PyObject *args)
 		      
 		    default:
 		      printf("k:%d l:%d R:%d Theta: %f\n", k, l, R, Theta);
+		      printf("status: %d\n", status);
 		      PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: Unknown error");
 		      goto fail;
 		    }	
