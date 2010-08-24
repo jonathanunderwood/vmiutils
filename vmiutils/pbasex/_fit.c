@@ -173,7 +173,7 @@ calc_distribution(PyObject *self, PyObject *args)
 	}
     }
 
-  retvalp = Py_BuildValue("OOO", r_arr, theta_arr, dist);
+  retvalp = Py_BuildValue("NNN", r_arr, theta_arr, dist);
   return retvalp;
 
  fail:
@@ -181,6 +181,87 @@ calc_distribution(PyObject *self, PyObject *args)
   Py_DECREF(r_arr);
   Py_DECREF(theta_arr);
   return NULL;
+}
+
+static PyObject *
+calc_distribution2(PyObject *self, PyObject *args)
+{
+  PyObject *coef;
+  int rbins, thetabins, i, kmax, lmax, index = -1;
+  double rmax, rstep, thetastep, rkstep, sigma, s;
+  double *dist;
+  PyObject *distnp;
+  npy_intp dims[2];
+
+  if (!PyArg_ParseTuple(args, "diiOiddi", 
+			&rmax, &rbins, &thetabins, &coef, &kmax, &rkstep, &sigma, &lmax))
+    {
+      PyErr_SetString (PyExc_TypeError, "Bad argument to calc_distribution2");
+      return NULL;
+    }
+
+  dist = malloc (rbins * thetabins * sizeof (double));
+  if (!dist)
+    return PyErr_NoMemory();
+
+  rstep = rmax / (rbins - 1);
+  thetastep = 2.0 * M_PI/ (thetabins - 1);
+  s = 2.0 * sigma * sigma;
+
+  for (i = 0; i < rbins; i++)
+    {
+      double r = i * rstep;
+      int j;
+
+      for (j = 0; j < thetabins; j++)
+	{
+	  double theta = j * thetastep;
+	  double val = 0.0;
+	  int k;
+
+	  index++;
+
+	  for (k = 0; k <= kmax; k++)
+	    {
+	      double rk = k * rkstep;
+	      double a = r - rk;
+	      double rad = exp(-(a * a) / s);
+	      int l;
+
+	      for (l = 0; l <= lmax; l++)
+		{
+		  double ang = gsl_sf_legendre_Pl(l, cos(theta));
+		  double *cvalp;
+
+		  cvalp = (double *) PyArray_GETPTR2(coef, k, l);
+		  if (!cvalp)
+		    {
+		      PyErr_SetString (PyExc_RuntimeError, 
+				       "Failed to get pointer to coefficient");
+		      free (dist);
+		      return NULL;
+		    }
+
+		  // TODO: should probably be using PyArray_GETVAL here
+		  val += (*cvalp) * rad * ang;
+		  Py_DECREF(cvalp);
+		}
+	    }
+	  dist[index] = val;
+	}
+    }
+
+  dims[0] = (npy_intp) rbins;
+  dims[1] = (npy_intp) thetabins;
+
+  distnp = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, dist);
+  if (!distnp)
+    {
+      free(dist);
+      return PyErr_NoMemory();
+    }
+
+  return distnp;
 }
 
 static PyObject *
@@ -195,7 +276,7 @@ calc_spectrum(PyObject *self, PyObject *args)
   if (!PyArg_ParseTuple(args, "diOidd", 
 			&rmax, &rbins, &coef, &kmax, &rkstep, &sigma))
     {
-      PyErr_SetString (PyExc_TypeError, "Bad argument to calc_distribution");
+      PyErr_SetString (PyExc_TypeError, "Bad argument to calc_spectrum");
       return NULL;
     }
 
@@ -299,7 +380,7 @@ calc_spectrum(PyObject *self, PyObject *args)
       Py_DECREF(valp);
     }
   
-  retvalp = Py_BuildValue("OO", r_arr, spec);
+  retvalp = Py_BuildValue("NN", r_arr, spec);
   return retvalp;
 
  fail:
@@ -308,12 +389,81 @@ calc_spectrum(PyObject *self, PyObject *args)
   return NULL;
 }
 
+static PyObject *
+calc_spectrum2(PyObject *self, PyObject *args)
+{
+  PyObject *coef;
+  PyObject *specnp;
+  int rbins, i, kmax;
+  double rmax, rstep, rkstep, sigma, s;
+  double *spec;
+  npy_intp rbinsnp;
+
+  if (!PyArg_ParseTuple(args, "diOidd", 
+			&rmax, &rbins, &coef, &kmax, &rkstep, &sigma))
+    {
+      PyErr_SetString (PyExc_TypeError, "Bad argument to calc_spectrum2");
+      return NULL;
+    }
+
+  spec = malloc (rbins * sizeof (double));
+  if (!spec)
+    return PyErr_NoMemory();
+
+  rstep = rmax / (rbins - 1);
+  s = 2.0 * sigma * sigma;
+
+  for (i = 0; i < rbins; i++)
+    {
+      double r = i * rstep;
+      double val = 0.0;
+      int k;
+
+      for (k = 0; k <= kmax; k++)
+	{
+	  double rk = k * rkstep;
+	  double a = r - rk;
+	  double rad = exp(-(a * a) / s);
+	  double *cvalp;
+
+	  cvalp = (double *) PyArray_GETPTR2(coef, k, 0);
+	  if (!cvalp)
+	    {
+	      PyErr_SetString (PyExc_RuntimeError, 
+			       "Failed to get pointer to coefficient");
+	      free(spec);
+	      return NULL;
+	    }
+
+	  // TODO: should probably be using PyArray_GETVAL here
+	  val += (*cvalp) * rad * r * r;
+	  Py_DECREF(cvalp);
+	}
+      spec[i] = val;
+    }
+
+  rbinsnp = (npy_intp) rbins;
+
+  specnp = PyArray_SimpleNewFromData (1, &rbinsnp, NPY_DOUBLE, spec);
+  if (!specnp)
+    {
+      free (spec);
+      return PyErr_NoMemory();
+    }
+
+  return specnp;
+}
+
 /* Module function table. Each entry specifies the name of the function exported
    by the module and the corresponding C function. */
 static PyMethodDef FitMethods[] = {
     {"calc_spectrum",  calc_spectrum, METH_VARARGS,
      "Returns a simulated angular integrated radial spectrum from fit coefficients."},
+    {"calc_spectrum2",  calc_spectrum2, METH_VARARGS,
+     "Returns a simulated angular integrated radial spectrum from fit coefficients."},
     {"calc_distribution",  calc_distribution, METH_VARARGS,
+     "Returns a simulated distribution polar image from fit coefficients."},
+    {"calc_distribution2",  calc_distribution2, METH_VARARGS,
      "Returns a simulated distribution polar image from fit coefficients."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
