@@ -43,14 +43,23 @@ logger.debug('data fit')
 # pylab.plot(r, i)
 # pylab.show()
 
-r, theta, dist = fit.calc_distribution()
-p = vmi.PolarImage()
-p.from_numpy_array(dist)
-c = vmi.CartesianImage()
-c.from_PolarImage(p)
+# r, theta, dist = fit.calc_distribution()
+# p = vmi.PolarImage()
+# p.from_numpy_array(dist)
+# c = vmi.CartesianImage()
+# c.from_PolarImage(p)
+# print 'plotting'
+# import pylab
+# f=pylab.figure()
+# p=pylab.imshow(c.image, cmap=pylab.cm.gist_gray)
+# f.colorbar(p)
+# pylab.show()
+
+x, y, dist = fit.cartesian_distribution()
 print 'plotting'
 import pylab
 f=pylab.figure()
-p=pylab.imshow(c.image, cmap=pylab.cm.gist_gray)
+p=pylab.imshow(dist, cmap=pylab.cm.gist_gray)
 f.colorbar(p)
 pylab.show()
+

@@ -157,6 +157,25 @@ class PbasexFit():
 
         return r, theta, dist
 
+    def cartesian_distribution(self, rmax=None, npoints=512):
+        if self.fit_done is False:
+            logger.error('no fit done')
+            raise AttributeError
+        
+        if rmax is None:
+            rmax = self.rmax
+        elif rmax > self.rmax:
+            logger.error('rmax exceeds that of original data')
+            raise ValueError
+        
+        dist = cartesian_distribution(rmax, npoints, self.coef, self.kmax,
+                                      self.rkspacing, self.sigma, self.lmax)
+
+        x = numpy.linspace(-rmax, rmax, npoints)
+        y = numpy.linspace(-rmax, rmax, npoints)
+
+        return x, y, dist
+
     def dump(self, file):
         fd = open(file, 'r')
         

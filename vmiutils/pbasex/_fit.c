@@ -265,6 +265,90 @@ calc_distribution2(PyObject *self, PyObject *args)
 }
 
 static PyObject *
+cartesian_distribution(PyObject *self, PyObject *args)
+{
+  PyObject *coef;
+  int npoints, i, kmax, lmax, index = -1;
+  double rmax, step, rkstep, sigma, s;
+  double *dist;
+  PyObject *distnp;
+  npy_intp dims[2];
+
+  if (!PyArg_ParseTuple(args, "diOiddi", 
+			&rmax, &npoints, &coef, &kmax, &rkstep, &sigma, &lmax))
+    {
+      PyErr_SetString (PyExc_TypeError, "Bad argument to calc_distribution2");
+      return NULL;
+    }
+
+  dist = malloc (npoints * npoints * sizeof (double));
+  if (!dist)
+    return PyErr_NoMemory();
+
+  step = 2.0 * rmax / (npoints - 1);
+  s = 2.0 * sigma * sigma;
+
+  for (i = 0; i < npoints; i++)
+    {
+      double x = -rmax + i * step;
+      int j;
+
+      for (j = 0; j < npoints; j++)
+	{
+	  double y = -rmax + j * step;
+	  double r = sqrt (x * x + y * y);
+	  double theta = atan2(x, y);
+	  double val = 0.0;
+	  int k;
+
+	  index++;
+
+	  for (k = 0; k <= kmax; k++)
+	    {
+	      double rk = k * rkstep;
+	      double a = r - rk;
+	      double rad = exp(-(a * a) / s);
+	      int l;
+
+	      for (l = 0; l <= lmax; l++)
+		{
+		  double ang = gsl_sf_legendre_Pl(l, cos(theta));
+		  double *cvalp;
+
+		  cvalp = (double *) PyArray_GETPTR2(coef, k, l);
+		  if (!cvalp)
+		    {
+		      PyErr_SetString (PyExc_RuntimeError, 
+				       "Failed to get pointer to coefficient");
+		      free (dist);
+		      return NULL;
+		    }
+
+		  // TODO: should probably be using PyArray_GETVAL here
+		  val += (*cvalp) * rad * ang;
+		  Py_DECREF(cvalp);
+		}
+	    }
+	  dist[index] = val;
+	}
+    }
+
+  dims[0] = (npy_intp) npoints;
+  dims[1] = (npy_intp) npoints;
+
+  distnp = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, dist);
+  if (!distnp)
+    {
+      free(dist);
+      return PyErr_NoMemory();
+    }
+
+  return distnp;
+}
+
+
+
+static PyObject *
 calc_spectrum(PyObject *self, PyObject *args)
 {
   PyObject *coef;
@@ -463,6 +547,8 @@ static PyMethodDef FitMethods[] = {
      "Returns a simulated angular integrated radial spectrum from fit coefficients."},
     {"calc_distribution",  calc_distribution, METH_VARARGS,
      "Returns a simulated distribution polar image from fit coefficients."},
+    {"cartesian_distribution",  cartesian_distribution, METH_VARARGS,
+     "Returns a simulated distribution cartesian image from fit coefficients."},
     {"calc_distribution2",  calc_distribution2, METH_VARARGS,
      "Returns a simulated distribution polar image from fit coefficients."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
