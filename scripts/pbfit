@@ -14,9 +14,20 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('vmi_file', help='Name of file containing VMI image')
 parser.add_argument('matrix_file', help='Name of file containing PBASEX matrix')
+parser.add_argument('--no-oddl', action='store_true', 
+                    help='Specify whether to include odd order Legendre Polynomials')
+parser.add_argument('--centre', nargs=2, type=float, default=None,
+                    help='The x and y coordinates of the image centre (after transposing, if requested)')
+parser.add_argument('--transpose', action='store_true',
+                    help='The value of sigma in the radial functions')
 
 args = parser.parse_args()
 
+if args.no_oddl is True:
+    oddl = False
+else:
+    oddl = True
+        
 mtx = pb.PbasexMatrix()
 mtx.load(args.matrix_file)
 logger.debug("matrix loaded")
@@ -25,7 +36,14 @@ vmicart = vmi.CartesianImage()
 vmicart.from_numpy_array(numpy.loadtxt(args.vmi_file))
 logger.debug("image loaded and converted to cartesian image")
 
-centre = vmicart.centre_of_gravity()
+if args.transpose is True:
+    vmicart.transpose()
+
+if args.centre is None:
+    centre = vmicart.centre_of_gravity()
+else:
+    centre = args.centre
+
 vmicart.set_centre(centre)
 logger.info('image centre: {0}'.format(centre))
 
@@ -34,13 +52,22 @@ vmipolar.from_CartesianImage(vmicart, Rbins=mtx.Rbins, Thetabins=mtx.Thetabins)
 logger.debug('image converted to polar coordinates')
 
 fit = pb.PbasexFit()
-fit.fit_data(vmipolar, mtx)
+fit.fit_data(vmipolar, mtx, oddl=oddl)
 logger.debug('data fit')
 
-r, i = fit.calc_radial_spectrum(750)
+r, i = fit.calc_radial_spectrum()
+
 import pylab
-pylab.figure()
-pylab.plot(r, i)
+fig = pylab.figure()
+axl = fig.add_subplot(111)
+axl.plot(r, i)
+
+r, beta = fit.beta_coefficients()
+#print beta.shape, r.shape, beta[0, :].shape
+axr = axl.twinx()
+axr.plot(r, beta[0, :])
+axr.plot(r, beta[1, :])
+axr.plot(r, beta[2, :])
 pylab.show()
 
 # r, theta, dist = fit.calc_distribution()
@@ -59,7 +86,7 @@ x, y, dist = fit.cartesian_distribution()
 print 'plotting'
 #import pylab
 f=pylab.figure()
-p=pylab.imshow(dist.clip(min=0.0), cmap=pylab.cm.gist_gray)
+p=pylab.imshow(dist, cmap=pylab.cm.gist_rainbow)
 f.colorbar(p)
 pylab.show()
 

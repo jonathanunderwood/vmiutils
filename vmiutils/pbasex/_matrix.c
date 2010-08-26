@@ -456,7 +456,6 @@ matrix2(PyObject *self, PyObject *args)
 		      status = gsl_integration_qaws (&fn, (double) R, upper_bound, table,
 						     epsabs, epsrel, wkspsize,
 						     wksp, &result, &abserr);
-		      printf("result: %g abserr:%g\n", result, abserr);
 		    }
 		  else 
 		    {

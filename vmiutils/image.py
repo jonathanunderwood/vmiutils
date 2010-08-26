@@ -33,6 +33,9 @@ class CartesianImage():
         """
         self.centre = centre
 
+    def transpose(self):
+        self.image = self.image.transpose()
+
     def from_PolarImage(self, pimage):
         """ Initizize from a PolarImage object by interpolation onto a
         cartesian grid.
