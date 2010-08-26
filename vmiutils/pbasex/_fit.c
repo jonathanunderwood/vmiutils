@@ -326,7 +326,6 @@ beta_coeffs(PyObject *self, PyObject *args)
   /* Normalize to beta_0 = 1 at each r. */
   for (i = 0; i < rbins; i++)
     {
-      double r = i * rstep;
       double norm = beta[i]; /* i.e. beta[0, r] */
       int l;
 
@@ -384,36 +383,41 @@ cartesian_distribution(PyObject *self, PyObject *args)
 	{
 	  double y = -rmax + j * step;
 	  double r = sqrt (x * x + y * y);
-	  double theta = atan2(x, y);
 	  double val = 0.0;
 	  int k;
 
 	  index++;
 
-	  for (k = 0; k <= kmax; k++)
+	  if (r < rmax)
 	    {
-	      double rk = k * rkstep;
-	      double a = r - rk;
-	      double rad = exp(-(a * a) / s);
-	      int l;
-
-	      for (l = 0; l <= lmax; l++)
+	      double theta = atan2(x, y);
+	      for (k = 0; k <= kmax; k++)
 		{
-		  double ang = gsl_sf_legendre_Pl(l, cos(theta));
-		  double *cvalp;
-
-		  cvalp = (double *) PyArray_GETPTR2(coef, k, l);
-		  if (!cvalp)
+		  double rk = k * rkstep;
+		  double a = r - rk;
+		  double rad = exp(-(a * a) / s);
+		  int l;
+		  
+		  for (l = 0; l <= lmax; l++)
 		    {
-		      PyErr_SetString (PyExc_RuntimeError, 
-				       "Failed to get pointer to coefficient");
-		      free (dist);
-		      return NULL;
+		      double ang = gsl_sf_legendre_Pl(l, cos(theta));
+		      double *cvalp;
+		      
+		      cvalp = (double *) PyArray_GETPTR2(coef, k, l);
+		      if (!cvalp)
+			{
+			  PyErr_SetString (PyExc_RuntimeError, 
+					   "Failed to get pointer to coefficient");
+			  free (dist);
+			  return NULL;
+			}
+		      
+		      // TODO: should probably be using PyArray_GETVAL here
+		      printf ("%d %d %g\n", k, l, *cvalp);
+		  
+		      val += (*cvalp) * rad * ang;
+		      Py_DECREF(cvalp);
 		    }
-
-		  // TODO: should probably be using PyArray_GETVAL here
-		  val += (*cvalp) * rad * ang;
-		  Py_DECREF(cvalp);
 		}
 	    }
 	  dist[index] = val;

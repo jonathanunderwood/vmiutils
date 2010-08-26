@@ -198,7 +198,9 @@ class PbasexFit():
 
         beta = beta_coeffs(rmax, rbins, self.coef, self.kmax, 
                            self.rkstep, self.sigma, self.lmax)
+
         r = numpy.linspace(0.0, rmax * self.rscale, rbins)
+
         return r, beta
 
     def dump(self, file):
