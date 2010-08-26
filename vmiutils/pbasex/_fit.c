@@ -265,6 +265,93 @@ calc_distribution2(PyObject *self, PyObject *args)
 }
 
 static PyObject *
+beta_coeffs(PyObject *self, PyObject *args)
+{
+  PyObject *coef;
+  int rbins, i, kmax, lmax, ldim;
+  double rmax, rstep, rkstep, sigma, s;
+  double *beta;
+  PyObject *betanp;
+  npy_intp dims[2];
+
+  if (!PyArg_ParseTuple(args, "diOiddi", 
+			&rmax, &rbins, &coef, &kmax, &rkstep, &sigma, &lmax))
+    {
+      PyErr_SetString (PyExc_TypeError, "Bad argument to beta_coefs");
+      return NULL;
+    }
+
+  ldim = lmax + 1;
+
+  beta = calloc (rbins * ldim, sizeof (double));
+  if (!beta)
+    return PyErr_NoMemory();
+
+  rstep = rmax / (rbins - 1);
+  s = 2.0 * sigma * sigma;
+
+  for (i = 0; i < rbins; i++)
+    {
+      double r = i * rstep;
+      int k;
+      
+      for (k = 0; k <= kmax; k++)
+	{
+	  double rk = k * rkstep;
+	  double a = r - rk;
+	  double rad = exp(-(a * a) / s);
+	  int l;
+
+	  for (l = 0; l <= lmax; l++)
+	    {
+	      double *cvalp;
+	      int index = l * rbins + i; /* i.e. beta[l, r] */
+
+	      cvalp = (double *) PyArray_GETPTR2(coef, k, l);
+	      if (!cvalp)
+		{
+		  PyErr_SetString (PyExc_RuntimeError, 
+				   "Failed to get pointer to coefficient");
+		  free (beta);
+		  return NULL;
+		}
+	      
+	      // TODO: should probably be using PyArray_GETVAL here
+	      beta[index] += (*cvalp) * rad;
+	      Py_DECREF(cvalp);
+	    }
+	}
+    }
+
+  /* Normalize to beta_0 = 1 at each r. */
+  for (i = 0; i < rbins; i++)
+    {
+      double r = i * rstep;
+      double norm = beta[i]; /* i.e. beta[0, r] */
+      int l;
+
+      for (l = 0; l <= lmax; l++)
+	{
+	  int index = l * rbins + i; /* i.e. beta[l, r] */
+	  beta[index] /= norm;
+	}
+    }
+
+  dims[0] = (npy_intp) ldim;
+  dims[1] = (npy_intp) rbins;
+
+  betanp = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, beta);
+  if (!beta)
+    {
+      free(beta);
+      return PyErr_NoMemory();
+    }
+
+  return betanp;
+}
+
+// TODO: speed up calculation by making use of mirror symmetry in y
+static PyObject *
 cartesian_distribution(PyObject *self, PyObject *args)
 {
   PyObject *coef;
@@ -479,7 +566,7 @@ calc_spectrum2(PyObject *self, PyObject *args)
   PyObject *coef;
   PyObject *specnp;
   int rbins, i, kmax;
-  double rmax, rstep, rkstep, sigma, s;
+  double rmax, rstep, rkstep, sigma, s, max = 0.0;
   double *spec;
   npy_intp rbinsnp;
 
@@ -524,7 +611,13 @@ calc_spectrum2(PyObject *self, PyObject *args)
 	  Py_DECREF(cvalp);
 	}
       spec[i] = val;
+      if (val > max)
+	max = val;
     }
+
+  /* Normalize to maximum value of 1. */
+  for (i = 0; i < rbins; i++)
+    spec[i] /= max;
 
   rbinsnp = (npy_intp) rbins;
 
@@ -551,6 +644,8 @@ static PyMethodDef FitMethods[] = {
      "Returns a simulated distribution cartesian image from fit coefficients."},
     {"calc_distribution2",  calc_distribution2, METH_VARARGS,
      "Returns a simulated distribution polar image from fit coefficients."},
+    {"beta_coeffs",  beta_coeffs, METH_VARARGS,
+     "Returns beta coefficents as a function of r from fit coefficients."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 

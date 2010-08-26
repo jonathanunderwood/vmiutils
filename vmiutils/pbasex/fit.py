@@ -1,3 +1,5 @@
+# TODO: Many functions don't honour oddl presently
+
 import logging
 import numpy.linalg
 import vmiutils as vmi
@@ -14,11 +16,11 @@ class PbasexFit():
         self.lmax = None
         self.oddl = None
         self.sigma = None
-        self.rkspacing = None
+        self.rkstep = None
         self.rfactor = None
         self.rmax = None
         self.__attribs = ['coefs', 'kmax', 'lmax', 'oddl', 'sigma',
-                          'rkspacing', 'rfactor', 'rmax']
+                          'rkstep', 'rfactor', 'rmax']
 
     def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None):
         if not isinstance(image, vmi.PolarImage):
@@ -34,8 +36,10 @@ class PbasexFit():
         if oddl is True and matrix.oddl is False:
             logger.error('odd l requested, but matrix not calculated for odd l')
             raise ValueError
+        elif oddl is True and matrix.oddl is True:
+            mtx = matrix.matrix
         elif oddl is False and matrix.oddl is True:
-            mtx = mtx[:, 0:matrix.lmax + 1:2, :, :]
+            mtx = matrix.matrix[:, 0:matrix.lmax + 1:2, :, :]
         elif oddl is None:
             mtx = matrix.matrix
             oddl = matrix.oddl
@@ -91,15 +95,19 @@ class PbasexFit():
         coef, resid, rank, s = numpy.linalg.lstsq(mtx.transpose(), img)
         # TODO: do something with resid
 
-
         coef = coef.reshape((kdim, ldim))
-        for i in xrange(coef.shape[0]):
-            if coef[i, 0] < 0.0:
-                coef[i, :] = 0.0
-            else:
-                coef[i, 1:] /= coef[i, 0]
 
-        self.coef = coef
+        # If oddl is False we need to expand the coef array to include the odd
+        # l values and set them to zero, such that coef is indexed as coef[k,
+        # l] rather than coef[k, l/2]. Then all other functions don't have to
+        # care about oddl.
+        if oddl is False:
+            self.coef = numpy.zeros((kdim, lmax + 1))
+            for l in xrange(0, lmax + 1, 2):
+                self.coef[:, l] = coef[:, l / 2]
+        else:
+            self.coef = coef
+
         self.kmax = matrix.kmax
         self.lmax = lmax
         self.oddl = oddl
@@ -109,9 +117,9 @@ class PbasexFit():
         # i.e. without extrapolating outside the input data
         self.rmax = Rbins - 1
 
-        # rkspacing holds the spacing between the centres of adjacent Gaussian
+        # rkstep holds the spacing between the centres of adjacent Gaussian
         # radial basis functions
-        self.rkspacing = float(Rbins) / kdim
+        self.rkstep = float(Rbins) / kdim
 
         # rfactor holds the scaling factor to convert from radial bin number
         # in the polar image to actual position in the original image 
@@ -119,12 +127,12 @@ class PbasexFit():
 
         self.fit_done = True
 
-    def calc_radial_spectrum(self, npoints=500, rmax=None):
+    def calc_radial_spectrum(self, rbins=500, rmax=None):
         """Calculate a raidal spectrum from the parameters of a fit. Returns a
         tuple (r, intensity) containing the r values and the corresponding
         intensities. 
 
-        npoints determines the number of points in the returned spectrum.
+        rbins determines the number of points in the returned spectrum.
 
         rmax is the maximum radius to consider, i.e. the spectrum is
         claculated for r=0..rmax. Note: rmax is the desired radial value and
@@ -141,13 +149,13 @@ class PbasexFit():
             logger.error('rmax exceeds that of original data')
             raise ValueError
 
-        spec = calc_spectrum2(float(rmax), npoints, self.coef, self.kmax, 
-                              self.rkspacing, self.sigma)
-        r = numpy.linspace(0.0, rmax * self.rscale, npoints)
+        spec = calc_spectrum2(float(rmax), rbins, self.coef, self.kmax, 
+                              self.rkstep, self.sigma)
+        r = numpy.linspace(0.0, rmax * self.rscale, rbins)
 
         return r, spec
 
-    def calc_distribution(self, rmax=None, rbins=512, thetabins=512):
+    def calc_distribution(self, rbins=512, thetabins=512, rmax=None):
         if self.fit_done is False:
             logger.error('no fit done')
             raise AttributeError
@@ -159,13 +167,13 @@ class PbasexFit():
             raise ValueError
         
         dist = calc_distribution2(rmax, rbins, thetabins, self.coef, self.kmax,
-                                  self.rkspacing, self.sigma, self.lmax)
+                                  self.rkstep, self.sigma, self.lmax)
         r = numpy.linspace(0.0, rmax * self.rscale, rbins)
         theta = numpy.linspace(-numpy.pi, numpy.pi, thetabins)
 
         return r, theta, dist
 
-    def cartesian_distribution(self, rmax=None, npoints=512):
+    def cartesian_distribution(self, bins=500, rmax=None):
         if self.fit_done is False:
             logger.error('no fit done')
             raise AttributeError
@@ -176,13 +184,22 @@ class PbasexFit():
             logger.error('rmax exceeds that of original data')
             raise ValueError
         
-        dist = cartesian_distribution(rmax, npoints, self.coef, self.kmax,
-                                      self.rkspacing, self.sigma, self.lmax)
+        dist = cartesian_distribution(rmax, bins, self.coef, self.kmax,
+                                      self.rkstep, self.sigma, self.lmax)
 
-        x = numpy.linspace(-rmax, rmax, npoints)
-        y = numpy.linspace(-rmax, rmax, npoints)
+        x = numpy.linspace(-rmax, rmax, bins)
+        y = numpy.linspace(-rmax, rmax, bins)
 
         return x, y, dist
+
+    def beta_coefficients(self, rbins=500, rmax=None):
+        if rmax == None:
+            rmax = self.rmax
+
+        beta = beta_coeffs(rmax, rbins, self.coef, self.kmax, 
+                           self.rkstep, self.sigma, self.lmax)
+        r = numpy.linspace(0.0, rmax * self.rscale, rbins)
+        return r, beta
 
     def dump(self, file):
         fd = open(file, 'r')
