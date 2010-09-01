@@ -22,7 +22,7 @@ def __cart2pol(out_coord, rbw, thetabw, xbw, ybw, xc, yc):
     return ix, iy
 
 def cart2pol(image, x=None, y=None, centre=None, 
-             radial_bins=256, angular_bins=256, rmax=None, order=5):
+             radial_bins=256, angular_bins=256, rmax=None, order=3):
     """ Convert an image on a regularly spaced cartesian grid into a regular
     spaced grid in polar coordinates using interpolation.
     
@@ -93,7 +93,7 @@ def cart2pol(image, x=None, y=None, centre=None,
 
     return r, t, pimage
 
-def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=5):
+def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
     """ Convert an image on a regularly spaced polar grid into a regular
     spaced grid in cartesian coordinates using interpolation.
     

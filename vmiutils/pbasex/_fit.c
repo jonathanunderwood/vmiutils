@@ -267,7 +267,7 @@ calc_distribution2(PyObject *self, PyObject *args)
 static PyObject *
 beta_coeffs(PyObject *self, PyObject *args)
 {
-  PyObject *coef;
+  PyObject *coefarg = NULL, *coef = NULL;
   int rbins, i, kmax, lmax, ldim;
   double rmax, rstep, rkstep, sigma, s;
   double *beta;
@@ -275,17 +275,24 @@ beta_coeffs(PyObject *self, PyObject *args)
   npy_intp dims[2];
 
   if (!PyArg_ParseTuple(args, "diOiddi", 
-			&rmax, &rbins, &coef, &kmax, &rkstep, &sigma, &lmax))
+			&rmax, &rbins, &coefarg, &kmax, &rkstep, &sigma, &lmax))
     {
       PyErr_SetString (PyExc_TypeError, "Bad argument to beta_coefs");
       return NULL;
     }
 
+  coef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_IN_ARRAY);
+  if (!coef)
+    return NULL;
+
   ldim = lmax + 1;
 
   beta = calloc (rbins * ldim, sizeof (double));
   if (!beta)
-    return PyErr_NoMemory();
+    {
+      Py_DECREF(coef);
+      return PyErr_NoMemory();
+    }
 
   rstep = rmax / (rbins - 1);
   s = 2.0 * sigma * sigma;
@@ -312,6 +319,7 @@ beta_coeffs(PyObject *self, PyObject *args)
 		{
 		  PyErr_SetString (PyExc_RuntimeError, 
 				   "Failed to get pointer to coefficient");
+		  Py_DECREF(coef);
 		  free (beta);
 		  return NULL;
 		}
@@ -323,6 +331,8 @@ beta_coeffs(PyObject *self, PyObject *args)
 	}
     }
 
+  Py_DECREF(coef);
+
   /* Normalize to beta_0 = 1 at each r. */
   for (i = 0; i < rbins; i++)
     {
@@ -332,7 +342,10 @@ beta_coeffs(PyObject *self, PyObject *args)
       for (l = 0; l <= lmax; l++)
 	{
 	  int index = l * rbins + i; /* i.e. beta[l, r] */
-	  beta[index] /= norm;
+	  /* if (norm > 0.0) */
+	    beta[index] /= norm;
+	  /* else */
+	  /*   beta[index] = 0.0; */
 	}
     }
 
@@ -353,7 +366,7 @@ beta_coeffs(PyObject *self, PyObject *args)
 static PyObject *
 cartesian_distribution(PyObject *self, PyObject *args)
 {
-  PyObject *coef;
+  PyObject *coefarg = NULL, *coef = NULL;
   int npoints, i, kmax, lmax, index = -1;
   double rmax, step, rkstep, sigma, s;
   double *dist;
@@ -361,15 +374,22 @@ cartesian_distribution(PyObject *self, PyObject *args)
   npy_intp dims[2];
 
   if (!PyArg_ParseTuple(args, "diOiddi", 
-			&rmax, &npoints, &coef, &kmax, &rkstep, &sigma, &lmax))
+			&rmax, &npoints, &coefarg, &kmax, &rkstep, &sigma, &lmax))
     {
       PyErr_SetString (PyExc_TypeError, "Bad argument to calc_distribution2");
       return NULL;
     }
 
+  coef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_IN_ARRAY);
+  if (!coef)
+    return NULL;
+
   dist = malloc (npoints * npoints * sizeof (double));
   if (!dist)
-    return PyErr_NoMemory();
+    {
+      Py_DECREF(coef);
+      return PyErr_NoMemory();
+    }
 
   step = 2.0 * rmax / (npoints - 1);
   s = 2.0 * sigma * sigma;
@@ -390,7 +410,8 @@ cartesian_distribution(PyObject *self, PyObject *args)
 
 	  if (r < rmax)
 	    {
-	      double theta = atan2(x, y);
+	      double costheta = cos(atan2(x, y));
+
 	      for (k = 0; k <= kmax; k++)
 		{
 		  double rk = k * rkstep;
@@ -400,7 +421,7 @@ cartesian_distribution(PyObject *self, PyObject *args)
 		  
 		  for (l = 0; l <= lmax; l++)
 		    {
-		      double ang = gsl_sf_legendre_Pl(l, cos(theta));
+		      double ang = gsl_sf_legendre_Pl(l, costheta);
 		      double *cvalp;
 		      
 		      cvalp = (double *) PyArray_GETPTR2(coef, k, l);
@@ -408,12 +429,13 @@ cartesian_distribution(PyObject *self, PyObject *args)
 			{
 			  PyErr_SetString (PyExc_RuntimeError, 
 					   "Failed to get pointer to coefficient");
+			  Py_DECREF(coef);
 			  free (dist);
 			  return NULL;
 			}
 		      
 		      // TODO: should probably be using PyArray_GETVAL here
-		      printf ("%d %d %g\n", k, l, *cvalp);
+		      //printf ("%d %d %g %g\n", k, l, *cvalp, 0.0/50.0);
 		  
 		      val += (*cvalp) * rad * ang;
 		      Py_DECREF(cvalp);
@@ -423,6 +445,8 @@ cartesian_distribution(PyObject *self, PyObject *args)
 	  dist[index] = val;
 	}
     }
+
+  Py_DECREF(coef);
 
   dims[0] = (npy_intp) npoints;
   dims[1] = (npy_intp) npoints;
@@ -567,7 +591,7 @@ calc_spectrum(PyObject *self, PyObject *args)
 static PyObject *
 calc_spectrum2(PyObject *self, PyObject *args)
 {
-  PyObject *coef;
+  PyObject *coefarg = NULL, *coef = NULL;
   PyObject *specnp;
   int rbins, i, kmax;
   double rmax, rstep, rkstep, sigma, s, max = 0.0;
@@ -575,15 +599,22 @@ calc_spectrum2(PyObject *self, PyObject *args)
   npy_intp rbinsnp;
 
   if (!PyArg_ParseTuple(args, "diOidd", 
-			&rmax, &rbins, &coef, &kmax, &rkstep, &sigma))
+			&rmax, &rbins, &coefarg, &kmax, &rkstep, &sigma))
     {
       PyErr_SetString (PyExc_TypeError, "Bad argument to calc_spectrum2");
       return NULL;
     }
 
+  coef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_IN_ARRAY);
+  if (!coef)
+    return NULL;
+
   spec = malloc (rbins * sizeof (double));
   if (!spec)
-    return PyErr_NoMemory();
+    {
+      Py_DECREF(coef);
+      return PyErr_NoMemory();
+    }
 
   rstep = rmax / (rbins - 1);
   s = 2.0 * sigma * sigma;
@@ -606,6 +637,7 @@ calc_spectrum2(PyObject *self, PyObject *args)
 	    {
 	      PyErr_SetString (PyExc_RuntimeError, 
 			       "Failed to get pointer to coefficient");
+	      Py_DECREF(coef);
 	      free(spec);
 	      return NULL;
 	    }
@@ -618,6 +650,8 @@ calc_spectrum2(PyObject *self, PyObject *args)
       if (val > max)
 	max = val;
     }
+
+  Py_DECREF(coef);
 
   /* Normalize to maximum value of 1. */
   for (i = 0; i < rbins; i++)

@@ -28,9 +28,9 @@ def info(args):
     except IOError:
         logger.error('File not found')
         sys.exit(1)
-    except:
-        logger.error('File not a valid matrix file')
-        sys.exit(1)
+    # except:
+    #     logger.error('File not a valid matrix file')
+    #     sys.exit(1)
 
 parser = argparse.ArgumentParser(
     description='Utility for calculating and manipulating Pbasex matrices')

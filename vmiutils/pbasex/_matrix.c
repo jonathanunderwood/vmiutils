@@ -188,10 +188,12 @@ matrix(PyObject *self, PyObject *args)
 	{
 	  int R;
 	  params.l = l;
+
 	  for (R = 0; R < Rbins; R++)
 	    {
 	      int j;
 	      params.R2 = (double) (R * R);
+
 	      for (j = 0; j <= midTheta; j++)
 		{
 		  int status;

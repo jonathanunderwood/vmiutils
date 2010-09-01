@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import sys
 import numpy
-import pickle
+import cPickle as pickle
 import math as m
 import logging
 from _matrix import *
@@ -35,8 +35,8 @@ class PbasexMatrix():
 
         # This private attribute is a list containing the variables that should be
         # saved to a file when self.dump is called and read when self.load is called.
-        self.__attribs = ['Rbins', 'Thetabins', 'kmax', 'sigma', 'lmax', 'oddl',
-                           'epsabs', 'epsrel', 'matrix']
+        self.__metadata = ['Rbins', 'Thetabins', 'kmax', 'sigma', 'lmax', 'oddl',
+                           'epsabs', 'epsrel']
 
     def calc_matrix(self, Rbins, Thetabins, kmax, lmax, sigma=None, oddl=True,
                     epsabs=0.0, epsrel=1.0e-7, wkspsize=100000):
@@ -110,8 +110,9 @@ class PbasexMatrix():
     def dump(self, file):
         fd = open(file, 'w')
 
-        for object in self.__attribs:
-            pickle.dump(getattr(self, object), fd)
+        for object in self.__metadata:
+            pickle.dump(getattr(self, object), fd, protocol=2)
+        numpy.save(fd, self.matrix)
 
         fd.close()
 
@@ -119,13 +120,13 @@ class PbasexMatrix():
         fd = open(file, 'r')
         
         try:
-            for object in self.__attribs:
+            for object in self.__metadata:
                 setattr(self, object, pickle.load(fd))
+            self.matrix = numpy.load(fd)
         finally:
             fd.close()
 
     def print_params(self):
-        for object in self.__attribs:
-            if object is not 'matrix':
-                print('{0}: {1}'.format(object, getattr(self, object)))
+        for object in self.__metadata:
+            print('{0}: {1}'.format(object, getattr(self, object)))
                 
