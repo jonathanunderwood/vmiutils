@@ -6,7 +6,7 @@
 
 
 static PyObject *
-calc_distribution2(PyObject *self, PyObject *args)
+polar_distribution(PyObject *self, PyObject *args)
 {
   PyObject *coef = NULL, *coefarg = NULL;
   PyObject *distnp = NULL;
@@ -383,7 +383,7 @@ static PyMethodDef FitMethods[] = {
      "Returns a simulated angular integrated radial spectrum from fit coefficients."},
     {"cartesian_distribution",  cartesian_distribution, METH_VARARGS,
      "Returns a simulated distribution cartesian image from fit coefficients."},
-    {"calc_distribution2",  calc_distribution2, METH_VARARGS,
+    {"polar_distribution",  calc_distribution2, METH_VARARGS,
      "Returns a simulated distribution polar image from fit coefficients."},
     {"beta_coeffs",  beta_coeffs, METH_VARARGS,
      "Returns beta coefficents as a function of r from fit coefficients."},
