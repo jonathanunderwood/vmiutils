@@ -379,11 +379,11 @@ radial_spectrum(PyObject *self, PyObject *args)
 /* Module function table. Each entry specifies the name of the function exported
    by the module and the corresponding C function. */
 static PyMethodDef FitMethods[] = {
-    {"radial_spectrum",  calc_spectrum2, METH_VARARGS,
+    {"radial_spectrum",  radial_spectrum, METH_VARARGS,
      "Returns a simulated angular integrated radial spectrum from fit coefficients."},
     {"cartesian_distribution",  cartesian_distribution, METH_VARARGS,
      "Returns a simulated distribution cartesian image from fit coefficients."},
-    {"polar_distribution",  calc_distribution2, METH_VARARGS,
+    {"polar_distribution",  polar_distribution, METH_VARARGS,
      "Returns a simulated distribution polar image from fit coefficients."},
     {"beta_coeffs",  beta_coeffs, METH_VARARGS,
      "Returns beta coefficents as a function of r from fit coefficients."},
