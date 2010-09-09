@@ -296,7 +296,7 @@ cartesian_distribution(PyObject *self, PyObject *args)
 
 
 static PyObject *
-calc_spectrum2(PyObject *self, PyObject *args)
+radial_spectrum(PyObject *self, PyObject *args)
 {
   PyObject *coefarg = NULL, *coef = NULL;
   PyObject *specnp;
@@ -379,7 +379,7 @@ calc_spectrum2(PyObject *self, PyObject *args)
 /* Module function table. Each entry specifies the name of the function exported
    by the module and the corresponding C function. */
 static PyMethodDef FitMethods[] = {
-    {"calc_spectrum2",  calc_spectrum2, METH_VARARGS,
+    {"radial_spectrum",  calc_spectrum2, METH_VARARGS,
      "Returns a simulated angular integrated radial spectrum from fit coefficients."},
     {"cartesian_distribution",  cartesian_distribution, METH_VARARGS,
      "Returns a simulated distribution cartesian image from fit coefficients."},
