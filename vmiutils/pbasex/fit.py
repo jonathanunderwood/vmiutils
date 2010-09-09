@@ -108,6 +108,8 @@ class PbasexFit():
         else:
             self.coef = coef
 
+        print self.coef[0, 1], self.coef[0, 0]
+
         self.kmax = matrix.kmax
         self.lmax = lmax
         self.oddl = oddl

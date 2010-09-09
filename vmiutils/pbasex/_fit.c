@@ -186,11 +186,11 @@ calc_distribution(PyObject *self, PyObject *args)
 static PyObject *
 calc_distribution2(PyObject *self, PyObject *args)
 {
-  PyObject *coef;
+  PyObject *coef = NULL, *coefarg = NULL;
+  PyObject *distnp = NULL;
   int rbins, thetabins, i, kmax, lmax, index = -1;
   double rmax, rstep, thetastep, rkstep, sigma, s;
-  double *dist;
-  PyObject *distnp;
+  double *dist = NULL;
   npy_intp dims[2];
 
   if (!PyArg_ParseTuple(args, "diiOiddi", 
@@ -200,9 +200,16 @@ calc_distribution2(PyObject *self, PyObject *args)
       return NULL;
     }
 
+  coef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_IN_ARRAY);
+  if (!coef)
+    return NULL;
+
   dist = malloc (rbins * thetabins * sizeof (double));
   if (!dist)
-    return PyErr_NoMemory();
+    {
+      Py_DECREF(coef);
+      return PyErr_NoMemory();
+    }
 
   rstep = rmax / (rbins - 1);
   thetastep = 2.0 * M_PI/ (thetabins - 1);
@@ -238,6 +245,7 @@ calc_distribution2(PyObject *self, PyObject *args)
 		    {
 		      PyErr_SetString (PyExc_RuntimeError, 
 				       "Failed to get pointer to coefficient");
+		      Py_DECREF(coef);
 		      free (dist);
 		      return NULL;
 		    }
@@ -258,8 +266,11 @@ calc_distribution2(PyObject *self, PyObject *args)
   if (!distnp)
     {
       free(dist);
+      Py_DECREF(coef);
       return PyErr_NoMemory();
     }
+
+  Py_DECREF(coef);
 
   return distnp;
 }
@@ -270,8 +281,8 @@ beta_coeffs(PyObject *self, PyObject *args)
   PyObject *coefarg = NULL, *coef = NULL;
   int rbins, i, kmax, lmax, ldim;
   double rmax, rstep, rkstep, sigma, s;
-  double *beta;
-  PyObject *betanp;
+  double *beta = NULL;
+  PyObject *betanp = NULL;
   npy_intp dims[2];
 
   if (!PyArg_ParseTuple(args, "diOiddi", 
@@ -422,7 +433,7 @@ cartesian_distribution(PyObject *self, PyObject *args)
 		  for (l = 0; l <= lmax; l++)
 		    {
 		      double ang = gsl_sf_legendre_Pl(l, costheta);
-		      double *cvalp;
+		      double *cvalp = NULL;
 		      
 		      cvalp = (double *) PyArray_GETPTR2(coef, k, l);
 		      if (!cvalp)
