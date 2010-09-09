@@ -2,6 +2,10 @@ from __future__ import division
 import numpy as np
 cimport numpy as np
 
+cdef inline double _max(double a, double b): return a if a >= b else b
+cdef inline double _min(double a, double b): return a if a <= b else b
+
+
 # We now need to fix a datatype for our arrays. I've used the variable
 # DTYPE for this, which is assigned to the usual NumPy runtime
 # type info object.
@@ -11,13 +15,13 @@ cimport numpy as np
 DTYPE = np.double
 ctypedef np.double_t DTYPE_t
 
+@cython.boundscheck(False) # turn of bounds-checking for entire function
 def cart2pol_bicubic(np.ndarray[DTYPE_t, ndim=2] image not None,
+                     np.ndarray[DTYPE_t, ndim=2] x,
+                     np.ndarray[DTYPE_t, ndim=2] y,
                      int rbins, int thetabins, double rmax, 
                      double xc, double yc):
 
-    if g.shape[0] % 2 != 1 or g.shape[1] % 2 != 1:
-        raise ValueError("Only odd dimensions on filter supported")
-    assert f.dtype == DTYPE and g.dtype == DTYPE
     # The "cdef" keyword is also used within functions to type variables. It
     # can only be used at the top indentation level (there are non-trivial
     # problems with allowing them in other places, though we'd love to see
@@ -27,25 +31,78 @@ def cart2pol_bicubic(np.ndarray[DTYPE_t, ndim=2] image not None,
     # other C types (like "unsigned int") could have been used instead.
     # Purists could use "Py_ssize_t" which is the proper Python type for
     # array indices.
-    cdef int vmax = f.shape[0]
-    cdef int wmax = f.shape[1]
-    cdef int smax = g.shape[0]
-    cdef int tmax = g.shape[1]
-    cdef int smid = smax // 2
-    cdef int tmid = tmax // 2
-    cdef int xmax = vmax + 2*smid
-    cdef int ymax = wmax + 2*tmid
-    cdef np.ndarray h = np.zeros([xmax, ymax], dtype=DTYPE)
-    cdef int x, y, s, t, v, w
-    # It is very important to type ALL your variables. You do not get any
-    # warnings if not, only much slower code (they are implicitly typed as
-    # Python objects).
-    cdef int s_from, s_to, t_from, t_to
-    # For the value variable, we want to use the same data type as is
-    # stored in the array, so we use "DTYPE_t" as defined above.
-    # NB! An important side-effect of this is that if "value" overflows its
-    # datatype size, it will simply wrap around like in C, rather than raise
-    # an error like in Python.
+
+    #TODO: pass centre in as a tuple, and separate into doubles
+
+    if x is None:
+        x = np.arange(image.shape[0])
+
+    if y is None:
+        y = np.arange(image.shape[1])
+
+    if xc is None:
+        xc = 0.5 * (x[0] + x[-1])
+    if yc is None:
+        yc = 0.5 * (y[0] + y[-1])
+    else:
+        xc = centre[0]
+        yc = centre[1]
+
+    # Calculate minimum distance from centre to edge of image - this
+    # determines the maximum radius in the polar image.
+    cdef double xsize = _min(abs(x[0] - xc), x[-1] - xc)
+    cdef double ysize = _min(abs(y[0] - yc), y[-1] - yc)
+    cdef double max_rad = _min(xsize, ysize)
+
+    if rmax is None:
+        rmax = max_rad
+    elif rmax > max_rad:
+        raise ValueError
+
+    # Polar image bin widths
+    cdef double rbw = rmax / (radial_bins - 1)
+    cdef double thetabw = 2.0 * numpy.pi / (angular_bins - 1)
+
+    # Cartesian image bin widths - assume regularly spaced
+    cdef double xbw = x[1] - x[0]
+    cdef double ybw = y[1] - y[0]
+    
+    cdef unsigned int i, j, k, l
+    cdef double r, theta, xx, yy
+    cdef np.ndarray pimage = np.empty([rbins, thetabins], dtype=DTYPE)
+    cdef double pi = np.pi
+    
+    for i in xrange(rbins):
+        r = i * rbw
+        for j in xrange(thetabins):
+            theta = j * thetabw - pi
+            x = r * sin(theta) + xc
+            y = r * cos(theta) + yc
+            lowx = <int> x
+            lowy = <int> y
+            dx = x - lowx
+            dy = y - lowy
+            val = 0.0
+            for k in xrange(-1, 3):
+                kk = low
+                
+def double _R(double x):
+    cdef double x1 = x + 2
+    cdef double x2 = x + 1
+    cdef double x3 = x - 1
+    cdef double ans = 0.0;
+
+    if x1 > 0:
+        ans += x1 ** 3
+    if x2 > 0:
+        ans =- 4.0 * x2 ** 3
+    if x > 0:
+        ans += x ** 3
+    if x3 > 0:
+        ans -= 4.0 * x3 ** 3
+
+    return ans
+
     cdef DTYPE_t value
     for x in range(xmax):
         for y in range(ymax):
