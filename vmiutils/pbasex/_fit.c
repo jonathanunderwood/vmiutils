@@ -4,7 +4,6 @@
 #include <math.h>
 #include <gsl/gsl_sf_legendre.h>
 
-
 static PyObject *
 polar_distribution(PyObject *self, PyObject *args)
 {
@@ -293,7 +292,6 @@ cartesian_distribution(PyObject *self, PyObject *args)
 
   return distnp;
 }
-
 
 static PyObject *
 radial_spectrum(PyObject *self, PyObject *args)
