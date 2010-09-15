@@ -267,7 +267,7 @@ cartesian_distribution(PyObject *self, PyObject *args)
 			}
 		      
 		      // TODO: should probably be using PyArray_GETVAL here
-		      //printf ("%d %d %g %g\n", k, l, *cvalp, 0.0/50.0);
+		      printf ("%d %d %g %g\n", k, l, *cvalp, 0.0/50.0);
 		  
 		      val += (*cvalp) * rad * ang;
 		      Py_DECREF(cvalp);

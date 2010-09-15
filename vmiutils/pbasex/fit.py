@@ -39,7 +39,7 @@ class PbasexFit():
         elif oddl is True and matrix.oddl is True:
             mtx = matrix.matrix
         elif oddl is False and matrix.oddl is True:
-            mtx = matrix.matrix[:, 0:matrix.lmax + 1:2, :, :]
+            mtx = matrix.matrix[:, ::2, :, :]
         elif oddl is None:
             mtx = matrix.matrix
             oddl = matrix.oddl
@@ -102,13 +102,13 @@ class PbasexFit():
         # l] rather than coef[k, l/2]. Then all other functions don't have to
         # care about oddl.
         if oddl is False:
-            self.coef = numpy.zeros((kdim, lmax + 1))
-            for l in xrange(0, lmax + 1, 2):
-                self.coef[:, l] = coef[:, l / 2]
+            self.coef = numpy.ones((kdim, lmax + 1))
+            #for l in xrange(0, lmax + 1, 2):
+             #   self.coef[:, l] = coef[:, l / 2]
         else:
             self.coef = coef
 
-        print self.coef[0, 1], self.coef[0, 0]
+        print self.coef[4, 1], self.coef[4, 0]
 
         self.kmax = matrix.kmax
         self.lmax = lmax
