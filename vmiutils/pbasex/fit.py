@@ -39,7 +39,7 @@ class PbasexFit():
         elif oddl is True and matrix.oddl is True:
             mtx = matrix.matrix
         elif oddl is False and matrix.oddl is True:
-            mtx = matrix.matrix[:, 0:matrix.lmax + 1:2, :, :]
+            mtx = matrix.matrix[:, ::2, :, :]
         elif oddl is None:
             mtx = matrix.matrix
             oddl = matrix.oddl
@@ -85,7 +85,7 @@ class PbasexFit():
             startTheta = Thetabins / 2 # Correct for both even and odd Thetabins
             endtheta = Thetabins - 1
             halfThetabins = Thetabins - startTheta 
-            mtx = matx[:, :, :, startTheta:endTheta]
+            mtx = mtx[:, :, :, startTheta:endTheta]
             mtx = mtx.reshape((kdim * ldim, Rbins * halfThetabins))
             img = image.image[:, startTheta:endTheta]
             img = img.reshape(Rbins * halfThetabins)
