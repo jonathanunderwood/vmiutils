@@ -85,7 +85,7 @@ class PbasexFit():
             startTheta = Thetabins / 2 # Correct for both even and odd Thetabins
             endtheta = Thetabins - 1
             halfThetabins = Thetabins - startTheta 
-            mtx = matx[:, :, :, startTheta:endTheta]
+            mtx = mtx[:, :, :, startTheta:endTheta]
             mtx = mtx.reshape((kdim * ldim, Rbins * halfThetabins))
             img = image.image[:, startTheta:endTheta]
             img = img.reshape(Rbins * halfThetabins)

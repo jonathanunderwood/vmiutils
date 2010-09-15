@@ -17,7 +17,7 @@ polar_distribution(PyObject *self, PyObject *args)
   if (!PyArg_ParseTuple(args, "diiOiddi", 
 			&rmax, &rbins, &thetabins, &coef, &kmax, &rkstep, &sigma, &lmax))
     {
-      PyErr_SetString (PyExc_TypeError, "Bad argument to calc_distribution2");
+      PyErr_SetString (PyExc_TypeError, "Bad argument to polar_distribution");
       return NULL;
     }
 
@@ -109,7 +109,7 @@ beta_coeffs(PyObject *self, PyObject *args)
   if (!PyArg_ParseTuple(args, "diOiddi", 
 			&rmax, &rbins, &coefarg, &kmax, &rkstep, &sigma, &lmax))
     {
-      PyErr_SetString (PyExc_TypeError, "Bad argument to beta_coefs");
+      PyErr_SetString (PyExc_TypeError, "Bad argument to beta_coeffs");
       return NULL;
     }
 
@@ -208,7 +208,7 @@ cartesian_distribution(PyObject *self, PyObject *args)
   if (!PyArg_ParseTuple(args, "diOiddi", 
 			&rmax, &npoints, &coefarg, &kmax, &rkstep, &sigma, &lmax))
     {
-      PyErr_SetString (PyExc_TypeError, "Bad argument to calc_distribution2");
+      PyErr_SetString (PyExc_TypeError, "Bad argument to cartesian_distribution");
       return NULL;
     }
 
@@ -306,7 +306,7 @@ radial_spectrum(PyObject *self, PyObject *args)
   if (!PyArg_ParseTuple(args, "diOidd", 
 			&rmax, &rbins, &coefarg, &kmax, &rkstep, &sigma))
     {
-      PyErr_SetString (PyExc_TypeError, "Bad argument to calc_spectrum2");
+      PyErr_SetString (PyExc_TypeError, "Bad argument to radial_spectrum");
       return NULL;
     }
 
