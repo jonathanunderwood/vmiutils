@@ -37,7 +37,7 @@ static double integrand(double r, void *params)
   ang = gsl_sf_legendre_Pl (p.l, p.RcosTheta / r);
 
   val = r * rad * ang / sqrt(r + p.R);
-  //  printf("%g %g %g\n", r, sqrt(p.R2), val);
+
   /* Round small values to 0 otherwise the integration error becomes dominated
      by the numerical error in exp such that the relative error is huge and the
      integration fails. */
@@ -209,10 +209,6 @@ matrix(PyObject *self, PyObject *args)
 		      status = gsl_integration_qaws (&fn, (double) R, upper_bound, table,
 		      				     epsabs, epsrel, wkspsize,
 		      				     wksp, &result, &abserr);
-		      /* status = gsl_integration_qags (&fn, (double) R, upper_bound, */
-		      /* 				     epsabs, epsrel, wkspsize, */
-		      /* 				     wksp, &result, &abserr); */
-
 		    }
 		  else 
 		    {
