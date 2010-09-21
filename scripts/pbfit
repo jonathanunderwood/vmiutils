@@ -85,7 +85,7 @@ pylab.show()
 x, y, dist = fit.cartesian_distribution()
 #import pylab
 f=pylab.figure()
-p=pylab.imshow(dist.clip(0.0), origin='lower', vmax=0.15, cmap=pylab.cm.gist_heat)
+p=pylab.imshow(dist.transpose().clip(0.0), origin='lower', cmap=pylab.cm.gist_heat)
 f.colorbar(p)
 pylab.show()
 
