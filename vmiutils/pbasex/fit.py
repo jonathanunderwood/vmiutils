@@ -108,8 +108,6 @@ class PbasexFit():
         else:
             self.coef = coef
 
-        print self.coef[4, 1], self.coef[4, 0]
-
         self.kmax = matrix.kmax
         self.lmax = lmax
         self.oddl = oddl
@@ -198,10 +196,12 @@ class PbasexFit():
         if rmax == None:
             rmax = self.rmax
 
+        print self.coef[:,1]
         beta = beta_coeffs(rmax, rbins, self.coef, self.kmax, 
                            self.rkstep, self.sigma, self.lmax)
 
         r = numpy.linspace(0.0, rmax * self.rscale, rbins)
+        print self.coef[:,1]
 
         return r, beta
 

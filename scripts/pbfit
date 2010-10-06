@@ -61,14 +61,15 @@ logger.debug('radial spectrum calculated')
 
 r2, beta = fit.beta_coefficients()
 logger.debug('beta coefficients calculated')
+#print beta[1,:]
 
 x, y, dist = fit.cartesian_distribution()
 logger.debug('cartesian distribution calculated')
 
 vmicart_zoom = vmicart.zoom_circle(vmipolar.R[-1])
 
-import matplotlib
-matplotlib.rcParams['legend.fancybox'] = True
+#import matplotlib
+#matplotlib.rcParams['legend.fancybox'] = True
 import pylab
 
 fig = pylab.figure()
@@ -89,10 +90,9 @@ ax1.plot(r1, spec)
 ax2 = ax1.twinx()
 ax2.set_autoscaley_on(False)
 ax2.set_ybound(-5, 5)
-for b in xrange(beta.shape[0]):
-    ax2.plot(r2, beta[b, :], label='$\beta$')
+for b in xrange(1, beta.shape[0]):
+    ax2.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
 pylab.legend()
-
 
 # pylab.subplot(2, 1, 2)
 # distplot = pylab.imshow(dist.transpose().clip(0.0), origin='lower', cmap=pylab.cm.gist_heat)
