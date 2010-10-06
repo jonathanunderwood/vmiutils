@@ -1,3 +1,4 @@
+# TODO rename R->r, Theta->theta
 import numpy
 import polcart
 
@@ -33,6 +34,58 @@ class CartesianImage():
         """
         self.centre = centre
 
+    def zoom_circle(self, rmax):
+        """ Return a new CartesianImage instance containing a square section
+        centred on the image centre and containing the circular section of the
+        image specified by rmax in image coordinates (not bins).
+        """
+        xbinw = self.x[1] - self.x[0]
+        ybinw = self.y[1] - self.y[0]
+
+        xminb = (self.centre[0] - rmax) / xbinw
+        xmaxb = (self.centre[0] + rmax) / xbinw
+
+        yminb = (self.centre[1] - rmax) / ybinw
+        ymaxb = (self.centre[1] + rmax) / ybinw
+        
+        return self.zoom_rect_pix([xminb, xmaxb, yminb, ymaxb])
+
+    def zoom_rect_coord(self, rect):
+        xbinw = self.x[1] - self.x[0]
+        ybinw = self.y[1] - self.y[0]
+
+        xminb = (rect[0] - self.x[0]) / xbinw
+        xmaxb = (rect[1] - self.x[0]) / xbinw
+
+        yminb = (rect[2] - self.y[0]) / ybinw
+        ymaxb = (rect[3] - self.y[0]) / ybinw
+    
+        return self.zoom_rect_pix([xminb, xmaxb, yminb, ymaxb])
+        
+    def zoom_rect_pix(self, rect):
+        """ Return a new CartesianImage instance containing the zoomed image
+        specified by rect. 
+
+        rect is a list containing the rectanlge to zoom specified in terms of
+        bins: [xmin, xmax, ymin, ymax]. As such, all elements of rect should
+        be integer.
+        """
+        try:
+            xmin = rect[0]
+            xmax = rect[1]
+            ymin = rect[2]
+            ymax = rect[3]
+            z = CartesianImage()
+            z.from_numpy_array(self.image[xmin:xmax, ymin:ymax],
+                               self.x[xmin:xmax], self.y[ymin:ymax])
+            return z
+        except IndexError:
+            log.error('rect outside image')
+            raise
+        except TypeError:
+            log.error('rect must be a list of integers (bins)')
+            raise
+
     def transpose(self):
         self.image = self.image.transpose()
 
@@ -45,6 +98,12 @@ class CartesianImage():
     def polar_rep(self, Rbins=None, Thetabins=None, Rmax=None):
         """ Returns a tuple (r, theta, pimage) containing the coordinates and
         polar representation of the image.
+
+        Rbins and Thetabins specify the number of bins in the returned image.
+
+        Rmax specifies the maximum radius to consider, and is specified in the
+        coordinate system of the image (as opposed to bin number). If Rmax is
+        None, then the largest radius possible is used.
         """
         if self.image is None:
             raise ValueError ## FIXME

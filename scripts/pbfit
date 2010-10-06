@@ -41,11 +41,12 @@ if args.transpose is True:
 
 if args.centre is None:
     centre = vmicart.centre_of_gravity()
+    logger.info('image centre of gravity used as centre: {0}'.format(centre))
 else:
     centre = args.centre
 
 vmicart.set_centre(centre)
-logger.info('image centre: {0}'.format(centre))
+logger.debug('image centre: {0}'.format(centre))
 
 vmipolar = vmi.PolarImage()
 vmipolar.from_CartesianImage(vmicart, Rbins=mtx.Rbins, Thetabins=mtx.Thetabins)
@@ -55,37 +56,58 @@ fit = pb.PbasexFit()
 fit.fit_data(vmipolar, mtx, oddl=oddl)
 logger.debug('data fit')
 
-r, i = fit.calc_radial_spectrum()
+r1, spec = fit.calc_radial_spectrum()
+logger.debug('radial spectrum calculated')
 
-import pylab
-fig = pylab.figure()
-axl = fig.add_subplot(111)
-axl.plot(r, i)
-
-r, beta = fit.beta_coefficients()
-#print beta.shape, r.shape, beta[0, :].shape
-axr = axl.twinx()
-axr.plot(r, beta[0, :])
-axr.plot(r, beta[1, :])
-axr.plot(r, beta[2, :])
-pylab.show()
-
-# r, theta, dist = fit.calc_distribution()
-# p = vmi.PolarImage()
-# p.from_numpy_array(dist)
-# c = vmi.CartesianImage()
-# c.from_PolarImage(p)
-# print 'plotting'
-# import pylab
-# f=pylab.figure()
-# p=pylab.imshow(c.image, cmap=pylab.cm.gist_gray)
-# f.colorbar(p)
-# pylab.show()
+r2, beta = fit.beta_coefficients()
+logger.debug('beta coefficients calculated')
 
 x, y, dist = fit.cartesian_distribution()
-#import pylab
-f=pylab.figure()
-p=pylab.imshow(dist.transpose().clip(0.0), origin='lower', cmap=pylab.cm.gist_heat)
-f.colorbar(p)
-pylab.show()
+logger.debug('cartesian distribution calculated')
 
+vmicart_zoom = vmicart.zoom_circle(vmipolar.R[-1])
+
+import matplotlib
+matplotlib.rcParams['legend.fancybox'] = True
+import pylab
+
+fig = pylab.figure()
+#pylab.subplot(2, 1, 1)
+
+#axis_l = fig.add_subplot(211)
+#axis_l.plot(r1, spec)
+
+ax1 = pylab.axes([0.1, 0.1, 0.8, 0.35])
+ax1.plot(r1, spec)
+
+# axis_r = axis_l.twinx()
+# pylab.ylim(-5, 5)
+# for b in xrange(beta.shape[0]):
+#     axis_r.plot(r2, beta[b, :], label='beta'+format(b))
+# pylab.legend()
+
+ax2 = ax1.twinx()
+ax2.set_autoscaley_on(False)
+ax2.set_ybound(-5, 5)
+for b in xrange(beta.shape[0]):
+    ax2.plot(r2, beta[b, :], label='$\beta$')
+pylab.legend()
+
+
+# pylab.subplot(2, 1, 2)
+# distplot = pylab.imshow(dist.transpose().clip(0.0), origin='lower', cmap=pylab.cm.gist_heat)
+# fig.colorbar(distplot)
+# pylab.show()
+
+ax3 = pylab.axes([0.1, 0.55, 0.35, 0.35])
+epl = ax3.imshow(vmicart_zoom.image.transpose(), origin='lower', 
+                 cmap=pylab.cm.gist_heat)
+
+fig.colorbar(epl)
+
+ax4 = pylab.axes([0.55, 0.55, 0.35, 0.35])
+dpl = ax4.imshow(dist.transpose().clip(0.0), origin='lower', 
+           cmap=pylab.cm.gist_heat)
+fig.colorbar(dpl)
+
+pylab.show()
