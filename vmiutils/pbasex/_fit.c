@@ -158,7 +158,6 @@ beta_coeffs(PyObject *self, PyObject *args)
 	      
 	      // TODO: should probably be using PyArray_GETVAL here
 	      beta[index] += (*cvalp) * rad;
-	      Py_DECREF(cvalp);
 	    }
 	}
     }
@@ -270,7 +269,6 @@ cartesian_distribution(PyObject *self, PyObject *args)
 		      //printf ("%d %d %g %g\n", k, l, *cvalp, 0.0/50.0);
 		  
 		      val += (*cvalp) * rad * ang;
-		      Py_DECREF(cvalp);
 		    }
 		}
 	    }
