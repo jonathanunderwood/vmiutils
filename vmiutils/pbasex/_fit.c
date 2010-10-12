@@ -25,7 +25,7 @@ polar_distribution(PyObject *self, PyObject *args)
   if (!coef)
     return NULL;
 
-  dist = malloc (rbins * thetabins * sizeof (double));
+  dist = (double *) PyDataMem_NEW (rbins * thetabins * sizeof (double));
   if (!dist)
     {
       Py_DECREF(coef);
@@ -80,6 +80,8 @@ polar_distribution(PyObject *self, PyObject *args)
 	}
     }
 
+  Py_DECREF(coef);
+
   dims[0] = (npy_intp) rbins;
   dims[1] = (npy_intp) thetabins;
 
@@ -87,11 +89,10 @@ polar_distribution(PyObject *self, PyObject *args)
   if (!distnp)
     {
       free(dist);
-      Py_DECREF(coef);
       return PyErr_NoMemory();
     }
 
-  Py_DECREF(coef);
+  PyArray_FLAGS(distnp) |= NPY_OWNDATA;
 
   return distnp;
 }
@@ -119,12 +120,15 @@ beta_coeffs(PyObject *self, PyObject *args)
 
   ldim = lmax + 1;
 
-  beta = calloc (rbins * ldim, sizeof (double));
+  beta = (double *) PyDataMem_NEW (rbins * ldim * sizeof (double));
   if (!beta)
     {
       Py_DECREF(coef);
       return PyErr_NoMemory();
     }
+
+  for (i = 0; i < rbins * ldim; i++)
+    beta[i] = 0.0;
 
   rstep = rmax / (rbins - 1);
   s = 2.0 * sigma * sigma;
@@ -156,7 +160,6 @@ beta_coeffs(PyObject *self, PyObject *args)
 		  return NULL;
 		}
 	      
-	      // TODO: should probably be using PyArray_GETVAL here
 	      beta[index] += (*cvalp) * rad;
 	    }
 	}
@@ -190,6 +193,8 @@ beta_coeffs(PyObject *self, PyObject *args)
       return PyErr_NoMemory();
     }
 
+  PyArray_FLAGS(betanp) |= NPY_OWNDATA;
+
   return betanp;
 }
 
@@ -215,7 +220,7 @@ cartesian_distribution(PyObject *self, PyObject *args)
   if (!coef)
     return NULL;
 
-  dist = malloc (npoints * npoints * sizeof (double));
+  dist = (double *) PyDataMem_NEW (npoints * npoints * sizeof (double));
   if (!dist)
     {
       Py_DECREF(coef);
@@ -288,6 +293,8 @@ cartesian_distribution(PyObject *self, PyObject *args)
       return PyErr_NoMemory();
     }
 
+  PyArray_FLAGS(distnp) |= NPY_OWNDATA;
+
   return distnp;
 }
 
@@ -312,7 +319,7 @@ radial_spectrum(PyObject *self, PyObject *args)
   if (!coef)
     return NULL;
 
-  spec = malloc (rbins * sizeof (double));
+  spec = (double *) PyDataMem_NEW (rbins * sizeof (double));
   if (!spec)
     {
       Py_DECREF(coef);
