@@ -8,10 +8,9 @@ static PyObject *
 polar_distribution(PyObject *self, PyObject *args)
 {
   PyObject *coef = NULL, *coefarg = NULL;
-  PyObject *distnp = NULL;
-  int rbins, thetabins, i, kmax, lmax, index = -1;
+  PyObject *dist;
+  int rbins, thetabins, i, kmax, lmax;
   double rmax, rstep, thetastep, rkstep, sigma, s;
-  double *dist = NULL;
   npy_intp dims[2];
 
   if (!PyArg_ParseTuple(args, "diiOiddi", 
@@ -25,7 +24,10 @@ polar_distribution(PyObject *self, PyObject *args)
   if (!coef)
     return NULL;
 
-  dist = (double *) PyDataMem_NEW (rbins * thetabins * sizeof (double));
+  dims[0] = (npy_intp) rbins;
+  dims[1] = (npy_intp) thetabins;
+
+  dist = PyArray_SimpleNew (2, dims, NPY_DOUBLE);
   if (!dist)
     {
       Py_DECREF(coef);
@@ -44,10 +46,10 @@ polar_distribution(PyObject *self, PyObject *args)
       for (j = 0; j < thetabins; j++)
 	{
 	  double theta = j * thetastep;
-	  double val = 0.0;
 	  int k;
-
-	  index++;
+	  double *distp = (double *) PyArray_GETPTR2(dist, i, j);
+	  
+	  *distp = 0.0;
 
 	  for (k = 0; k <= kmax; k++)
 	    {
@@ -59,42 +61,17 @@ polar_distribution(PyObject *self, PyObject *args)
 	      for (l = 0; l <= lmax; l++)
 		{
 		  double ang = gsl_sf_legendre_Pl(l, cos(theta));
-		  double *cvalp;
+		  double *cvalp = (double *) PyArray_GETPTR2(coef, k, l);
 
-		  cvalp = (double *) PyArray_GETPTR2(coef, k, l);
-		  if (!cvalp)
-		    {
-		      PyErr_SetString (PyExc_RuntimeError, 
-				       "Failed to get pointer to coefficient");
-		      Py_DECREF(coef);
-		      free (dist);
-		      return NULL;
-		    }
-
-		  // TODO: should probably be using PyArray_GETVAL here
-		  val += (*cvalp) * rad * ang;
-		  Py_DECREF(cvalp);
+		  *distp += *cvalp * rad * ang;
 		}
 	    }
-	  dist[index] = val;
 	}
     }
 
   Py_DECREF(coef);
 
-  dims[0] = (npy_intp) rbins;
-  dims[1] = (npy_intp) thetabins;
-
-  distnp = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, dist);
-  if (!distnp)
-    {
-      free(dist);
-      return PyErr_NoMemory();
-    }
-
-  PyArray_FLAGS(distnp) |= NPY_OWNDATA;
-
-  return distnp;
+  return dist;
 }
 
 static PyObject *
@@ -103,8 +80,7 @@ beta_coeffs(PyObject *self, PyObject *args)
   PyObject *coefarg = NULL, *coef = NULL;
   int rbins, i, kmax, lmax, ldim;
   double rmax, rstep, rkstep, sigma, s;
-  double *beta = NULL;
-  PyObject *betanp = NULL;
+  PyObject *beta;
   npy_intp dims[2];
 
   if (!PyArg_ParseTuple(args, "diOiddi", 
@@ -120,15 +96,15 @@ beta_coeffs(PyObject *self, PyObject *args)
 
   ldim = lmax + 1;
 
-  beta = (double *) PyDataMem_NEW (rbins * ldim * sizeof (double));
+  dims[0] = (npy_intp) ldim;
+  dims[1] = (npy_intp) rbins;
+
+  beta = PyArray_ZEROS (2, dims, NPY_DOUBLE, 0);
   if (!beta)
     {
-      Py_DECREF(coef);
+      Py_DECREF (coef);
       return PyErr_NoMemory();
     }
-
-  for (i = 0; i < rbins * ldim; i++)
-    beta[i] = 0.0;
 
   rstep = rmax / (rbins - 1);
   s = 2.0 * sigma * sigma;
@@ -147,20 +123,10 @@ beta_coeffs(PyObject *self, PyObject *args)
 
 	  for (l = 0; l <= lmax; l++)
 	    {
-	      double *cvalp;
-	      int index = l * rbins + i; /* i.e. beta[l, r] */
+	      double *cvalp = (double *) PyArray_GETPTR2(coef, k, l);
+	      double *betap = (double *) PyArray_GETPTR2(beta, l, i);
 
-	      cvalp = (double *) PyArray_GETPTR2(coef, k, l);
-	      if (!cvalp)
-		{
-		  PyErr_SetString (PyExc_RuntimeError, 
-				   "Failed to get pointer to coefficient");
-		  Py_DECREF(coef);
-		  free (beta);
-		  return NULL;
-		}
-	      
-	      beta[index] += (*cvalp) * rad;
+	      *betap += *cvalp * rad;
 	    }
 	}
     }
@@ -170,32 +136,21 @@ beta_coeffs(PyObject *self, PyObject *args)
   /* Normalize to beta_0 = 1 at each r. */
   for (i = 0; i < rbins; i++)
     {
-      double norm = beta[i]; /* i.e. beta[0, r] */
+      double *normp = (double *) PyArray_GETPTR2(beta, 0, i);
       int l;
-
+      
       for (l = 0; l <= lmax; l++)
 	{
-	  int index = l * rbins + i; /* i.e. beta[l, r] */
+	  double *betap = (double *) PyArray_GETPTR2(beta, l, i);
+      
 	  /* if (norm > 0.0) */
-	    beta[index] /= norm;
+	  *betap /= *normp;
 	  /* else */
 	  /*   beta[index] = 0.0; */
 	}
     }
 
-  dims[0] = (npy_intp) ldim;
-  dims[1] = (npy_intp) rbins;
-
-  betanp = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, beta);
-  if (!beta)
-    {
-      free(beta);
-      return PyErr_NoMemory();
-    }
-
-  PyArray_FLAGS(betanp) |= NPY_OWNDATA;
-
-  return betanp;
+  return beta;
 }
 
 // TODO: speed up calculation by making use of mirror symmetry in y
@@ -203,10 +158,9 @@ static PyObject *
 cartesian_distribution(PyObject *self, PyObject *args)
 {
   PyObject *coefarg = NULL, *coef = NULL;
-  int npoints, i, kmax, lmax, index = -1;
+  int npoints, i, kmax, lmax;
   double rmax, step, rkstep, sigma, s;
-  double *dist;
-  PyObject *distnp;
+  PyObject *dist;
   npy_intp dims[2];
 
   if (!PyArg_ParseTuple(args, "diOiddi", 
@@ -220,7 +174,10 @@ cartesian_distribution(PyObject *self, PyObject *args)
   if (!coef)
     return NULL;
 
-  dist = (double *) PyDataMem_NEW (npoints * npoints * sizeof (double));
+  dims[0] = (npy_intp) npoints;
+  dims[1] = (npy_intp) npoints;
+
+  dist = PyArray_SimpleNew (2, dims, NPY_DOUBLE);
   if (!dist)
     {
       Py_DECREF(coef);
@@ -239,14 +196,14 @@ cartesian_distribution(PyObject *self, PyObject *args)
 	{
 	  double y = -rmax + j * step;
 	  double r = sqrt (x * x + y * y);
-	  double val = 0.0;
-	  int k;
+	  double *distp = (double *) PyArray_GETPTR2(dist, i, j);
 
-	  index++;
+	  *distp = 0.0;
 
 	  if (r < rmax)
 	    {
 	      double costheta = cos(atan2(x, y));
+	      int k;
 
 	      for (k = 0; k <= kmax; k++)
 		{
@@ -258,54 +215,27 @@ cartesian_distribution(PyObject *self, PyObject *args)
 		  for (l = 0; l <= lmax; l++)
 		    {
 		      double ang = gsl_sf_legendre_Pl(l, costheta);
-		      double *cvalp = NULL;
-		      
-		      cvalp = (double *) PyArray_GETPTR2(coef, k, l);
-		      if (!cvalp)
-			{
-			  PyErr_SetString (PyExc_RuntimeError, 
-					   "Failed to get pointer to coefficient");
-			  Py_DECREF(coef);
-			  free (dist);
-			  return NULL;
-			}
-		      
-		      // TODO: should probably be using PyArray_GETVAL here
-		      //printf ("%d %d %g %g\n", k, l, *cvalp, 0.0/50.0);
-		  
-		      val += (*cvalp) * rad * ang;
+		      double *cvalp = (double *) PyArray_GETPTR2(coef, k, l);
+
+		      *distp += *cvalp * rad * ang;
 		    }
 		}
 	    }
-	  dist[index] = val;
 	}
     }
 
   Py_DECREF(coef);
 
-  dims[0] = (npy_intp) npoints;
-  dims[1] = (npy_intp) npoints;
-
-  distnp = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, dist);
-  if (!distnp)
-    {
-      free(dist);
-      return PyErr_NoMemory();
-    }
-
-  PyArray_FLAGS(distnp) |= NPY_OWNDATA;
-
-  return distnp;
+  return dist;
 }
 
 static PyObject *
 radial_spectrum(PyObject *self, PyObject *args)
 {
   PyObject *coefarg = NULL, *coef = NULL;
-  PyObject *specnp;
+  PyObject *spec;
   int rbins, i, kmax;
   double rmax, rstep, rkstep, sigma, s, max = 0.0;
-  double *spec;
   npy_intp rbinsnp;
 
   if (!PyArg_ParseTuple(args, "diOidd", 
@@ -319,7 +249,9 @@ radial_spectrum(PyObject *self, PyObject *args)
   if (!coef)
     return NULL;
 
-  spec = (double *) PyDataMem_NEW (rbins * sizeof (double));
+  /* spec = (double *) PyDataMem_NEW (rbins * sizeof (double)); */
+  rbinsnp = (npy_intp) rbins;
+  spec = PyArray_SimpleNew (1, &rbinsnp, NPY_DOUBLE);
   if (!spec)
     {
       Py_DECREF(coef);
@@ -333,6 +265,7 @@ radial_spectrum(PyObject *self, PyObject *args)
     {
       double r = i * rstep;
       double val = 0.0;
+      double *specp = (double *) PyArray_GETPTR1(spec, i);
       int k;
 
       for (k = 0; k <= kmax; k++)
@@ -340,23 +273,13 @@ radial_spectrum(PyObject *self, PyObject *args)
 	  double rk = k * rkstep;
 	  double a = r - rk;
 	  double rad = exp(-(a * a) / s);
-	  double *cvalp;
+	  double *cvalp = (double *) PyArray_GETPTR2(coef, k, 0);
 
-	  cvalp = (double *) PyArray_GETPTR2(coef, k, 0);
-	  if (!cvalp)
-	    {
-	      PyErr_SetString (PyExc_RuntimeError, 
-			       "Failed to get pointer to coefficient");
-	      Py_DECREF(coef);
-	      free(spec);
-	      return NULL;
-	    }
-
-	  // TODO: should probably be using PyArray_GETVAL here
 	  val += (*cvalp) * rad * r * r;
-	  Py_DECREF(cvalp);
 	}
-      spec[i] = val;
+
+      *specp = val;
+
       if (val > max)
 	max = val;
     }
@@ -365,18 +288,13 @@ radial_spectrum(PyObject *self, PyObject *args)
 
   /* Normalize to maximum value of 1. */
   for (i = 0; i < rbins; i++)
-    spec[i] /= max;
-
-  rbinsnp = (npy_intp) rbins;
-
-  specnp = PyArray_SimpleNewFromData (1, &rbinsnp, NPY_DOUBLE, spec);
-  if (!specnp)
     {
-      free (spec);
-      return PyErr_NoMemory();
+      double *specp = (double *) PyArray_GETPTR1(spec, i);
+
+      *specp /= max;
     }
 
-  return specnp;
+  return spec;
 }
 
 /* Module function table. Each entry specifies the name of the function exported
