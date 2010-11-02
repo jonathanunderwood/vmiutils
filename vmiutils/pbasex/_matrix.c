@@ -77,8 +77,7 @@ matrix(PyObject *self, PyObject *args)
   int ldim, kdim, midTheta, k;
   unsigned short int oddl, ThetabinsOdd, linc;
   npy_intp dims[4];
-  double *matrix;
-  PyObject *matrixnp;
+  PyObject *matrix;
   gsl_integration_workspace *wksp;
   gsl_function fn;
   int_params params;
@@ -114,7 +113,16 @@ matrix(PyObject *self, PyObject *args)
 	}
     }
 
-  matrix = malloc (Rbins * Thetabins * kdim * ldim * sizeof(double));
+  /* matrix = malloc (Rbins * Thetabins * kdim * ldim * sizeof(double)); */
+  /* if (!matrix) */
+  /*   return PyErr_NoMemory(); */
+  /* create numpy array to hold the matrix. */
+  dims[0] = (npy_intp) kdim;
+  dims[1] = (npy_intp) ldim;
+  dims[2] = (npy_intp) Rbins;
+  dims[3] = (npy_intp) Thetabins;
+
+  matrix = PyArray_SimpleNew (4, dims, NPY_DOUBLE);
   if (!matrix)
     return PyErr_NoMemory();
   
@@ -124,14 +132,14 @@ matrix(PyObject *self, PyObject *args)
   wksp = gsl_integration_workspace_alloc(wkspsize);
   if (!wksp)
     {
-      free (matrix);
+      Py_DECREF (matrix);
       return PyErr_NoMemory();
     }
 
   table = gsl_integration_qaws_table_alloc(-0.5, 0.0, 0.0, 0.0);
   if (!table)
     {
-      free (matrix);
+      Py_DECREF (matrix);
       gsl_integration_workspace_free(wksp);
       return PyErr_NoMemory();
     }
@@ -205,10 +213,16 @@ matrix(PyObject *self, PyObject *args)
 
 		  switch (status)
 		    {
-		      unsigned int index;
+		      PyObject *pval;
+
 		    case GSL_SUCCESS:
-		      index = j + Thetabins * (R + Rbins * (l + ldim *(k)));
-		      matrix[index] = result;
+		      pval = PyFloat_FromDouble (result);
+
+		      if (!pval)
+			goto fail;
+
+		      if (PyArray_SETITEM(matrix, PyArray_GETPTR4(matrix, k, l, R, j), pval)) 
+			goto fail;
 
 		      /* Symmetry of Legendre polynomials is such that
 			 P_L(cos(Theta))=P_L(cos(-Theta)), so we can exploit
@@ -216,8 +230,10 @@ matrix(PyObject *self, PyObject *args)
 			 Thetabins is odd), in which case it's not needed.
 		      */
 		      if (!(ThetabinsOdd && j == midTheta))
-			matrix[index + Thetabins - (2 * j) - 1] = result;
+			if (PyArray_SETITEM(matrix, PyArray_GETPTR4(matrix, k, l, R, Thetabins - j - 1), pval)) 
+			  goto fail;
 
+		      Py_DECREF(pval);
 		      break;
 
 		    case GSL_EMAXITER:
@@ -255,20 +271,7 @@ matrix(PyObject *self, PyObject *args)
   gsl_integration_workspace_free(wksp);
   gsl_integration_qaws_table_free(table);
 
-
-  /* Create numpy array to hold the matrix. */
-  dims[0] = (npy_intp) kdim;
-  dims[1] = (npy_intp) ldim;
-  dims[2] = (npy_intp) Rbins;
-  dims[3] = (npy_intp) Thetabins;
-
-  matrixnp = PyArray_SimpleNewFromData (4, dims, NPY_DOUBLE, matrix);
-
-  // TODO: better error checking here.
-  if (!matrixnp)
-    return PyErr_NoMemory();
-
-  return matrixnp;
+  return matrix;
 
  fail:  
   gsl_integration_workspace_free(wksp);
