@@ -49,7 +49,7 @@ vmicart.set_centre(centre)
 logger.debug('image centre: {0}'.format(centre))
 
 vmipolar = vmi.PolarImage()
-vmipolar.from_CartesianImage(vmicart, Rbins=mtx.Rbins, Thetabins=mtx.Thetabins)
+vmipolar.from_CartesianImage(vmicart, rbins=mtx.Rbins, thetabins=mtx.Thetabins)
 logger.debug('image converted to polar coordinates')
 
 fit = pb.PbasexFit()
@@ -65,7 +65,7 @@ logger.debug('beta coefficients calculated')
 x, y, dist = fit.cartesian_distribution()
 logger.debug('cartesian distribution calculated')
 
-vmicart_zoom = vmicart.zoom_circle(vmipolar.R[-1])
+vmicart_zoom = vmicart.zoom_circle(vmipolar.r[-1])
 logger.debug('zoom of original image calculated')
 
 

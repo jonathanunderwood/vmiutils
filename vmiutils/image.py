@@ -1,4 +1,3 @@
-# TODO rename R->r, Theta->theta
 import numpy
 import polcart
 
@@ -95,14 +94,14 @@ class CartesianImage():
         """
         self.x, self.y, self.image = pimage.cartesian_rep()
 
-    def polar_rep(self, Rbins=None, Thetabins=None, Rmax=None):
+    def polar_rep(self, rbins=None, thetabins=None, rmax=None):
         """ Returns a tuple (r, theta, pimage) containing the coordinates and
         polar representation of the image.
 
-        Rbins and Thetabins specify the number of bins in the returned image.
+        rbins and thetabins specify the number of bins in the returned image.
 
-        Rmax specifies the maximum radius to consider, and is specified in the
-        coordinate system of the image (as opposed to bin number). If Rmax is
+        rmax specifies the maximum radius to consider, and is specified in the
+        coordinate system of the image (as opposed to bin number). If rmax is
         None, then the largest radius possible is used.
         """
         if self.image is None:
@@ -111,14 +110,14 @@ class CartesianImage():
         if self.centre is None:
             raise ValueError ## FIXME
 
-        if Rbins is None:
-            Rbins = min(self.image.shape[0], self.image.shape[1]) 
+        if rbins is None:
+            rbins = min(self.image.shape[0], self.image.shape[1]) 
 
-        if Thetabins is None:
-            Thetabins = min(self.image.shape[0], self.image.shape[1]) 
+        if thetabins is None:
+            thetabins = min(self.image.shape[0], self.image.shape[1]) 
 
         return polcart.cart2pol(self.image, self.x, self.y, self.centre, 
-                                Rbins, Thetabins, Rmax)
+                                rbins, thetabins, rmax)
 
     def centre_of_gravity(self):
         """Returns a tuple representing the coordinates corresponding to the
@@ -140,40 +139,42 @@ class PolarImage():
 
     def __init__(self):
         self.image = None
-        self.R = None
-        self.Theta = None
+        self.r = None
+        self.theta = None
+        self.rbins = None
+        self.thetabins = None
 
-    def from_numpy_array(self, image, R=None, Theta=None):
-        """ Initialize from a polar image stored in a numpy array. If R or Theta are
-        not specified, the R and Theta coordinates are stored as pixel values.
+    def from_numpy_array(self, image, r=None, theta=None):
+        """ Initialize from a polar image stored in a numpy array. If R or theta are
+        not specified, the r and theta coordinates are stored as pixel values.
         """
         self.image = image.copy()
 
-        if R is None:
-            self.R = numpy.arange(self.image.shape[0])
+        if r is None:
+            self.r = numpy.arange(self.image.shape[0])
         else:
-            self.R = R.copy()
+            self.r = r.copy()
 
-        if Theta is None:
-            self.Theta = numpy.linspace(-numpy.pi, numpy.pi, self.image.shape[1])
+        if theta is None:
+            self.theta = numpy.linspace(-numpy.pi, numpy.pi, self.image.shape[1])
         else:
-            self.Theta = Theta.copy()
+            self.theta = theta.copy()
 
-    def from_CartesianImage(self, cimage, Rbins=None, 
-                               Thetabins=None, Rmax=None):
+    def from_CartesianImage(self, cimage, rbins=None, 
+                               thetabins=None, rmax=None):
         """Calculate a polar represenation of a CartesianImage instance.
 
         cimage is a CartesianImage instance.
 
-        Rbins and Thetabins specify the desired number of bins in the
+        rbins and thetabins specify the desired number of bins in the
         polar representation. If these are none, the number of bins in the
         cartesian image is used.
         """
-        self.R, self.Theta, self.image = \
-            cimage.polar_rep(Rbins, Thetabins, Rmax)
+        self.r, self.theta, self.image = \
+            cimage.polar_rep(rbins, thetabins, rmax)
 
-        self.Rbins = self.R.shape[0]
-        self.Thetabins = self.Theta.shape[0]
+        self.rbins = self.r.shape[0]
+        self.thetabins = self.theta.shape[0]
 
     def cartesian_rep(self, xbins=None, ybins=None):
         """ Returns a tuple (x, y, image) containing the coordinates and
@@ -188,4 +189,4 @@ class PolarImage():
         if ybins is None:
             ybins = self.image.shape[0]
 
-        return polcart.pol2cart(self.image, self.R, self.Theta, xbins, ybins)
+        return polcart.pol2cart(self.image, self.r, self.theta, xbins, ybins)

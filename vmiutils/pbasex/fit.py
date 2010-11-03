@@ -29,7 +29,7 @@ class PbasexFit():
         elif not isinstance(matrix, pbm.PbasexMatrix):
             logger.error('matrix is not an instance of PbasexMatrix')
             raise TypeError
-        elif (image.Rbins is not matrix.Rbins) or (image.Thetabins is not matrix.Thetabins):
+        elif (image.rbins is not matrix.Rbins) or (image.thetabins is not matrix.Thetabins):
             logger.error("image and matrix do not have compatible dimensions")
             raise TypeError
         
@@ -123,7 +123,7 @@ class PbasexFit():
 
         # rfactor holds the scaling factor to convert from radial bin number
         # in the polar image to actual position in the original image 
-        self.rscale = image.R[1] - image.R[0]
+        self.rscale = image.r[1] - image.r[0]
 
         self.fit_done = True
 
