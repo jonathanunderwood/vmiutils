@@ -6,7 +6,7 @@ import numpy
 import vmiutils as vmi
 import vmiutils.pbasex as pb
 
-logging.basicConfig()
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('pbfit')
 
 parser = argparse.ArgumentParser(
@@ -61,12 +61,13 @@ logger.debug('radial spectrum calculated')
 
 r2, beta = fit.beta_coefficients()
 logger.debug('beta coefficients calculated')
-#print beta[1,:]
 
 x, y, dist = fit.cartesian_distribution()
 logger.debug('cartesian distribution calculated')
 
 vmicart_zoom = vmicart.zoom_circle(vmipolar.R[-1])
+logger.debug('zoom of original image calculated')
+
 
 #import matplotlib
 #matplotlib.rcParams['legend.fancybox'] = True
@@ -77,7 +78,6 @@ fig = pylab.figure()
 
 #axis_l = fig.add_subplot(211)
 #axis_l.plot(r1, spec)
-
 ax1 = pylab.axes([0.1, 0.1, 0.8, 0.35])
 ax1.plot(r1, spec)
 
