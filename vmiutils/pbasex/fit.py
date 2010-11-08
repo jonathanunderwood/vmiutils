@@ -6,6 +6,15 @@ import vmiutils as vmi
 import matrix as pbm
 from _fit import *
 
+logger = logging.getLogger('vmiutils.pbasex.fit')
+
+class __NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
+__null_handler = __NullHandler()
+logger.addHandler(__null_handler)
+
 # Note: the way the matrix is calculated and stored is such that the indices
 # are in the order matrix[k, l, Rbin, Thetabin]
 
