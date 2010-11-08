@@ -1,5 +1,15 @@
 import numpy
 import scipy.ndimage
+import logging
+
+logger = logging.getLogger('vmiutils.polcart')
+
+class __NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
+__null_handler = __NullHandler()
+logger.addHandler(__null_handler)
 
 def __pol2cart(out_coord, xbw, ybw, rmax, rbw, thetabw):
     ix, iy = out_coord
