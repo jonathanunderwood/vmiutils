@@ -1,5 +1,3 @@
-# TODO: Many functions don't honour oddl presently
-
 import logging
 import numpy.linalg
 import vmiutils as vmi
