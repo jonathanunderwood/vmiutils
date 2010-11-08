@@ -162,24 +162,6 @@ class PbasexFit():
 
         return r, spec
 
-    def calc_distribution(self, rbins=512, thetabins=512, rmax=None):
-        if self.fit_done is False:
-            logger.error('no fit done')
-            raise AttributeError
-        
-        if rmax is None:
-            rmax = self.rmax
-        elif rmax > self.rmax:
-            logger.error('rmax exceeds that of original data')
-            raise ValueError
-        
-        dist = calc_distribution2(rmax, rbins, thetabins, self.coef, self.kmax,
-                                  self.rkstep, self.sigma, self.lmax)
-        r = numpy.linspace(0.0, rmax * self.rscale, rbins)
-        theta = numpy.linspace(-numpy.pi, numpy.pi, thetabins)
-
-        return r, theta, dist
-
     def cartesian_distribution(self, bins=500, rmax=None):
         if self.fit_done is False:
             logger.error('no fit done')
