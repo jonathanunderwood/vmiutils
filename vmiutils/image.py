@@ -1,5 +1,17 @@
 import numpy
 import polcart
+import logging
+
+logger = logging.getLogger('vmiutils.image')
+
+class __NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
+__null_handler = __NullHandler()
+logger.addHandler(__null_handler)
+
+
 
 class CartesianImage():
     """ Class used to represent a VMI image stored as a cartesian
@@ -79,10 +91,10 @@ class CartesianImage():
                                self.x[xmin:xmax], self.y[ymin:ymax])
             return z
         except IndexError:
-            log.error('rect outside image')
+            logger.error('rect outside image')
             raise
         except TypeError:
-            log.error('rect must be a list of integers (bins)')
+            logger.error('rect must be a list of integers (bins)')
             raise
 
     def transpose(self):
@@ -105,9 +117,11 @@ class CartesianImage():
         None, then the largest radius possible is used.
         """
         if self.image is None:
+            logger.error('no image data')
             raise ValueError ## FIXME
 
         if self.centre is None:
+            logger.error('image centre not defined')
             raise ValueError ## FIXME
 
         if rbins is None:
