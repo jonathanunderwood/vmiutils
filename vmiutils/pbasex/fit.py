@@ -26,7 +26,7 @@ class PbasexFit():
         self.rkstep = None
         self.rfactor = None
         self.rmax = None
-        self.__attribs = ['coefs', 'kmax', 'lmax', 'oddl', 'sigma',
+        self.__metadata = ['kmax', 'lmax', 'oddl', 'sigma',
                           'rkstep', 'rfactor', 'rmax']
 
     def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None):
@@ -211,11 +211,21 @@ class PbasexFit():
         return r, beta
 
     def dump(self, file):
+        fd = open(file, 'w')
+
+        for object in self.__metadata:
+            pickle.dump(getattr(self, object), fd, protocol=2)
+        numpy.save(fd, self.coefs)
+
+        fd.close()
+
+    def load(self, file):
         fd = open(file, 'r')
         
         try:
-            for object in self.__attribs:
+            for object in self.__metadata:
                 setattr(self, object, pickle.load(fd))
+            self.coefs = numpy.load(fd)
         finally:
             fd.close()
 
