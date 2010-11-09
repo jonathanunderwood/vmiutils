@@ -81,20 +81,8 @@ class PbasexMatrix():
                 mtx = matrix(kmax, lmax, Rbins, Thetabins, sigma, oddl, 
                              epsabs, epsrel, wkspsize)
                 break
-            except MaxIterError:
-                logger.info("Maximum integration iterations exceeded")
-                raise
-            except RoundError:
-                logger.error("Round-off error during integration")
-                raise
-            except SingularError:
-                logger.error("Singularity in integration")
-                raise
-            except DivergeError:
-                logger.error("Divergence in integration")
-                raise
-            except RuntimeError:
-                logger.error("Runtime error during matrix calculation")
+            except IntegrationError as errstring:
+                logger.info(errstring)
                 raise
 
         self.matrix = mtx

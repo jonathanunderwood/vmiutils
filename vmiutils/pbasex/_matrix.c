@@ -15,11 +15,7 @@
 #define __UPPER_BOUND_FACTOR 15.0
 
 /* Exceptions for this module. */
-static PyObject *MaxIterError;
-static PyObject *RoundError;
-static PyObject *SingularError;
-static PyObject *DivergeError;
-static PyObject *ToleranceError;
+static PyObject *IntegrationError;
 
 typedef struct 
 {
@@ -214,6 +210,8 @@ matrix(PyObject *self, PyObject *args)
 		  switch (status)
 		    {
 		      PyObject *pval;
+		      char *errstring;
+		      int ret;
 
 		    case GSL_SUCCESS:
 		      pval = PyFloat_FromDouble (result);
@@ -237,29 +235,42 @@ matrix(PyObject *self, PyObject *args)
 		      break;
 
 		    case GSL_EMAXITER:
-		      PyErr_SetString (MaxIterError, 
-				       "Maximum number of integration subdivisions exceeded");
+		      ret = asprintf(&errstring,
+			       "Failed to integrate: max number of subdivisions exceeded.\nk: %d l: %d R: %d Theta: %f\n", 
+			       k, l, R, Theta);
+		      PyErr_SetString (IntegrationError, errstring);
+		      free (errstring);
 		      goto fail;
 		      
 		    case GSL_EROUND:
-		      printf("k:%d l:%d R:%d Theta: %f\n", k, l, R, Theta);
-		      PyErr_SetString (RoundError, "Failed to integrate: round-off error");
+		      ret = asprintf(&errstring,
+			       "Failed to integrate: round-off error.\nk: %d l: %d R: %d Theta: %f\n", 
+			       k, l, R, Theta);
+		      PyErr_SetString (IntegrationError, errstring);
+		      free (errstring);
 		      goto fail;
 		      
 		    case GSL_ESING:
-		      printf("k:%d l:%d R:%d Theta: %f\n", k, l, R, Theta);
-		      PyErr_SetString (SingularError, "Failed to integrate: singularity found");
+		      ret = asprintf(&errstring,
+			       "Failed to integrate: singularity.\nk: %d l: %d R: %d Theta: %f\n", 
+			       k, l, R, Theta);
+		      PyErr_SetString (IntegrationError, errstring);
+		      free (errstring);
 		      goto fail;
 		      
 		    case GSL_EDIVERGE:
-		      printf("k:%d l:%d R:%d Theta: %f\n", k, l, R, Theta);
-		      PyErr_SetString (DivergeError, "Failed to integrate: divergent or slowly convergent");
+		      ret = asprintf(&errstring,
+			       "Failed to integrate: divergent.\nk: %d l: %d R: %d Theta: %f\n", 
+			       k, l, R, Theta);
+		      PyErr_SetString (IntegrationError, errstring);
 		      goto fail;
 		      
 		    default:
-		      printf("k:%d l:%d R:%d Theta: %f\n", k, l, R, Theta);
-		      printf("status: %d\n", status);
-		      PyErr_SetString (PyExc_RuntimeError, "Failed to integrate: Unknown error");
+		      ret = asprintf(&errstring,
+			       "Failed to integrate: unknown error. status: %d.\nk: %d l: %d R: %d Theta: %f\n", 
+			       status, k, l, R, Theta);
+		      PyErr_SetString (IntegrationError, errstring);
+		      free (errstring);
 		      goto fail;
 		    }	
 		}
@@ -306,25 +317,9 @@ init_matrix(void)
     return;
 
   /* Exceptions. */
-  MaxIterError = PyErr_NewException("_basisfn.MaxIterError", NULL, NULL);
-  Py_INCREF(MaxIterError);
-  PyModule_AddObject(mod, "MaxIterError", MaxIterError);
-
-  RoundError = PyErr_NewException("_basisfn.RoundError", NULL, NULL);
-  Py_INCREF(RoundError);
-  PyModule_AddObject(mod, "RoundError", RoundError);
-
-  SingularError = PyErr_NewException("_basisfn.SingularError", NULL, NULL);
-  Py_INCREF(SingularError);
-  PyModule_AddObject(mod, "SingularError", SingularError);
-
-  DivergeError = PyErr_NewException("_basisfn.DivergeError", NULL, NULL);
-  Py_INCREF(DivergeError);
-  PyModule_AddObject(mod, "DivergeError", DivergeError);
-
-  ToleranceError = PyErr_NewException("_basisfn.ToleranceError", NULL, NULL);
-  Py_INCREF(ToleranceError);
-  PyModule_AddObject(mod, "ToleranceError", ToleranceError);
+  IntegrationError = PyErr_NewException("_matrix.IntegrationError", NULL, NULL);
+  Py_INCREF(IntegrationError);
+  PyModule_AddObject(mod, "IntegrationError", IntegrationError);
 }
 
 #undef __SMALL
