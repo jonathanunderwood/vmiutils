@@ -19,7 +19,7 @@ parser.add_argument('--no-oddl', action='store_true',
 parser.add_argument('--centre', nargs=2, type=float, default=None,
                     help='The x and y coordinates of the image centre (after transposing, if requested)')
 parser.add_argument('--transpose', action='store_true',
-                    help='The value of sigma in the radial functions')
+                    help='If specified, the image will be transposed before fitting')
 
 args = parser.parse_args()
 
