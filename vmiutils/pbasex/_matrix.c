@@ -109,10 +109,6 @@ matrix(PyObject *self, PyObject *args)
 	}
     }
 
-  /* matrix = malloc (Rbins * Thetabins * kdim * ldim * sizeof(double)); */
-  /* if (!matrix) */
-  /*   return PyErr_NoMemory(); */
-  /* create numpy array to hold the matrix. */
   dims[0] = (npy_intp) kdim;
   dims[1] = (npy_intp) ldim;
   dims[2] = (npy_intp) Rbins;
