@@ -29,12 +29,14 @@ else:
     oddl = True
         
 mtx = pb.PbasexMatrix()
+logger.debug('loading matrix file: {0}'.format(args.matrix_file)
 mtx.load(args.matrix_file)
-logger.debug("matrix loaded")
+logger.debug('matrix loaded')
 
 vmicart = vmi.CartesianImage()
+logger.debug('loading VMI file: {0}'.format(args.vmi_file)
 vmicart.from_numpy_array(numpy.loadtxt(args.vmi_file))
-logger.debug("image loaded and converted to cartesian image")
+logger.debug('image loaded and converted to cartesian image')
 
 if args.transpose is True:
     vmicart.transpose()
@@ -74,18 +76,8 @@ logger.debug('zoom of original image calculated')
 import pylab
 
 fig = pylab.figure()
-#pylab.subplot(2, 1, 1)
-
-#axis_l = fig.add_subplot(211)
-#axis_l.plot(r1, spec)
 ax1 = pylab.axes([0.1, 0.1, 0.8, 0.35])
 ax1.plot(r1, spec)
-
-# axis_r = axis_l.twinx()
-# pylab.ylim(-5, 5)
-# for b in xrange(beta.shape[0]):
-#     axis_r.plot(r2, beta[b, :], label='beta'+format(b))
-# pylab.legend()
 
 ax2 = ax1.twinx()
 ax2.set_autoscaley_on(False)
@@ -93,11 +85,6 @@ ax2.set_ybound(-5, 5)
 for b in xrange(1, beta.shape[0]):
     ax2.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
 pylab.legend()
-
-# pylab.subplot(2, 1, 2)
-# distplot = pylab.imshow(dist.transpose().clip(0.0), origin='lower', cmap=pylab.cm.gist_heat)
-# fig.colorbar(distplot)
-# pylab.show()
 
 ax3 = pylab.axes([0.1, 0.55, 0.35, 0.35])
 epl = ax3.imshow(vmicart_zoom.image.transpose(), origin='lower', 
