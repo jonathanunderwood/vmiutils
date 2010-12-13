@@ -6,6 +6,19 @@
 
 import numpy
 import scipy.linalg
+import logging
+import vmiutils.image as vmi
+
+# Set up logging and create a null handler in case the application doesn't
+# provide a log handler
+logger = logging.getLogger('vmiutils.ChoNa')
+
+class __NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
+__null_handler = __NullHandler()
+logger.addHandler(__null_handler)
 
 def __P(i, j):
     """
@@ -39,7 +52,7 @@ def area_matrix(dim):
 
     return S
 
-def invert(image, S=None):
+def invert_quadrant(image, S=None):
     """
     Invert an image stored as a 2D numpy array. Assumes that image[0, 0]
     corresponds to the first element of the area matrix etc. In other words,
@@ -66,6 +79,47 @@ def invert(image, S=None):
 
     a = scipy.linalg.solve(S, im)
     return a.transpose()
+
+def invert_CartesianImage(image, S=None):
+
+    # Find largest size of matrix we need
+    dim = max(quad.shape[0] for i, quad in enumerate(image.quadrant))
+
+    if S == None:
+        S = area_matrix(dim)
+        logger.debug('S matrix calculated with dim={0}'.format(dim))
+    elif S.shape[0] != image.shape[1] or S.shape[1] != image.shape[1]:
+        logger.error('S matrix dimensions not sufficient for image')
+        raise ValueError
+        
+    out = numpy.empty(image.image.shape)
+
+    cx = image.centre_pixel[0]
+    cy = image.centre_pixel[1]
+
+    for i, quad in enumerate(image.quadrant):
+        # See image.py to understand how we construct the image from these
+        # quadrants
+        dim = quad.shape[1]
+        if i == 0:
+            out[cx::, cy::] = scipy.linalg.solve(
+                S[0:dim, 0:dim], quad.transpose()).transpose()
+        elif i == 1:
+            out[cx::, cy - 1::-1] = scipy.linalg.solve(
+                S[0:dim, 0:dim], quad.transpose()).transpose()
+        elif i == 2:
+            out[cx - 1::-1, cy - 1::-1] = scipy.linalg.solve(
+                S[0:dim, 0:dim], quad.transpose()).transpose()
+        elif i == 3:
+            out[cx - 1::-1, cy::] = scipy.linalg.solve(
+                S[0:dim, 0:dim], quad.transpose()).transpose()
+        logger.debug('quadrant {0} inverted'.format(i))
+
+    oimage = vmi.CartesianImage()
+    oimage.from_numpy_array(out, image.x, image.y)
+    oimage.set_centre(image.centre)
+
+    return oimage
 
 def invert_plreg(image, iterations, initial_guess=None, tau=None, S=None):
 
@@ -139,7 +193,6 @@ def blur_image(im, n, ny=None):
 
 
 
-
 if __name__ == "__main__":
     import image
     import sys
@@ -177,3 +230,4 @@ if __name__ == "__main__":
     plt2 = pylab.imshow(wksp, cmap=matplotlib.cm.gray, origin='lower')
 
     pylab.show()
+

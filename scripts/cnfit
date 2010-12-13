@@ -1,0 +1,90 @@
+#!/usr/bin/python
+
+import sys
+import argparse
+import logging
+import numpy
+import vmiutils as vmi
+import vmiutils.ChoNa as cn
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('cnfit')
+
+parser = argparse.ArgumentParser(
+    description='Utility for inverting a VMI image using the Cho and Na matrix')
+
+parser.add_argument('vmi_file', help='Name of file containing VMI image')
+parser.add_argument('--centre', nargs=2, type=float, default=None,
+                    help='The x and y coordinates of the image centre (after transposing, if requested)')
+parser.add_argument('--transpose', action='store_true',
+                    help='If specified, the image will be transposed before fitting')
+
+args = parser.parse_args()
+
+vmicart = vmi.CartesianImage()
+
+try:
+    vmicart.from_numpy_array(numpy.loadtxt(args.vmi_file))
+    logger.debug('image loaded and converted to cartesian image')
+except IOError:
+        logger.error('Could not read file: {0}'.format(file))
+        sys.exit(74)
+
+if args.transpose is True:
+    vmicart.transpose()
+
+if args.centre is None:
+    centre = vmicart.centre_of_gravity()
+    logger.info('image centre of gravity used as centre: {0}'.format(centre))
+else:
+    centre = args.centre
+
+vmicart.set_centre(centre)
+logger.debug('image centre: {0}'.format(centre))
+
+logger.info('inverting image...')
+cartimg = cn.invert_CartesianImage(vmicart)
+logger.info('image inverted')
+
+polimg = vmi.PolarImage()
+logger.info('converting to spherical polar coordinates...')
+polimg.from_CartesianImage(cartimg, rbins=128, thetabins=128)
+logger.info('finished converting to spherical polar coordinates')
+
+r1, spec = polimg.radial_spectrum()
+logger.debug('radial spectrum calculated')
+
+r2, beta = polimg.beta_coefficients()
+logger.debug('beta coefficients calculated')
+
+import pylab
+
+fig = pylab.figure()
+ax1 = pylab.axes([0.1, 0.1, 0.8, 0.35])
+ax1.plot(r1, spec)
+
+ax2 = ax1.twinx()
+ax2.set_autoscaley_on(False)
+ax2.set_ybound(-5, 5)
+for b in xrange(1, beta.shape[0]):
+    ax2.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
+pylab.legend()
+
+ax3 = pylab.axes([0.1, 0.55, 0.35, 0.35])
+epl = ax3.imshow(vmicart.image.transpose(), origin='lower', 
+                 cmap=pylab.cm.gist_heat)
+
+fig.colorbar(epl)
+
+ax4 = pylab.axes([0.55, 0.55, 0.35, 0.35])
+dpl = ax4.imshow(cartimg.image.transpose().clip(0.0), origin='lower', 
+           cmap=pylab.cm.gist_heat)
+fig.colorbar(dpl)
+
+pylab.show()
+
+
+
+fig = pylab.figure()
+pylab.imshow(cartimg.image.clip(0.0))
+pylab.show()

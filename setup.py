@@ -13,5 +13,7 @@ setup(name='VMIutils',
                              ['vmiutils/pbasex/_fit.c'],
                              libraries=['gsl', 'gslcblas', 'm']),
                              ],
-      scripts=['scripts/pbmatrix', 'scripts/pbfit'],
+      scripts=['scripts/pbmatrix', 
+               'scripts/pbfit',
+               'scripts/cnfit'],
       )
