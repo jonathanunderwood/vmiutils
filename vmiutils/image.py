@@ -258,19 +258,27 @@ class PolarImage():
         """
         return self.r, self.image.sum(1)
 
-    def beta_coefficients(self, lmax=2):
+    def beta_coefficients(self, lmax=2, oddl=False):
         """ Return a tuple (r, beta) representing the values of the beta
         parameters at for each radial bin calculated by fitting to an
-        expansion in Legendre polynomials up to order lmax """
+        expansion in Legendre polynomials up to order lmax. oddl specifies
+        whether odd l coefficients are fit or not.
+        """
 
         costheta = numpy.cos(self.theta)
         A = numpy.c_[[legpol(lmax, ct)[0] for ct in costheta]]
         logger.debug(
             'matrix calculated for beta fitting with shape {0}'.format(A.shape))
 
+        if oddl is False:
+            A = A[:, ::2]
+            logger.debug(
+                'odd l coefs not fit: matrix reduced to shape {0}'.format(A.shape))
+
         try:
             # TODO set rcond
-            beta, resid, rank, s = lstsq(A, self.image)
+            beta, resid, rank, s = lstsq(A, self.image.transpose())
+            # Note that beta is indexed as beta[l, r]
             # TODO: do something with resid, rank, s
         except numpy.linalg.LinAlgError:
             logger.error(
@@ -278,10 +286,16 @@ class PolarImage():
             raise
         logger.debug('beta coefficents fit successfully')
 
+
         # Normalize to beta_0 = 1 at each r
-        beta0 = beta[:, 0, numpy.newaxis]
+        beta0 = beta[0, :]
         beta = beta / beta0
         logger.debug('beta coefficents normalized')
 
+        if oddl is False:
+            logger.debug('adding rows to beta matrix for odd l coeffs')
+            logger.debug('beta shape before adding new rows {0}'.format(beta.shape)) 
+            beta = numpy.insert(beta, numpy.arange(1, lmax), 0, axis=0)
+            logger.debug('rows for odd l added to beta array; new shape {0}'.format(beta.shape)) 
 
         return self.r, beta

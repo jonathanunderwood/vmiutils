@@ -48,7 +48,7 @@ logger.info('image inverted')
 
 polimg = vmi.PolarImage()
 logger.info('converting to spherical polar coordinates...')
-polimg.from_CartesianImage(cartimg, rbins=128, thetabins=128)
+polimg.from_CartesianImage(cartimg, rbins=128, thetabins=64)
 logger.info('finished converting to spherical polar coordinates')
 
 r1, spec = polimg.radial_spectrum()
@@ -66,7 +66,8 @@ ax1.plot(r1, spec)
 ax2 = ax1.twinx()
 ax2.set_autoscaley_on(False)
 ax2.set_ybound(-5, 5)
-for b in xrange(1, beta.shape[0]):
+
+for b in numpy.arange(1, beta.shape[0]):
     ax2.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
 pylab.legend()
 
