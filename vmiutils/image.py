@@ -27,7 +27,7 @@ class CartesianImage():
         self.xbinw = None
         self.ybinw = None
         self.centre = None
-        self.quadrant = None
+        self.quad = None
         
     def from_numpy_array(self, image, x=None, y=None):
         """ Initialize from an image stored in a numpy array. If x or y are
@@ -62,34 +62,56 @@ class CartesianImage():
         cy = _round_int((centre[0] - self.y[0]) / self.ybinw)
         self.centre_pixel = (cx, cy)
 
-        # Set up views of quadrants. The quadrants are numbered 0-3:
-        # Quadrant 0: from centre to (xmax, ymax) [Top right]
-        # Quadrant 1: from centre to (xmax, 0)    [Bottom right]
-        # Quadrant 2: from centre to (0, 0)       [Bottom Left]
-        # Quadrant 3: from centre to (0, ymax]    [Top left]
-        self.quadrant = [
-        self.image[cx::, cy::], 
-        self.image[cx::, cy - 1::-1],
-        self.image[cx - 1::-1, cy - 1::-1],
-        self.image[cx - 1::-1, cy::]
-        ]
-        
+        # Set up slices to give views of quadrants. The quadrants are numbered
+        # 0-3: Quadrant 0: from centre to (xmax, ymax) [Top right] Quadrant 1:
+        # from centre to (xmax, 0) [Bottom right] Quadrant 2: from centre to
+        # (0, 0) [Bottom Left] Quadrant 3: from centre to (0, ymax] [Top left]
+        # self.quadrant = [
+        # self.image[cx::, cy::], 
+        # self.image[cx::, cy - 1::-1],
+        # self.image[cx - 1::-1, cy - 1::-1],
+        # self.image[cx - 1::-1, cy::]
+        # ]
+
+        self.quad = [
+            (slice(cx, None, None), slice (cy, None, None)),
+            (slice(cx, None, None), slice (cy - 1, None, -1)),
+            (slice(cx - 1, None, -1), slice (cy - 1, None, -1)),
+            (slice(cx - 1, None, -1), slice (cy, None, None))
+            ]
+
+    def __quad_idx(self, quad):
+        if quad in ('upper right', 'top right', 'ur', 0):
+            return 0
+        elif quad in ('lower right', 'bottom right', 'lr', 1):
+            return 1
+        elif quad in ('lower left', 'bottom left', 'll', 2):
+            return 2
+        elif quad in ('upper left', 'top left', 'ul', 3):
+            return 3
+        else:
+            logger.error('quad argument not recognized: {0}'.format(quad))
+            raise ValueError
+
     def get_quadrant(self, quad):
+        """ Return a numpy array instance containing the requested image
+        quadrant indexed such that [0, 0] is the image centre, and increasing
+        |x| and |y| as indices increase.
+        """
+        return self.image[self.quad[self.__quad_idx(quad)]]
+        
+    def set_quadrant(self, quad, data):
         """ Return a numpy array instance containing the requested image
         quadrant indexed such that [0, 0] is the image centre, and increasing
         x and y move away from the centre.
         """
-        if quad in ('upper right', 'top right', 'ur', 0):
-            return self.quadrant[0]
-        elif quad in ('lower right', 'bottom right', 'lr', 1):
-            return self.quadrant[1]
-        elif quad in ('lower left', 'bottom left', 'll', 2):
-            return self.quadrant[2]
-        elif quad in ('upper left', 'top left', 'ul', 3):
-            return self.quadrant[3]
-        else:
-            logger.error('quad argument not recognized')
+        qslice = self.quad[self.__quad_idx(quad)]
+
+        if self.image[qslice].shape != data.shape:
+            logger.error('data not correct shape for specified quadrant')
             raise ValueError
+        else:
+            self.image[qslice] = data
 
     def zoom_circle(self, rmax):
         """ Return a new CartesianImage instance containing a square section
@@ -145,15 +167,18 @@ class CartesianImage():
             raise
 
     def transpose(self):
+        # TODO: Need to deal with quadrants here too.
         self.image = self.image.transpose()
 
-    def from_PolarImage(self, pimage):
-        """ Initizize from a PolarImage object by interpolation onto a
+    def from_PolarImage(self, pimage, order=3):
+        """ Initialise from a PolarImage object by interpolation onto a
         cartesian grid.
+
+        order specifies the interpolaton order used in the conversion.
         """
         self.x, self.y, self.image = pimage.cartesian_rep()
 
-    def polar_rep(self, rbins=None, thetabins=None, rmax=None):
+    def polar_rep(self, rbins=None, thetabins=None, rmax=None, order=3):
         """ Returns a tuple (r, theta, pimage) containing the coordinates and
         polar representation of the image.
 
@@ -162,6 +187,8 @@ class CartesianImage():
         rmax specifies the maximum radius to consider, and is specified in the
         coordinate system of the image (as opposed to bin number). If rmax is
         None, then the largest radius possible is used.
+
+        order specifies the interpolaton order used in the conversion.
         """
         if self.image is None:
             logger.error('no image data')
@@ -177,8 +204,10 @@ class CartesianImage():
         if thetabins is None:
             thetabins = min(self.image.shape[0], self.image.shape[1]) 
 
-        return polcart.cart2pol(self.image, self.x, self.y, self.centre, 
-                                rbins, thetabins, rmax)
+        return polcart.cart2pol(self.image, x=self.x, y=self.y, 
+                                centre=self.centre, radial_bins=rbins, 
+                                angular_bins=thetabins, rmax=rmax,
+                                order=order)
 
     def centre_of_gravity(self):
         """Returns a tuple representing the coordinates corresponding to the
@@ -222,7 +251,7 @@ class PolarImage():
             self.theta = theta.copy()
 
     def from_CartesianImage(self, cimage, rbins=None, 
-                               thetabins=None, rmax=None):
+                               thetabins=None, rmax=None, order=3):
         """Calculate a polar represenation of a CartesianImage instance.
 
         cimage is a CartesianImage instance.
@@ -232,17 +261,20 @@ class PolarImage():
         cartesian image is used.
         """
         self.r, self.theta, self.image = \
-            cimage.polar_rep(rbins, thetabins, rmax)
+            cimage.polar_rep(rbins, thetabins, rmax, order)
 
         self.rbins = self.r.shape[0]
         self.thetabins = self.theta.shape[0]
 
-    def cartesian_rep(self, xbins=None, ybins=None):
+    def cartesian_rep(self, xbins=None, ybins=None, order=3):
         """ Returns a tuple (x, y, image) containing the coordinates and
-        cartesian represenation of the image. xbins and ybins optionally
-        specify the number of bins in each dimension. If not specified, the
-        number of bins in each direction will be equal to the number of radial
-        bins in the polar image.
+        cartesian represenation of the image. 
+
+        xbins and ybins optionally specify the number of bins in each
+        dimension. If not specified, the number of bins in each direction will
+        be equal to the number of radial bins in the polar image.
+
+        order specifies the interpolaton order used in the conversion.
         """
         if xbins is None:
             xbins = self.image.shape[0]
@@ -250,7 +282,8 @@ class PolarImage():
         if ybins is None:
             ybins = self.image.shape[0]
 
-        return polcart.pol2cart(self.image, self.r, self.theta, xbins, ybins)
+        return polcart.pol2cart(self.image, self.r, self.theta, 
+                                xbins, ybins, order)
 
     def radial_spectrum(self):
         """ Return a tuple (r, intensity) for the radial spectrum calculated

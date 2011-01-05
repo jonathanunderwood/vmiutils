@@ -81,45 +81,26 @@ def invert_quadrant(image, S=None):
     return a.transpose()
 
 def invert_CartesianImage(image, S=None):
-
+    
     # Find largest size of matrix we need
-    dim = max(quad.shape[0] for i, quad in enumerate(image.quadrant))
+    dim = max(image.get_quadrant(i).shape[0] for i in xrange(4))
 
-    if S == None:
-        S = area_matrix(dim)
-        logger.debug('S matrix calculated with dim={0}'.format(dim))
-    elif S.shape[0] != image.shape[1] or S.shape[1] != image.shape[1]:
-        logger.error('S matrix dimensions not sufficient for image')
-        raise ValueError
+    S = area_matrix(dim)
+    logger.debug('S matrix calculated with dim={0}'.format(dim))
         
-    out = numpy.empty(image.image.shape)
+    image_out = vmi.CartesianImage()
+    image_out.from_numpy_array(
+        numpy.empty(image.image.shape), image.x, image.y)
+    image_out.set_centre(image.centre)
 
-    cx = image.centre_pixel[0]
-    cy = image.centre_pixel[1]
-
-    for i, quad in enumerate(image.quadrant):
-        # See image.py to understand how we construct the image from these
-        # quadrants
-        dim = quad.shape[1]
-        if i == 0:
-            out[cx::, cy::] = scipy.linalg.solve(
-                S[0:dim, 0:dim], quad.transpose()).transpose()
-        elif i == 1:
-            out[cx::, cy - 1::-1] = scipy.linalg.solve(
-                S[0:dim, 0:dim], quad.transpose()).transpose()
-        elif i == 2:
-            out[cx - 1::-1, cy - 1::-1] = scipy.linalg.solve(
-                S[0:dim, 0:dim], quad.transpose()).transpose()
-        elif i == 3:
-            out[cx - 1::-1, cy::] = scipy.linalg.solve(
-                S[0:dim, 0:dim], quad.transpose()).transpose()
+    for i in xrange(4):
+        quadrant = image.get_quadrant(i).transpose()
+        dim = quadrant.shape[0]
+        qinv = scipy.linalg.solve(S[0:dim, 0:dim], quadrant).transpose()
+        image_out.set_quadrant(i, qinv)
         logger.debug('quadrant {0} inverted'.format(i))
 
-    oimage = vmi.CartesianImage()
-    oimage.from_numpy_array(out, image.x, image.y)
-    oimage.set_centre(image.centre)
-
-    return oimage
+    return image_out
 
 def invert_plreg(image, iterations, initial_guess=None, tau=None, S=None):
 

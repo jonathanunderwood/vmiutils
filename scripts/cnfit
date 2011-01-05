@@ -18,8 +18,24 @@ parser.add_argument('--centre', nargs=2, type=float, default=None,
                     help='The x and y coordinates of the image centre (after transposing, if requested)')
 parser.add_argument('--transpose', action='store_true',
                     help='If specified, the image will be transposed before fitting')
+parser.add_argument('--no-oddl', action='store_true',
+                    help='If specified, only even l coefficients in the Legendre polynomial fitting will be used')
+parser.add_argument('--lmax', type=int, default=2,
+                    help='Maximum value of l in Legendre polynomial fitting')
+parser.add_argument('--rbins', type=float, default=128,
+                    help='Number of radial bins used for polar image')
+parser.add_argument('--thetabins', type=float, default=128,
+                    help='Number of angular bins used for polar image')
+parser.add_argument('--order', type=int, default=3,
+                    help='Interpolation order used when converting to polar image')
+
 
 args = parser.parse_args()
+
+if args.no_oddl is True:
+    oddl = False
+else:
+    oddl = True
 
 vmicart = vmi.CartesianImage()
 
@@ -48,13 +64,14 @@ logger.info('image inverted')
 
 polimg = vmi.PolarImage()
 logger.info('converting to spherical polar coordinates...')
-polimg.from_CartesianImage(cartimg, rbins=128, thetabins=64)
+polimg.from_CartesianImage(cartimg, rbins=args.rbins,
+                           thetabins=args.thetabins, order=args.order)
 logger.info('finished converting to spherical polar coordinates')
 
 r1, spec = polimg.radial_spectrum()
 logger.debug('radial spectrum calculated')
 
-r2, beta = polimg.beta_coefficients()
+r2, beta = polimg.beta_coefficients(lmax=args.lmax, oddl=oddl)
 logger.debug('beta coefficients calculated')
 
 import pylab
@@ -85,7 +102,10 @@ fig.colorbar(dpl)
 pylab.show()
 
 
+fig = pylab.figure()
+pylab.imshow(vmicart.image.transpose().clip(0.0), origin='lower')
+pylab.show()
 
 fig = pylab.figure()
-pylab.imshow(cartimg.image.clip(0.0))
+pylab.imshow(cartimg.image.transpose().clip(0.0), origin='lower')
 pylab.show()
