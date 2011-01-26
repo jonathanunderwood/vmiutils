@@ -3,6 +3,7 @@ from numpy.linalg import lstsq
 import polcart
 import logging
 from scipy.special import lpn as legpol
+import copy
 
 logger = logging.getLogger('vmiutils.image')
 
@@ -20,15 +21,65 @@ class CartesianImage():
     """ Class used to represent a VMI image stored as a cartesian
     array.
     """
-    def __init__(self):
-        self.image = None
-        self.x = None
-        self.y = None
-        self.xbinw = None
-        self.ybinw = None
-        self.centre = None
-        self.quad = None
+    def __init__(self, image=None, x=None, y=None, 
+                 xbins=None, ybins=None, centre=None):
+        if image is None:
+            self.image = None
+            self.x = None
+            self.y = None
+            self.xbinw = None
+            self.ybinw = None
+            self.centre = None
+            self.shape = None
+            self.quad = None
+            return
+
+        elif image in ('empty', 'Empty', 'zeros', 'Zeros'):
+            if x is not None and y is not None:
+                self.x = x.copy()
+                self.y = y.copy()
+                xbins = x.shape[0]
+                ybins = y.shape[0]
+            elif xbins is not None and ybins is not None:
+                self.x = numpy.arange(xbins)
+                self.y = numpy.arange(xbins)
+            else:
+                logger.error(
+                    'x and y dimensions of CartesianImage not specified')
+
+            if image in ('empty', 'Empty'):
+                self.image=numpy.empty((xbins, ybins))
+            else:
+                self.image=numpy.zeros((xbins, ybins))
+
+        elif isinstance(image, numpy.ndarray):
+            self.image = image.copy()
+
+            if x is None:
+                self.x = numpy.arange(self.image.shape[0])
+            else:
+                self.x = x.copy()
+
+                if y is None:
+                    self.y = numpy.arange(self.image.shape[1])
+                else:
+                    self.y = y.copy()
+                    
+        self.shape = self.image.shape
+
+        # Set bin widths in each dimension assuming bins are equally
+        # spaced
+        self.xbinw = self.x[1] - self.x[0]
+        self.ybinw = self.y[1] - self.y[0]
         
+        if centre is None:
+            self.set_centre(self.centre_of_grid())
+        else:
+            self.set_centre(centre)
+
+    def copy(self):
+        return copy.copy(self)
+
     def from_numpy_array(self, image, x=None, y=None):
         """ Initialize from an image stored in a numpy array. If x or y are
         not specified, the x and y coordinates are stored as pixel values.
@@ -45,9 +96,13 @@ class CartesianImage():
         else:
             self.y = y.copy()
         
+        self.shape = self.image.shape
+
         # Set bin widths in each dimension assuming bins are equally spaced
         self.xbinw = self.x[1] - self.x[0]
         self.ybinw = self.y[1] - self.y[0]
+
+        self.set_centre(self.centre_of_grid())
 
     def set_centre(self, centre):
         """ Specify the coordinates of the centre of the image as a tuple
@@ -166,17 +221,17 @@ class CartesianImage():
             logger.error('rect must be a list of integers (bins)')
             raise
 
-    def transpose(self):
-        # TODO: Need to deal with quadrants here too.
-        self.image = self.image.transpose()
-
     def from_PolarImage(self, pimage, order=3):
         """ Initialise from a PolarImage object by interpolation onto a
         cartesian grid.
 
         order specifies the interpolaton order used in the conversion.
         """
-        self.x, self.y, self.image = pimage.cartesian_rep()
+        raise NotImplementedError
+    
+        # self.x, self.y, self.image = pimage.cartesian_rep()
+        #     self.shape = self.image.shape
+        #     self.set_centre(self.centre_of_grid())
 
     def polar_rep(self, rbins=None, thetabins=None, rmax=None, order=3):
         """ Returns a tuple (r, theta, pimage) containing the coordinates and
