@@ -1,1 +1,1 @@
-from ChoNa import invert_CartesianImage, area_matrix
+from ChoNa import invert_CartesianImage, area_matrix, invert_CartesianImage_plreg

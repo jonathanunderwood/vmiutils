@@ -16,8 +16,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument('vmi_file', help='Name of file containing VMI image')
 parser.add_argument('--centre', nargs=2, type=float, default=None,
                     help='The x and y coordinates of the image centre (after transposing, if requested)')
-parser.add_argument('--transpose', action='store_true',
-                    help='If specified, the image will be transposed before fitting')
+parser.add_argument('--swapxy', action='store_true',
+                    help='If specified, the image data will have the axes swapped before fitting')
 parser.add_argument('--no-oddl', action='store_true',
                     help='If specified, only even l coefficients in the Legendre polynomial fitting will be used')
 parser.add_argument('--lmax', type=int, default=2,
@@ -28,7 +28,10 @@ parser.add_argument('--thetabins', type=float, default=128,
                     help='Number of angular bins used for polar image')
 parser.add_argument('--order', type=int, default=3,
                     help='Interpolation order used when converting to polar image')
-
+parser.add_argument('--plreg', action='store_true',
+                    help='If specified, Projected Landweber regularization will be used')
+parser.add_argument('--iterations', type=int, default=1000,
+                    help='Number of iterations to use for regularization')
 
 args = parser.parse_args()
 
@@ -40,14 +43,16 @@ else:
 vmicart = vmi.CartesianImage()
 
 try:
-    vmicart.from_numpy_array(numpy.loadtxt(args.vmi_file))
+    imdat=numpy.loadtxt(args.vmi_file)
     logger.debug('image loaded and converted to cartesian image')
 except IOError:
         logger.error('Could not read file: {0}'.format(file))
         sys.exit(74)
 
-if args.transpose is True:
-    vmicart.transpose()
+if args.swapxy is True:
+    vmicart.from_numpy_array(imdat.transpose())
+else:
+    vmicart.from_numpy_array(imdat)
 
 if args.centre is None:
     centre = vmicart.centre_of_gravity()
@@ -58,9 +63,14 @@ else:
 vmicart.set_centre(centre)
 logger.debug('image centre: {0}'.format(centre))
 
-logger.info('inverting image...')
-cartimg = cn.invert_CartesianImage(vmicart)
-logger.info('image inverted')
+if args.plreg is False:
+    logger.info('inverting image...')
+    cartimg = cn.invert_CartesianImage(vmicart)
+    logger.info('image inverted')
+else:
+    logger.info('inverting image using projected Landweber regularization...')
+    cartimg = cn.invert_CartesianImage_plreg(vmicart)
+    logger.info('image inverted')
 
 polimg = vmi.PolarImage()
 logger.info('converting to spherical polar coordinates...')

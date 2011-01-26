@@ -5,7 +5,6 @@
 # from zero, so the formulas are adjusted accordingly.
 
 import numpy
-import scipy.linalg
 import logging
 import vmiutils.image as vmi
 
@@ -52,34 +51,6 @@ def area_matrix(dim):
 
     return S
 
-def invert_quadrant(image, S=None):
-    """
-    Invert an image stored as a 2D numpy array. Assumes that image[0, 0]
-    corresponds to the first element of the area matrix etc. In other words,
-    assumes that image[0, 0] is the image centre and the array contains one
-    quadrant of the image. 
-
-    image: numpy 2D array containing image to be inverted
-
-    S: Area matrix as defined by Cho and Na. Optional - if not passed will be
-    calculated as needed
-
-    returns a 2D numpy array containing the inverted image in cylindrical
-    polar coordinates.
-    """
-
-    # Because of the column order that linalg.solve expects, we have to
-    # transpose here, and then transpose the answer back.
-    im = image.transpose()
-
-    if S == None:
-        S = area_matrix(im.shape[0])
-    elif S.shape[0] != im.shape[0]:
-        raise ValueError
-
-    a = scipy.linalg.solve(S, im)
-    return a.transpose()
-
 def invert_CartesianImage(image, S=None):
     
     # Find largest size of matrix we need
@@ -88,16 +59,70 @@ def invert_CartesianImage(image, S=None):
     S = area_matrix(dim)
     logger.debug('S matrix calculated with dim={0}'.format(dim))
         
-    image_out = vmi.CartesianImage()
-    image_out.from_numpy_array(
-        numpy.empty(image.image.shape), image.x, image.y)
-    image_out.set_centre(image.centre)
+    image_out = vmi.CartesianImage(
+        image='empty', x=image.x, y=image.y, centre=image.centre)
 
     for i in xrange(4):
-        quadrant = image.get_quadrant(i).transpose()
+        quadrant = image.get_quadrant(i)
         dim = quadrant.shape[0]
-        qinv = scipy.linalg.solve(S[0:dim, 0:dim], quadrant).transpose()
+        qinv = numpy.linalg.solve(S[0:dim, 0:dim], quadrant)
         image_out.set_quadrant(i, qinv)
+        logger.debug('quadrant {0} inverted'.format(i))
+
+    return image_out
+
+import copy
+
+def invert_CartesianImage_plreg(image, iterations=10, initial_guess=None, 
+                                reduced_tau=None):
+    # reduced_tau lies in range 0..2
+    if reduced_tau is None:
+        reduced_tau = 1.0
+    elif reduced_tau <= 0.0 or reduced_tau >= 2.0:
+        logger.error('reduced_tau not in range 0.0 - 2.0')
+        raise ValueError
+
+    # Find largest size of matrix we need
+    dim = max(image.get_quadrant(i).shape[0] for i in xrange(4))
+
+    Smtx = area_matrix(dim)
+    logger.debug('S matrix calculated with dim={0}'.format(dim))
+        
+    if initial_guess is None or initial_guess in ('zeros', 'Zeros'):
+        image_out = vmi.CartesianImage(image='zeros', x=image.x, y=image.y, 
+                                       centre=image.centre)
+    elif isinstance(initial_guess, vmi.CartesianImage):
+        image_out = initial_guess.copy()
+
+    for i in xrange(4):
+        quad = image.get_quadrant(i)
+        quad_out = image_out.get_quadrant(i)
+
+        dim = quad.shape[0]
+
+        S = Smtx[0:dim, 0:dim]
+
+        St = S.transpose()
+        StS = numpy.dot(St, S)
+
+        Snorm = numpy.linalg.norm(S)
+        Snorm2 = Snorm * Snorm
+        
+        tau = reduced_tau / Snorm2
+
+        for y in xrange(image.shape[1]):
+            print y
+            a = quad_out[:, y]
+            b = numpy.dot(St, quad[:, y])
+            
+            for iter in xrange(iterations):
+                a += tau * (b - numpy.dot(StS, a))
+                a = a.clip(min=0.0)
+            
+            quad_out[:, y] = a
+            logger.debug('quadrant {0} row {1} inverted'.format(i, y))
+
+        image_out.set_quadrant(i, quad_out)
         logger.debug('quadrant {0} inverted'.format(i))
 
     return image_out
