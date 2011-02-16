@@ -212,7 +212,7 @@ class CartesianImage():
             z = CartesianImage()
             z.from_numpy_array(self.image[xmin:xmax, ymin:ymax],
                                self.x[xmin:xmax], self.y[ymin:ymax])
-            z.set_center(self.center)
+            z.centre=self.centre
             return z
         except IndexError:
             logger.error('rect outside image')

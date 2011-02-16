@@ -29,17 +29,17 @@ else:
     oddl = True
         
 mtx = pb.PbasexMatrix()
-logger.debug('loading matrix file: {0}'.format(args.matrix_file)
+logger.debug('loading matrix file: {0}'.format(args.matrix_file))
 mtx.load(args.matrix_file)
 logger.debug('matrix loaded')
 
 vmicart = vmi.CartesianImage()
-logger.debug('loading VMI file: {0}'.format(args.vmi_file)
+logger.debug('loading VMI file: {0}'.format(args.vmi_file))
 vmicart.from_numpy_array(numpy.loadtxt(args.vmi_file))
 logger.debug('image loaded and converted to cartesian image')
 
 if args.transpose is True:
-    vmicart.transpose()
+    vmicart.image.transpose()
 
 if args.centre is None:
     centre = vmicart.centre_of_gravity()
