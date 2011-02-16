@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 import sys
 import argparse
 import logging
@@ -37,11 +36,7 @@ parser.add_argument('--iterations', type=int, default=1000,
 
 args = parser.parse_args()
 
-if args.no_oddl is True:
-    oddl = False
-else:
-    oddl = True
-
+# Load text file
 try:
     imdat=numpy.loadtxt(args.vmi_file)
     logger.debug('image loaded and converted to cartesian image')
@@ -49,16 +44,20 @@ except IOError:
         logger.error('Could not read file: {0}'.format(file))
         sys.exit(74)
 
+# Swap axes if requested
 if args.swapxy is True:
     imdat = imdat.transpose()
 
 vmicart = vmi.CartesianImage(image=imdat, centre=args.centre)
 
+# If centre wasn't specified default to using the centre of gravity rather
+# than the centre of the grid
 if args.centre is None:
     cofg = vmicart.centre_of_gravity()
     logger.info('image centre of gravity used as centre: {0}'.format(cofg))
     vmicart.set_centre(cofg)
 
+# Invert the image
 if args.plreg is False:
     logger.info('inverting image...')
     invimg_cart = cn.invert_CartesianImage(vmicart)
@@ -68,14 +67,23 @@ else:
     invimg_cart = cn.invert_CartesianImage_plreg(vmicart)
     logger.info('image inverted')
 
+# Convert inverted image to polar coordinates for finding radial spectrum and
+# angular distribution
 invimg_pol = vmi.PolarImage()
 logger.info('converting to spherical polar coordinates...')
 invimg_pol.from_CartesianImage(invimg_cart, rbins=args.rbins,
                            thetabins=args.thetabins, order=args.order)
 logger.info('finished converting to spherical polar coordinates')
 
+# Calculate radial spectrum
 r1, spec = invimg_pol.radial_spectrum()
 logger.debug('radial spectrum calculated')
+
+# Calulate radial dependent beta coefficients
+if args.no_oddl is True:
+    oddl = False
+else:
+    oddl = True
 
 r2, beta = invimg_pol.beta_coefficients(lmax=args.lmax, oddl=oddl)
 logger.debug('beta coefficients calculated')
