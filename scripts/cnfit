@@ -6,6 +6,8 @@ import logging
 import numpy
 import vmiutils as vmi
 import vmiutils.ChoNa as cn
+import matplotlib
+import matplotlib.pyplot as plot
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('cnfit')
@@ -40,7 +42,6 @@ if args.no_oddl is True:
 else:
     oddl = True
 
-
 try:
     imdat=numpy.loadtxt(args.vmi_file)
     logger.debug('image loaded and converted to cartesian image')
@@ -61,29 +62,32 @@ vmicart = vmi.CartesianImage(image=imdat, centre=centre)
 
 if args.plreg is False:
     logger.info('inverting image...')
-    cartimg = cn.invert_CartesianImage(vmicart)
+    invimg_cart = cn.invert_CartesianImage(vmicart)
     logger.info('image inverted')
 else:
     logger.info('inverting image using projected Landweber regularization...')
-    cartimg = cn.invert_CartesianImage_plreg(vmicart)
+    invimg_cart = cn.invert_CartesianImage_plreg(vmicart)
     logger.info('image inverted')
 
-polimg = vmi.PolarImage()
+invimg_pol = vmi.PolarImage()
 logger.info('converting to spherical polar coordinates...')
-polimg.from_CartesianImage(cartimg, rbins=args.rbins,
+invimg_pol.from_CartesianImage(invimg_cart, rbins=args.rbins,
                            thetabins=args.thetabins, order=args.order)
 logger.info('finished converting to spherical polar coordinates')
 
-r1, spec = polimg.radial_spectrum()
+r1, spec = invimg_pol.radial_spectrum()
 logger.debug('radial spectrum calculated')
 
-r2, beta = polimg.beta_coefficients(lmax=args.lmax, oddl=oddl)
+r2, beta = invimg_pol.beta_coefficients(lmax=args.lmax, oddl=oddl)
 logger.debug('beta coefficients calculated')
 
-import pylab
+# Plotting - set up a 2x2 grid of plots, but have the radial spectrum span two
+# plot columns
+fig = plot.figure()
+grid = matplotlib.gridspec.GridSpec(2, 2)
 
-fig = pylab.figure()
-ax1 = pylab.axes([0.1, 0.1, 0.8, 0.35])
+# Plot radial spectrum and beta coefficents
+ax1 = plot.subplot(grid[0, :]) # Span both columns
 ax1.plot(r1, spec)
 
 ax2 = ax1.twinx()
@@ -92,26 +96,18 @@ ax2.set_ybound(-5, 5)
 
 for b in numpy.arange(1, beta.shape[0]):
     ax2.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
-pylab.legend()
+plot.legend()
 
-ax3 = pylab.axes([0.1, 0.55, 0.35, 0.35])
-epl = ax3.imshow(vmicart.image.transpose(), origin='lower', 
-                 cmap=pylab.cm.gist_heat)
+# Plot experimental image
+ax3 = plot.subplot(grid[1, 0])
+im = ax3.imshow(vmicart.image.transpose(), origin='lower', 
+                 cmap=plot.cm.gist_heat)
+fig.colorbar(im)
 
-fig.colorbar(epl)
+# Plot inverted image
+ax4 = plot.subplot(grid[1, 1])
+im = ax4.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower', 
+                 cmap=plot.cm.gist_heat)
+fig.colorbar(im)
 
-ax4 = pylab.axes([0.55, 0.55, 0.35, 0.35])
-dpl = ax4.imshow(cartimg.image.transpose().clip(0.0), origin='lower', 
-           cmap=pylab.cm.gist_heat)
-fig.colorbar(dpl)
-
-pylab.show()
-
-
-fig = pylab.figure()
-pylab.imshow(vmicart.image.transpose().clip(0.0), origin='lower')
-pylab.show()
-
-fig = pylab.figure()
-pylab.imshow(cartimg.image.transpose().clip(0.0), origin='lower')
-pylab.show()
+plot.show()
