@@ -17,9 +17,9 @@ parser.add_argument('matrix_file', help='Name of file containing PBASEX matrix')
 parser.add_argument('--no-oddl', action='store_true', 
                     help='Specify whether to include odd order Legendre Polynomials')
 parser.add_argument('--centre', nargs=2, type=float, default=None,
-                    help='The x and y coordinates of the image centre (after transposing, if requested)')
-parser.add_argument('--transpose', action='store_true',
-                    help='If specified, the image will be transposed before fitting')
+                    help='The x and y coordinates of the image centre (after swapping axes, if requested)')
+parser.add_argument('--swapxy', action='store_true',
+                    help='If specified, the image data will have the axes swapped before fitting')
 
 args = parser.parse_args()
 
@@ -33,9 +33,10 @@ logger.debug('loading matrix file: {0}'.format(args.matrix_file))
 mtx.load(args.matrix_file)
 logger.debug('matrix loaded')
 
-vmicart = vmi.CartesianImage()
 logger.debug('loading VMI file: {0}'.format(args.vmi_file))
-vmicart.from_numpy_array(numpy.loadtxt(args.vmi_file))
+npimg = numpy.loadtxt(args.vmi_file)
+vmicart = vmi.CartesianImage(image=npimg)
+
 logger.debug('image loaded and converted to cartesian image')
 
 if args.transpose is True:

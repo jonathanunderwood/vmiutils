@@ -60,10 +60,10 @@ class CartesianImage():
             else:
                 self.x = x.copy()
 
-                if y is None:
-                    self.y = numpy.arange(self.image.shape[1])
-                else:
-                    self.y = y.copy()
+            if y is None:
+                self.y = numpy.arange(self.image.shape[1])
+            else:
+                self.y = y.copy()
                     
         self.shape = self.image.shape
 
@@ -79,30 +79,6 @@ class CartesianImage():
 
     def copy(self):
         return copy.copy(self)
-
-    def from_numpy_array(self, image, x=None, y=None):
-        """ Initialize from an image stored in a numpy array. If x or y are
-        not specified, the x and y coordinates are stored as pixel values.
-        """
-        self.image = image.copy()
-
-        if x is None:
-            self.x = numpy.arange(self.image.shape[0])
-        else:
-            self.x = x.copy()
-
-        if y is None:
-            self.y = numpy.arange(self.image.shape[1])
-        else:
-            self.y = y.copy()
-        
-        self.shape = self.image.shape
-
-        # Set bin widths in each dimension assuming bins are equally spaced
-        self.xbinw = self.x[1] - self.x[0]
-        self.ybinw = self.y[1] - self.y[0]
-
-        self.set_centre(self.centre_of_grid())
 
     def set_centre(self, centre):
         """ Specify the coordinates of the centre of the image as a tuple
@@ -209,10 +185,9 @@ class CartesianImage():
             xmax = rect[1]
             ymin = rect[2]
             ymax = rect[3]
-            z = CartesianImage()
-            z.from_numpy_array(self.image[xmin:xmax, ymin:ymax],
-                               self.x[xmin:xmax], self.y[ymin:ymax])
-            z.centre=self.centre
+            z = CartesianImage(image=self.image[xmin:xmax, ymin:ymax],
+                               x=self.x[xmin:xmax], y=self.y[ymin:ymax],
+                               centre=self.centre)
             return z
         except IndexError:
             logger.error('rect outside image')
