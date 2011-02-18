@@ -59,7 +59,11 @@ else:
     raise NotImplementedError
 
 if args.swapxy is True:
-    vmicart = vmi.CartesianImage(image=img.transpose(), x=y, y=x, centre=args.centre)
+    if args.centre is None:
+        vmicart = vmi.CartesianImage(image=img.transpose(), x=y, y=x)
+    else:
+        centre = (args.centre[1], args.centre[0])
+        vmicart = vmi.CartesianImage(image=img.transpose(), x=y, y=x, centre=centre)
 else:
     vmicart = vmi.CartesianImage(image=img, x=x, y=y, centre=args.centre)
 
@@ -143,7 +147,7 @@ im = ax6.imshow(invimg_cart.transpose().clip(0.0), origin='lower',
 fig.colorbar(im)
 
 #plot.show()
-plot.savefig('junk.pdf')
+plot.savefig(args.vmi_file + '.pdf')
 
 
 ###################################
@@ -152,7 +156,7 @@ plot.savefig('junk.pdf')
 # Plotting - set up a 3x2 grid of plots, but have the radial spectra span two
 # plot columns
 
-fig, axis = plt.subplots(2)
+fig, axis = plot.subplots(2)
 
 # Plot radial spectrum
 axis[0].plot(r1, spec)
@@ -170,23 +174,24 @@ plot.legend()
 plot.savefig('junk2.pdf')
 
 # Plot unzoomed experimental image
-fig, axis = plt.subplots(3)
+fig, axis = plot.subplots(3)
+fig.subplots_adjust(hspace=0.4)
 
+plot.xticks(fontsize=9, rotation=45)
 im = axis[0].imshow(vmicart.image.transpose(), origin='lower',
                 extent=(vmicart.x[0], vmicart.x[-1],
                         vmicart.y[0], vmicart.y[-1]),
                 cmap=plot.cm.gist_heat)
-fig.colorbar(im)
+#fig.colorbar(im)
 
 # Plot zoomed experimental image
 im = axis[1].imshow(vmicart_zoom.image.transpose(), origin='lower',
                 extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
                         vmicart_zoom.y[0], vmicart_zoom.y[-1]),
                 cmap=plot.cm.gist_heat)
-fig.colorbar(im)
+#fig.colorbar(im)
 
 # Plot inverted image
-ax6 = plot.subplot(grid[2, 2])
 # If zoom returned a CartesianImage instance, we'd use this, which is more
 # consistent with the above
 # im = ax5.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower', 
@@ -198,7 +203,7 @@ im = axis[2].imshow(invimg_cart.transpose().clip(0.0), origin='lower',
                         y[0], y[-1]),
                 cmap=plot.cm.gist_heat)
 
-fig.colorbar(im)
+#fig.colorbar(im)
 
 #plot.show()
 plot.savefig('junk3.pdf')
