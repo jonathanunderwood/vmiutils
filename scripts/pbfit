@@ -5,6 +5,9 @@ import logging
 import numpy
 import vmiutils as vmi
 import vmiutils.pbasex as pb
+import matplotlib
+matplotlib.use('PDF')
+import matplotlib.pyplot as plot
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('pbfit')
@@ -20,6 +23,9 @@ parser.add_argument('--centre', nargs=2, type=float, default=None,
                     help='The x and y coordinates of the image centre (after swapping axes, if requested)')
 parser.add_argument('--swapxy', action='store_true',
                     help='If specified, the image data will have the axes swapped before fitting')
+parser.add_argument('--filetype', default='matrix',
+                    choices=['matrix', 'threecolumn'],
+                    help='Specifies the type of data file')
 
 args = parser.parse_args()
 
@@ -33,23 +39,36 @@ logger.debug('loading matrix file: {0}'.format(args.matrix_file))
 mtx.load(args.matrix_file)
 logger.debug('matrix loaded')
 
-logger.debug('loading VMI file: {0}'.format(args.vmi_file))
-npimg = numpy.loadtxt(args.vmi_file)
-vmicart = vmi.CartesianImage(image=npimg)
+if args.filetype == 'matrix':
+    logger.debug('loading VMI matrix file: {0}'.format(args.vmi_file))
+    try:
+        img = numpy.loadtxt(args.vmi_file)
+        x = None
+        y = None
+    except IOError:
+        logger.error('could not read file: {0}'.format(vmi_file))
+        sys.exit(74)
+elif args.filetype == 'threecolumn':
+    import vmiutils.threecolumns
+    try:
+        x, y, img = vmiutils.threecolumns.threecolumns_read(args.vmi_file)
+    except IOError:
+        logger.error('could not read file: {0}'.format(vmi_file))
+        sys.exit(74)
+else:
+    raise NotImplementedError
+
+if args.swapxy is True:
+    vmicart = vmi.CartesianImage(image=img.transpose(), x=y, y=x, centre=args.centre)
+else:
+    vmicart = vmi.CartesianImage(image=img, x=x, y=y, centre=args.centre)
 
 logger.debug('image loaded and converted to cartesian image')
 
-if args.transpose is True:
-    vmicart.image.transpose()
-
 if args.centre is None:
     centre = vmicart.centre_of_gravity()
+    vmicart.set_centre(centre)
     logger.info('image centre of gravity used as centre: {0}'.format(centre))
-else:
-    centre = args.centre
-
-vmicart.set_centre(centre)
-logger.debug('image centre: {0}'.format(centre))
 
 vmipolar = vmi.PolarImage()
 vmipolar.from_CartesianImage(vmicart, rbins=mtx.Rbins, thetabins=mtx.Thetabins)
@@ -65,37 +84,122 @@ logger.debug('radial spectrum calculated')
 r2, beta = fit.beta_coefficients()
 logger.debug('beta coefficients calculated')
 
-x, y, dist = fit.cartesian_distribution()
+x, y, invimg_cart = fit.cartesian_distribution()
 logger.debug('cartesian distribution calculated')
 
 vmicart_zoom = vmicart.zoom_circle(vmipolar.r[-1])
 logger.debug('zoom of original image calculated')
 
+# Plotting - set up a 3x2 grid of plots, but have the radial spectra span two
+# plot columns
+fig = plot.figure()
+grid = matplotlib.gridspec.GridSpec(3, 3)
 
-#import matplotlib
-#matplotlib.rcParams['legend.fancybox'] = True
-import pylab
-
-fig = pylab.figure()
-ax1 = pylab.axes([0.1, 0.1, 0.8, 0.35])
+# Plot radial spectrum
+ax1 = plot.subplot(grid[0, :]) # Span both columns
 ax1.plot(r1, spec)
 
-ax2 = ax1.twinx()
-ax2.set_autoscaley_on(False)
-ax2.set_ybound(-5, 5)
-for b in xrange(1, beta.shape[0]):
-    ax2.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
-pylab.legend()
+# Plot beta coefficents overlaid on dashed radial spectrum
+ax2 = plot.subplot(grid[1, :]) # Span both columns
+ax2.plot(r1, spec, ':')
+ax3 = ax2.twinx()
+ax3.set_autoscaley_on(False)
+ax3.set_ybound(-5, 5)
 
-ax3 = pylab.axes([0.1, 0.55, 0.35, 0.35])
-epl = ax3.imshow(vmicart_zoom.image.transpose(), origin='lower', 
-                 cmap=pylab.cm.gist_heat)
+for b in numpy.arange(1, beta.shape[0]):
+    ax3.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
+plot.legend()
 
-fig.colorbar(epl)
 
-ax4 = pylab.axes([0.55, 0.55, 0.35, 0.35])
-dpl = ax4.imshow(dist.transpose().clip(0.0), origin='lower', 
-           cmap=pylab.cm.gist_heat)
-fig.colorbar(dpl)
+# Plot unzoomed experimental image
+ax4 = plot.subplot(grid[2, 0])
+im = ax4.imshow(vmicart.image.transpose(), origin='lower',
+                extent=(vmicart.x[0], vmicart.x[-1],
+                        vmicart.y[0], vmicart.y[-1]),
+                cmap=plot.cm.gist_heat)
+fig.colorbar(im)
 
-pylab.show()
+# Plot zoomed experimental image
+ax5 = plot.subplot(grid[2, 1])
+im = ax5.imshow(vmicart_zoom.image.transpose(), origin='lower',
+                extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
+                        vmicart_zoom.y[0], vmicart_zoom.y[-1]),
+                cmap=plot.cm.gist_heat)
+fig.colorbar(im)
+
+# Plot inverted image
+ax6 = plot.subplot(grid[2, 2])
+# If zoom returned a CartesianImage instance, we'd use this, which is more
+# consistent with the above
+# im = ax5.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower', 
+#                 extent=(invimg_cart.x[0], invimg_cart.x[-1],
+#                         invimg_cart.y[0], invimg_cart.y[-1]),
+#                  cmap=plot.cm.gist_heat)
+im = ax6.imshow(invimg_cart.transpose().clip(0.0), origin='lower', 
+                extent=(x[0], x[-1],
+                        y[0], y[-1]),
+                cmap=plot.cm.gist_heat)
+
+fig.colorbar(im)
+
+#plot.show()
+plot.savefig('junk.pdf')
+
+
+###################################
+
+
+# Plotting - set up a 3x2 grid of plots, but have the radial spectra span two
+# plot columns
+
+fig, axis = plt.subplots(2)
+
+# Plot radial spectrum
+axis[0].plot(r1, spec)
+
+# Plot beta coefficents overlaid on dashed radial spectrum
+axis[1].plot(r1, spec, ':')
+ax3 = ax2.twinx()
+ax3.set_autoscaley_on(False)
+ax3.set_ybound(-5, 5)
+
+for b in numpy.arange(1, beta.shape[0]):
+    ax3.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
+plot.legend()
+
+
+# Plot unzoomed experimental image
+ax4 = plot.subplot(grid[2, 0])
+im = ax4.imshow(vmicart.image.transpose(), origin='lower',
+                extent=(vmicart.x[0], vmicart.x[-1],
+                        vmicart.y[0], vmicart.y[-1]),
+                cmap=plot.cm.gist_heat)
+fig.colorbar(im)
+
+# Plot zoomed experimental image
+ax5 = plot.subplot(grid[2, 1])
+im = ax5.imshow(vmicart_zoom.image.transpose(), origin='lower',
+                extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
+                        vmicart_zoom.y[0], vmicart_zoom.y[-1]),
+                cmap=plot.cm.gist_heat)
+fig.colorbar(im)
+
+# Plot inverted image
+ax6 = plot.subplot(grid[2, 2])
+# If zoom returned a CartesianImage instance, we'd use this, which is more
+# consistent with the above
+# im = ax5.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower', 
+#                 extent=(invimg_cart.x[0], invimg_cart.x[-1],
+#                         invimg_cart.y[0], invimg_cart.y[-1]),
+#                  cmap=plot.cm.gist_heat)
+im = ax6.imshow(invimg_cart.transpose().clip(0.0), origin='lower', 
+                extent=(x[0], x[-1],
+                        y[0], y[-1]),
+                cmap=plot.cm.gist_heat)
+
+fig.colorbar(im)
+
+#plot.show()
+plot.savefig('junk2.pdf')
+
+

@@ -149,11 +149,11 @@ class CartesianImage():
         centred on the image centre and containing the circular section of the
         image specified by rmax in image coordinates (not bins).
         """
-        xminb = _round_int((self.centre[0] - rmax) / self.xbinw)
-        xmaxb = _round_int((self.centre[0] + rmax) / self.xbinw)
+        xminb = _round_int((self.centre[0] - rmax - self.x[0]) / self.xbinw) 
+        xmaxb = _round_int((self.centre[0] + rmax - self.x[0]) / self.xbinw)
 
-        yminb = _round_int((self.centre[1] - rmax) / self.ybinw)
-        ymaxb = _round_int((self.centre[1] + rmax) / self.ybinw)
+        yminb = _round_int((self.centre[1] - rmax - self.y[0]) / self.ybinw)
+        ymaxb = _round_int((self.centre[1] + rmax - self.y[0]) / self.ybinw)
         
         return self.zoom_rect_pix([xminb, xmaxb, yminb, ymaxb])
 
@@ -185,6 +185,7 @@ class CartesianImage():
             xmax = rect[1]
             ymin = rect[2]
             ymax = rect[3]
+            print '#', xmin, xmax, ymin, ymax
             z = CartesianImage(image=self.image[xmin:xmax, ymin:ymax],
                                x=self.x[xmin:xmax], y=self.y[ymin:ymax],
                                centre=self.centre)

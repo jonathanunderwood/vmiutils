@@ -6,6 +6,7 @@ import numpy
 import vmiutils as vmi
 import vmiutils.ChoNa as cn
 import matplotlib
+matplotlib.use('PDF')
 import matplotlib.pyplot as plot
 
 logging.basicConfig(level=logging.DEBUG)
@@ -41,12 +42,13 @@ try:
     imdat=numpy.loadtxt(args.vmi_file)
     logger.debug('image loaded and converted to cartesian image')
 except IOError:
-        logger.error('Could not read file: {0}'.format(file))
+        logger.error('could not read file: {0}'.format(file))
         sys.exit(74)
 
 # Swap axes if requested
 if args.swapxy is True:
     imdat = imdat.transpose()
+# TODO: need to swap x and y if read in
 
 vmicart = vmi.CartesianImage(image=imdat, centre=args.centre)
 
@@ -117,4 +119,5 @@ im = ax4.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
                  cmap=plot.cm.gist_heat)
 fig.colorbar(im)
 
-plot.show()
+#plot.show()
+plot.savefig('junk.pdf')

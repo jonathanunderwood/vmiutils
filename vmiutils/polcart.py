@@ -21,14 +21,14 @@ def __pol2cart(out_coord, xbw, ybw, rmax, rbw, thetabw):
     it = (t + numpy.pi) / thetabw
     return ir, it
 
-def __cart2pol(out_coord, rbw, thetabw, xbw, ybw, xc, yc):
+def __cart2pol(out_coord, rbw, thetabw, xbw, ybw, xc, yc, x0, y0):
     ir, it = out_coord
     r = ir * rbw
     t = it * thetabw - numpy.pi
     x = r * numpy.sin(t)
     y = r * numpy.cos(t)
-    ix = (x + xc) / xbw
-    iy = (y + yc) / ybw
+    ix = (x + xc - x0) / xbw
+    iy = (y + yc - y0) / ybw
     return ix, iy
 
 def cart2pol(image, x=None, y=None, centre=None, 
@@ -94,7 +94,7 @@ def cart2pol(image, x=None, y=None, centre=None,
 
     pimage = scipy.ndimage.geometric_transform(
         image, __cart2pol, order=order,
-        extra_arguments=(rbw, thetabw, xbw, ybw, xc, yc),
+        extra_arguments=(rbw, thetabw, xbw, ybw, xc, yc, x[0], y[0]),
         output_shape=(radial_bins, angular_bins)
         )
 
