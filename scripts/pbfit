@@ -159,26 +159,27 @@ axis[0].plot(r1, spec)
 
 # Plot beta coefficents overlaid on dashed radial spectrum
 axis[1].plot(r1, spec, ':')
-ax3 = ax2.twinx()
-ax3.set_autoscaley_on(False)
-ax3.set_ybound(-5, 5)
+ax = axis[1].twinx()
+ax.set_autoscaley_on(False)
+ax.set_ybound(-5, 5)
 
 for b in numpy.arange(1, beta.shape[0]):
-    ax3.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
+    ax.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
 plot.legend()
 
+plot.savefig('junk2.pdf')
 
 # Plot unzoomed experimental image
-ax4 = plot.subplot(grid[2, 0])
-im = ax4.imshow(vmicart.image.transpose(), origin='lower',
+fig, axis = plt.subplots(3)
+
+im = axis[0].imshow(vmicart.image.transpose(), origin='lower',
                 extent=(vmicart.x[0], vmicart.x[-1],
                         vmicart.y[0], vmicart.y[-1]),
                 cmap=plot.cm.gist_heat)
 fig.colorbar(im)
 
 # Plot zoomed experimental image
-ax5 = plot.subplot(grid[2, 1])
-im = ax5.imshow(vmicart_zoom.image.transpose(), origin='lower',
+im = axis[1].imshow(vmicart_zoom.image.transpose(), origin='lower',
                 extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
                         vmicart_zoom.y[0], vmicart_zoom.y[-1]),
                 cmap=plot.cm.gist_heat)
@@ -192,7 +193,7 @@ ax6 = plot.subplot(grid[2, 2])
 #                 extent=(invimg_cart.x[0], invimg_cart.x[-1],
 #                         invimg_cart.y[0], invimg_cart.y[-1]),
 #                  cmap=plot.cm.gist_heat)
-im = ax6.imshow(invimg_cart.transpose().clip(0.0), origin='lower', 
+im = axis[2].imshow(invimg_cart.transpose().clip(0.0), origin='lower', 
                 extent=(x[0], x[-1],
                         y[0], y[-1]),
                 cmap=plot.cm.gist_heat)
@@ -200,6 +201,6 @@ im = ax6.imshow(invimg_cart.transpose().clip(0.0), origin='lower',
 fig.colorbar(im)
 
 #plot.show()
-plot.savefig('junk2.pdf')
+plot.savefig('junk3.pdf')
 
 
