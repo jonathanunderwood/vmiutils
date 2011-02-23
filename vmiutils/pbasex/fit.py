@@ -179,8 +179,10 @@ class PbasexFit():
         x = numpy.linspace(-rmax, rmax, bins)
         y = numpy.linspace(-rmax, rmax, bins)
 
+        return vmi.CartesianImage(x=x, y=y, image=dist)
         # TODO: would be better to return a CartesianImage instance here.
-        return x, y, dist
+#        return x, y, dist
+        
 
     def beta_coefficients(self, rbins=500, rmax=None):
         if rmax == None:

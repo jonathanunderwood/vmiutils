@@ -157,4 +157,30 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
 
     return x, y, cimage
 
+if __name__ == '__main__':
+    import polcart as pc
+    import numpy as np
+    import matplotlib
+    import matplotlib.pyplot as plot
+
+    x = np.arange(5)
+    y = np.arange(5)
+    a = np.zeros((5, 5))
+    a[2, 2] = 1.0
+    a[1, 1] = 1.0
+    r, theta, b = pc.cart2pol(x=x, y=y, image=a)
+
+    x2, y2, c = pc.pol2cart (r=r, theta=theta, image=b)
+
+    fig = plot.figure()
+    grid = matplotlib.gridspec.GridSpec(2,1)
+    ax1 = plot.subplot(grid[0, 0])
+    im1 = ax1.imshow(a.transpose(), origin='lower',
+                     extent=(x[0], x[-1], y[0], y[-1]))
+    fig.colorbar(im1)
     
+    ax2 = plot.subplot(grid[1, 0])
+    im2 = ax2.imshow(c.transpose(), origin='lower',
+                     extent=(x2[0], x2[-1], y2[0], y2[-1]))
+    fig.colorbar(im2)
+    plot.show()

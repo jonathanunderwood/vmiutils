@@ -72,8 +72,10 @@ class CartesianImage():
         self.xbinw = self.x[1] - self.x[0]
         self.ybinw = self.y[1] - self.y[0]
         
-        if centre is None:
+        if centre is None or centre == 'grid_centre':
             self.set_centre(self.centre_of_grid())
+        elif centre == 'cofg':
+            self.set_centre(self.centre_of_gravity())
         else:
             self.set_centre(centre)
 
@@ -185,7 +187,6 @@ class CartesianImage():
             xmax = rect[1]
             ymin = rect[2]
             ymax = rect[3]
-            print '#', xmin, xmax, ymin, ymax
             z = CartesianImage(image=self.image[xmin:xmax, ymin:ymax],
                                x=self.x[xmin:xmax], y=self.y[ymin:ymax],
                                centre=self.centre)
