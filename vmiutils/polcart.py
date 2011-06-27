@@ -174,21 +174,29 @@ if __name__ == '__main__':
     a = np.zeros((5, 5))
     a[2, 2] = 1.0
     a[1, 1] = 1.0
+    a[1, 2] = 1.0
     r, theta, b = pc.cart2pol(x=x, y=y, image=a)
 
     x2, y2, c = pc.pol2cart(r=r, theta=theta, image=b, xbins=5, ybins=5)
 
     fig = plot.figure()
     grid = matplotlib.gridspec.GridSpec(2, 1)
+
     ax1 = plot.subplot(grid[0, 0])
+    xbw = x[1] - x[0]
+    ybw = y[1] - y[0]
     im1 = ax1.imshow(a.transpose(), origin='lower',
-                     extent=(x[0], x[-1], y[0], y[-1]),
+                     extent=(x[0] - 0.5 * xbw, x[-1] + 0.5 * xbw,
+                             y[0] - 0.5 * ybw, y[-1] + 0.5 * ybw),
                      interpolation='none')
     fig.colorbar(im1)
 
     ax2 = plot.subplot(grid[1, 0])
+    x2bw = x2[1] - x2[0]
+    y2bw = y2[1] - y2[0]
     im2 = ax2.imshow(c.transpose(), origin='lower',
-                     extent=(x2[0], x2[-1], y2[0], y2[-1]),
+                     extent=(x2[0] - 0.5 * x2bw, x2[-1] + 0.5 * x2bw,
+                             y2[0] - 0.5 * y2bw, y2[-1] + 0.5 * y2bw),
                      interpolation='none')
     fig.colorbar(im2)
     plot.show()
