@@ -207,7 +207,6 @@ matrix(PyObject *self, PyObject *args)
 		    {
 		      PyObject *pval;
 		      char *errstring;
-		      int ret;
 
 		    case GSL_SUCCESS:
 		      pval = PyFloat_FromDouble (result);
@@ -231,42 +230,74 @@ matrix(PyObject *self, PyObject *args)
 		      break;
 
 		    case GSL_EMAXITER:
-		      ret = asprintf(&errstring,
-			       "Failed to integrate: max number of subdivisions exceeded.\nk: %d l: %d R: %d Theta: %f\n", 
-			       k, l, R, Theta);
-		      PyErr_SetString (IntegrationError, errstring);
-		      free (errstring);
+		      if (!asprintf(&errstring,
+				    "Failed to integrate: max number of subdivisions exceeded.\nk: %d l: %d R: %d Theta: %f\n", 
+				    k, l, R, Theta))
+			{
+			  PyErr_SetString (IntegrationError, errstring);
+			  free (errstring);
+			}
+		      else
+			{
+			  PyErr_SetString (IntegrationError, "Couldn't allocate storage for further detail\n");
+			}
+
 		      goto fail;
 		      
 		    case GSL_EROUND:
-		      ret = asprintf(&errstring,
-			       "Failed to integrate: round-off error.\nk: %d l: %d R: %d Theta: %f\n", 
-			       k, l, R, Theta);
-		      PyErr_SetString (IntegrationError, errstring);
-		      free (errstring);
+		      if(!asprintf(&errstring,
+				   "Failed to integrate: round-off error.\nk: %d l: %d R: %d Theta: %f\n", 
+				   k, l, R, Theta))
+			{
+			  PyErr_SetString (IntegrationError, errstring);
+			  free (errstring);
+			}
+		      else
+			{
+			  PyErr_SetString (IntegrationError, "Couldn't allocate storage for further detail\n");
+			}
 		      goto fail;
 		      
 		    case GSL_ESING:
-		      ret = asprintf(&errstring,
-			       "Failed to integrate: singularity.\nk: %d l: %d R: %d Theta: %f\n", 
-			       k, l, R, Theta);
-		      PyErr_SetString (IntegrationError, errstring);
-		      free (errstring);
+		      if (!asprintf(&errstring,
+				    "Failed to integrate: singularity.\nk: %d l: %d R: %d Theta: %f\n", 
+				    k, l, R, Theta))
+			{
+			  PyErr_SetString (IntegrationError, errstring);
+			  free (errstring);
+			}
+		      else
+			{
+			  PyErr_SetString (IntegrationError, "Couldn't allocate storage for further detail\n");
+			}
 		      goto fail;
 		      
 		    case GSL_EDIVERGE:
-		      ret = asprintf(&errstring,
-			       "Failed to integrate: divergent.\nk: %d l: %d R: %d Theta: %f\n", 
-			       k, l, R, Theta);
-		      PyErr_SetString (IntegrationError, errstring);
+		      if (!asprintf(&errstring,
+				    "Failed to integrate: divergent.\nk: %d l: %d R: %d Theta: %f\n", 
+				    k, l, R, Theta))
+			{
+			  PyErr_SetString (IntegrationError, errstring);
+			  free (errstring);
+			}
+		      else
+			{
+			  PyErr_SetString (IntegrationError, "Couldn't allocate storage for further detail\n");
+			}
 		      goto fail;
 		      
 		    default:
-		      ret = asprintf(&errstring,
-			       "Failed to integrate: unknown error. status: %d.\nk: %d l: %d R: %d Theta: %f\n", 
-			       status, k, l, R, Theta);
-		      PyErr_SetString (IntegrationError, errstring);
-		      free (errstring);
+		      if (!asprintf(&errstring,
+				    "Failed to integrate: unknown error. status: %d.\nk: %d l: %d R: %d Theta: %f\n", 
+				    status, k, l, R, Theta))
+			{
+			  PyErr_SetString (IntegrationError, errstring);
+			  free (errstring);
+			}
+		      else
+			{
+			  PyErr_SetString (IntegrationError, "Couldn't allocate storage for further detail\n");
+			}
 		      goto fail;
 		    }	
 		}
