@@ -5,7 +5,13 @@
 
 /* Note that Python.h must be included before any other header files. */
 #include <Python.h>
+
+/* For numpy we need to specify the API version we're targetting so
+   that deprecated API warnings are issued when appropriate. */
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/ndarrayobject.h>
+#undef NPY_NO_DEPRECATED_API
+
 #include <math.h>
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_sf_legendre.h>
@@ -73,7 +79,7 @@ matrix(PyObject *self, PyObject *args)
   int ldim, kdim, midTheta, k;
   unsigned short int oddl, ThetabinsOdd, linc;
   npy_intp dims[4];
-  PyObject *matrix;
+  PyArrayObject *matrix;
   gsl_integration_workspace *wksp;
   gsl_function fn;
   int_params params;
@@ -114,7 +120,7 @@ matrix(PyObject *self, PyObject *args)
   dims[2] = (npy_intp) Rbins;
   dims[3] = (npy_intp) Thetabins;
 
-  matrix = PyArray_SimpleNew (4, dims, NPY_DOUBLE);
+  matrix =(PyArrayObject *) PyArray_SimpleNew (4, dims, NPY_DOUBLE);
   if (!matrix)
     return PyErr_NoMemory();
   
@@ -309,7 +315,7 @@ matrix(PyObject *self, PyObject *args)
   gsl_integration_workspace_free(wksp);
   gsl_integration_qaws_table_free(table);
 
-  return matrix;
+  return (PyObject *)matrix;
 
  fail:  
   gsl_integration_workspace_free(wksp);
