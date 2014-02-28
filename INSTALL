@@ -1,0 +1,10 @@
+Fedora 20
+=========
+1) Install the following packages:
+   python-devel
+   gsl-devel
+   gcc
+   numpy
+
+2) Run the command:
+   python setup.py build
