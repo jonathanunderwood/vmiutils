@@ -1,11 +1,17 @@
 /* Note that Python.h must be included before any other header files. */
 #include <Python.h>
+
+/* For numpy we need to specify the API version we're targetting so
+   that deprecated API warnings are issued when appropriate. */
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/ndarrayobject.h>
+#undef NPY_NO_DEPRECATED_API
+
 #include <math.h>
 #include <gsl/gsl_sf_legendre.h>
 
 static inline int
-arr1D_get(PyObject *arr, int idx, double *val)
+arr1D_get(PyArrayObject *arr, int idx, double *val)
 {
   PyObject *pval = PyArray_GETITEM(arr, PyArray_GETPTR1(arr, idx));
   if (pval)
@@ -19,7 +25,7 @@ arr1D_get(PyObject *arr, int idx, double *val)
 }
 
 static inline int
-arr1D_set(PyObject *arr, int idx, double val)
+arr1D_set(PyArrayObject *arr, int idx, double val)
 {
   PyObject *pval = PyFloat_FromDouble (val);
   if (pval)
@@ -33,7 +39,7 @@ arr1D_set(PyObject *arr, int idx, double val)
 }
 
 static inline int
-arr2D_get(PyObject *arr, int idx1, int idx2, double *val)
+arr2D_get(PyArrayObject *arr, int idx1, int idx2, double *val)
 {
   PyObject *pval = PyArray_GETITEM(arr, PyArray_GETPTR2(arr, idx1, idx2));
   if (pval)
@@ -47,7 +53,7 @@ arr2D_get(PyObject *arr, int idx1, int idx2, double *val)
 }
 
 static inline int
-arr2D_set(PyObject *arr, int idx1, int idx2, double val)
+arr2D_set(PyArrayObject *arr, int idx1, int idx2, double val)
 {
   PyObject *pval = PyFloat_FromDouble (val);
   if (pval)
@@ -63,8 +69,8 @@ arr2D_set(PyObject *arr, int idx1, int idx2, double val)
 static PyObject *
 polar_distribution(PyObject *self, PyObject *args)
 {
-  PyObject *coef = NULL, *coefarg = NULL;
-  PyObject *dist;
+  PyArrayObject *dist = NULL, *coef = NULL;
+  PyObject *coefarg = NULL;
   int rbins, thetabins, i, kmax, lmax;
   double rmax, rstep, thetastep, rkstep, sigma, s;
   npy_intp dims[2];
@@ -76,14 +82,14 @@ polar_distribution(PyObject *self, PyObject *args)
       return NULL;
     }
 
-  coef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_IN_ARRAY);
+  coef = (PyArrayObject *) PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
   if (!coef)
     return NULL;
 
   dims[0] = (npy_intp) rbins;
   dims[1] = (npy_intp) thetabins;
 
-  dist = PyArray_SimpleNew (2, dims, NPY_DOUBLE);
+  dist = (PyArrayObject *) PyArray_SimpleNew (2, dims, NPY_DOUBLE);
   if (!dist)
     {
       Py_DECREF(coef);
@@ -129,7 +135,7 @@ polar_distribution(PyObject *self, PyObject *args)
 
   Py_DECREF(coef);
 
-  return dist;
+  return (PyObject *) dist;
 
  fail:
   Py_DECREF(coef);
@@ -140,10 +146,10 @@ polar_distribution(PyObject *self, PyObject *args)
 static PyObject *
 beta_coeffs(PyObject *self, PyObject *args)
 {
-  PyObject *coefarg = NULL, *coef = NULL;
+  PyArrayObject *coef = NULL, *beta = NULL;
+  PyObject *coefarg = NULL;
   int rbins, i, kmax, lmax, ldim;
   double rmax, rstep, rkstep, sigma, s;
-  PyObject *beta;
   npy_intp dims[2];
 
   if (!PyArg_ParseTuple(args, "diOiddi", 
@@ -153,7 +159,7 @@ beta_coeffs(PyObject *self, PyObject *args)
       return NULL;
     }
 
-  coef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_IN_ARRAY);
+  coef = (PyArrayObject *) PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
   if (!coef)
     return NULL;
 
@@ -162,7 +168,7 @@ beta_coeffs(PyObject *self, PyObject *args)
   dims[0] = (npy_intp) ldim;
   dims[1] = (npy_intp) rbins;
 
-  beta = PyArray_ZEROS (2, dims, NPY_DOUBLE, 0);
+  beta = (PyArrayObject *) PyArray_ZEROS (2, dims, NPY_DOUBLE, 0);
   if (!beta)
     {
       Py_DECREF (coef);
@@ -220,7 +226,7 @@ beta_coeffs(PyObject *self, PyObject *args)
 	}
     }
 
-  return beta;
+  return (PyObject *) beta;
 
  fail:
   Py_DECREF(beta);
@@ -232,10 +238,11 @@ beta_coeffs(PyObject *self, PyObject *args)
 static PyObject *
 cartesian_distribution(PyObject *self, PyObject *args)
 {
-  PyObject *coefarg = NULL, *coef = NULL;
+  PyArrayObject *coef = NULL;
+  PyObject *coefarg = NULL;
   int npoints, i, kmax, lmax;
   double rmax, step, rkstep, sigma, s;
-  PyObject *dist;
+  PyArrayObject *dist;
   npy_intp dims[2];
 
   if (!PyArg_ParseTuple(args, "diOiddi", 
@@ -245,14 +252,14 @@ cartesian_distribution(PyObject *self, PyObject *args)
       return NULL;
     }
 
-  coef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_IN_ARRAY);
+  coef = (PyArrayObject *) PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
   if (!coef)
     return NULL;
 
   dims[0] = (npy_intp) npoints;
   dims[1] = (npy_intp) npoints;
 
-  dist = PyArray_SimpleNew (2, dims, NPY_DOUBLE);
+  dist = (PyArrayObject *) PyArray_SimpleNew (2, dims, NPY_DOUBLE);
   if (!dist)
     {
       Py_DECREF(coef);
@@ -304,7 +311,7 @@ cartesian_distribution(PyObject *self, PyObject *args)
 
   Py_DECREF(coef);
 
-  return dist;
+  return (PyObject *) dist;
   
  fail:
   Py_DECREF(coef);
@@ -315,8 +322,8 @@ cartesian_distribution(PyObject *self, PyObject *args)
 static PyObject *
 radial_spectrum(PyObject *self, PyObject *args)
 {
-  PyObject *coefarg = NULL, *coef = NULL;
-  PyObject *spec;
+  PyArrayObject *coef = NULL, *spec = NULL;
+  PyObject *coefarg = NULL;
   int rbins, i, kmax;
   double rmax, rstep, rkstep, sigma, s, max = 0.0;
   npy_intp rbinsnp;
@@ -328,13 +335,13 @@ radial_spectrum(PyObject *self, PyObject *args)
       return NULL;
     }
 
-  coef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_IN_ARRAY);
+  coef = (PyArrayObject *) PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
   if (!coef)
     return NULL;
 
   /* spec = (double *) PyDataMem_NEW (rbins * sizeof (double)); */
   rbinsnp = (npy_intp) rbins;
-  spec = PyArray_SimpleNew (1, &rbinsnp, NPY_DOUBLE);
+  spec = (PyArrayObject *) PyArray_SimpleNew (1, &rbinsnp, NPY_DOUBLE);
   if (!spec)
     {
       Py_DECREF(coef);
@@ -384,7 +391,7 @@ radial_spectrum(PyObject *self, PyObject *args)
 	goto fail;
     }
 
-  return spec;
+  return (PyObject *) spec;
 
  fail:
   Py_DECREF(coef);
