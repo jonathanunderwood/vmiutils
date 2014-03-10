@@ -79,14 +79,15 @@ matrix(PyObject *self, PyObject *args)
   int ldim, kdim, midTheta, k;
   unsigned short int oddl, ThetabinsOdd, linc;
   npy_intp dims[4];
-  PyArrayObject *matrix;
+  PyArrayObject *matrix, *detectfn_coef = NULL;
+  PyObject *detectfn_coefarg;
   gsl_integration_workspace *wksp;
   gsl_function fn;
   int_params params;
   gsl_integration_qaws_table *table;
 
-  if (!PyArg_ParseTuple(args, "iiiidHddi", 
-			&kmax, &lmax, &Rbins, &Thetabins, &sigma, &oddl, &epsabs, &epsrel, &wkspsize))
+  if (!PyArg_ParseTuple(args, "iiiidHddiO", 
+			&kmax, &lmax, &Rbins, &Thetabins, &sigma, &oddl, &epsabs, &epsrel, &wkspsize, &detectfn_coefarg))
     {
       PyErr_SetString (PyExc_TypeError, "Bad argument to matrix");
       return NULL;
@@ -115,6 +116,18 @@ matrix(PyObject *self, PyObject *args)
 	}
     }
 
+  /* detectfn_coefarg is a pointer to a numpy array containing
+     detection function coefficients if supplied, or NULL (None)
+     otherwise. They will have been calculated from previous pbasex
+     fit. */
+  if (detectfn_coefarg != NULL)
+    {
+      detectfn_coef = (PyArrayObject *) PyArray_FROM_OTF(detectfn_coefarg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+      if (!detectfn_coef)
+	return NULL;
+    }
+
+  /* Allocate a new numpy array for the pbasex matrix */
   dims[0] = (npy_intp) kdim;
   dims[1] = (npy_intp) ldim;
   dims[2] = (npy_intp) Rbins;
@@ -122,7 +135,10 @@ matrix(PyObject *self, PyObject *args)
 
   matrix =(PyArrayObject *) PyArray_SimpleNew (4, dims, NPY_DOUBLE);
   if (!matrix)
-    return PyErr_NoMemory();
+    {
+      Py_XDECREF (detectfn_coef);
+      return PyErr_NoMemory();
+    }
   
   /* Turn off gsl error handler - we'll check return codes. */
   gsl_set_error_handler_off ();
@@ -130,6 +146,7 @@ matrix(PyObject *self, PyObject *args)
   wksp = gsl_integration_workspace_alloc(wkspsize);
   if (!wksp)
     {
+      Py_XDECREF (detectfn_coef);
       Py_DECREF (matrix);
       return PyErr_NoMemory();
     }
@@ -315,11 +332,14 @@ matrix(PyObject *self, PyObject *args)
   gsl_integration_workspace_free(wksp);
   gsl_integration_qaws_table_free(table);
 
+  Py_XDECREF (detectfn_coef);
+
   return (PyObject *)matrix;
 
  fail:  
   gsl_integration_workspace_free(wksp);
   gsl_integration_qaws_table_free(table);
+  Py_XDECREF (detectfn_coef);
   Py_DECREF(matrix);
 
   return NULL;

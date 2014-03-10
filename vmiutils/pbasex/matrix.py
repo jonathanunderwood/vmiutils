@@ -79,7 +79,7 @@ class PbasexMatrix():
         while True:
             try:
                 mtx = matrix(kmax, lmax, Rbins, Thetabins, sigma, oddl, 
-                             epsabs, epsrel, wkspsize)
+                             epsabs, epsrel, wkspsize, None)
                 break
             except IntegrationError as errstring:
                 logger.info(errstring)
