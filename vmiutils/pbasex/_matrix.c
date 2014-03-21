@@ -30,6 +30,7 @@ typedef struct
 } int_params;
 
 static double integrand(double r, void *params)
+/* Integrand for PBASEX, no detection function. */
 {
   double a, rad, ang, val;
   int_params p = *(int_params *) params;
@@ -49,46 +50,24 @@ static double integrand(double r, void *params)
     return 0.0;
 }
 
-/* static PyObject * */
-/* basisfn(PyObject *self, PyObject *args) */
-/* { */
-/*   int l; */
-/*   double r, rk, sigma, theta, rad, ang, a, s; */
-
-/*   if (!PyArg_ParseTuple(args, "dddid", &r, &rk, &sigma, &l, &theta)) */
-/*     { */
-/*       PyErr_SetString (PyExc_TypeError, "Bad argument to basisfn_full"); */
-/*       return NULL; */
-/*     } */
-
-/*   a = r - rk; */
-/*   s = 2.0 * sigma * sigma; */
-/*   rad = exp(-(a * a) / s); */
-/*   ang = gsl_sf_legendre_Pl(l, cos(theta)); */
-
-/*   return Py_BuildValue("d", rad * ang); */
-/* } */
-
 static PyObject *
 matrix(PyObject *self, PyObject *args)
 {
   int lmax, kmax, Rbins, Thetabins;
   double sigma, epsabs, epsrel; /* Suggest epsabs = 0.0, epsrel = 1.0e-7 */   
   double rkspacing, dTheta;
-  double alpha, beta;
   int wkspsize; /* Suggest: wkspsize = 100000. */
   int ldim, kdim, midTheta, k;
   unsigned short int oddl, ThetabinsOdd, linc;
   npy_intp dims[4];
-  PyArrayObject *matrix, *detectfn_coef = NULL;
-  PyObject *detectfn_coefarg;
+  PyArrayObject *matrix;
   gsl_integration_workspace *wksp;
   gsl_function fn;
   int_params params;
   gsl_integration_qaws_table *table;
 
-  if (!PyArg_ParseTuple(args, "iiiidHddiOdd", 
-			&kmax, &lmax, &Rbins, &Thetabins, &sigma, &oddl, &epsabs, &epsrel, &wkspsize, &detectfn_coefarg, &alpha, &beta))
+  if (!PyArg_ParseTuple(args, "iiiidHddi",
+			&kmax, &lmax, &Rbins, &Thetabins, &sigma, &oddl, &epsabs, &epsrel, &wkspsize))
     {
       PyErr_SetString (PyExc_TypeError, "Bad argument to matrix");
       return NULL;
@@ -115,17 +94,6 @@ matrix(PyObject *self, PyObject *args)
 	  ldim = (lmax / 2) + 1;
 	  linc = 2;
 	}
-    }
-
-  /* detectfn_coefarg is a pointer to a numpy array containing
-     detection function coefficients if supplied, or NULL (None)
-     otherwise. They will have been calculated from previous pbasex
-     fit. */
-  if (detectfn_coefarg != NULL)
-    {
-      detectfn_coef = (PyArrayObject *) PyArray_FROM_OTF(detectfn_coefarg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-      if (!detectfn_coef)
-	return NULL;
     }
 
   /* Allocate a new numpy array for the pbasex matrix */
@@ -333,14 +301,11 @@ matrix(PyObject *self, PyObject *args)
   gsl_integration_workspace_free(wksp);
   gsl_integration_qaws_table_free(table);
 
-  Py_XDECREF (detectfn_coef);
-
   return (PyObject *)matrix;
 
  fail:  
   gsl_integration_workspace_free(wksp);
   gsl_integration_qaws_table_free(table);
-  Py_XDECREF (detectfn_coef);
   Py_DECREF(matrix);
 
   return NULL;
@@ -363,10 +328,9 @@ basisfn(PyObject *self, PyObject *args)
   gsl_function fn;
   int_params params;
   gsl_integration_qaws_table *table;
-  PyObject *numpy_matrix;
   char *errstring;
 
-  if (!PyArg_ParseTuple(args, "iiiiddddi", 
+  if (!PyArg_ParseTuple(args, "iiiiddddi",
 			&k, &l, &Rbins, &Thetabins, &sigma, &rk, &epsabs, &epsrel, &wkspsize))
     {
       PyErr_SetString (PyExc_TypeError, "Bad argument to matrix");
@@ -374,7 +338,10 @@ basisfn(PyObject *self, PyObject *args)
     }
 
   /* Release GIL, as we're not accessing any Python objects for the main calculation. */
-  Py_BEGIN_ALLOW_THREADS;
+  NPY_BEGIN_ALLOW_THREADS
+
+  fn.params = &params;
+  fn.function = &integrand;
 
   matrix = malloc(Rbins * Thetabins * sizeof (double));
   if (matrix == NULL)
@@ -396,8 +363,6 @@ basisfn(PyObject *self, PyObject *args)
       return PyErr_NoMemory();
     }
 
-  fn.function = &integrand;
-  fn.params = &params;
 
   params.two_sigma2 = 2.0 * sigma * sigma;
   params.rk = rk;
@@ -524,8 +489,7 @@ basisfn(PyObject *self, PyObject *args)
   gsl_integration_qaws_table_free(table);
 
   /* Regain GIL as we'll now access some Python objects. */
-  Py_END_ALLOW_THREADS;
-
+  NPY_END_ALLOW_THREADS
 
   /* Make a numpy array from matrix. */
   dims[0] = (npy_intp) Rbins;
@@ -579,14 +543,14 @@ basisfn(PyObject *self, PyObject *args)
    by the module and the corresponding C function. */
 static PyMethodDef MatrixMethods[] = {
     {"basisfn",  basisfn, METH_VARARGS,
-     "Returns the value of a basis function."},
+     "Returns a matrix of a single (k, l) basis function."},
     {"matrix",  matrix, METH_VARARGS,
      "Returns an inversion matrix of basis functions."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
 /* Module initialization function, must be caled initNAME, where NAME is the
-   compiled module name, in this case _basisfn. */
+   compiled module name, in this case _matrix. */
 PyMODINIT_FUNC
 init_matrix(void)
 {
