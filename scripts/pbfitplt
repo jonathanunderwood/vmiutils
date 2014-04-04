@@ -1,0 +1,117 @@
+#!/usr/bin/python
+
+import argparse
+import logging
+import numpy
+import vmiutils as vmi
+import vmiutils.pbasex as pb
+import matplotlib
+matplotlib.use('PDF')
+import matplotlib.pyplot as plot
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('pbfit')
+
+parser = argparse.ArgumentParser(
+    description='Utility for generating plots from a PBASEX fit file and a VMI data file')
+
+parser.add_argument('fit_file', help='Name of file containing PBASEX fit')
+
+parser.add_argument('vmi_file', help='Name of file containing original VMI data')
+
+parser.add_argument('--swapxy', action='store_true',
+                    help='If specified, the VMI image data will have the axes swapped before plotting')
+parser.add_argument('--filetype', default='matrix',
+                    choices=['matrix', 'threecolumn'],
+                    help='Specifies the type of VMI data file')
+parser.add_argument('--centre', nargs=2, type=float, default=None,
+                    help='The x and y coordinates of the VMI image centre (after swapping axes, if requested)')
+
+args = parser.parse_args()
+
+if args.filetype == 'matrix':
+    logger.debug('loading VMI matrix file: {0}'.format(args.vmi_file))
+    try:
+        img = numpy.loadtxt(args.vmi_file)
+        x = None
+        y = None
+    except IOError:
+        logger.error('could not read file: {0}'.format(vmi_file))
+        sys.exit(74)
+elif args.filetype == 'threecolumn':
+    import vmiutils.threecolumns
+    try:
+        x, y, img = vmiutils.threecolumns.threecolumns_read(args.vmi_file)
+    except IOError:
+        logger.error('could not read file: {0}'.format(vmi_file))
+        sys.exit(74)
+else:
+    raise NotImplementedError
+
+if args.swapxy is True:
+    if args.centre is None:
+        vmicart = vmi.CartesianImage(image=img.transpose(), x=y, y=x)
+    else:
+        centre = (args.centre[1], args.centre[0])
+        vmicart = vmi.CartesianImage(image=img.transpose(), x=y, y=x, centre=centre)
+else:
+    vmicart = vmi.CartesianImage(image=img, x=x, y=y, centre=args.centre)
+
+logger.debug('VMI image loaded')
+
+fit = pb.PbasexFit()
+fit.load(args.fit_file)
+logger.debug('fit data loaded')
+
+r1, spec = fit.calc_radial_spectrum()
+logger.debug('radial spectrum calculated')
+
+r2, beta = fit.beta_coefficients()
+logger.debug('beta coefficients calculated')
+
+invimg_cart = fit.cartesian_distribution()
+logger.debug('cartesian distribution calculated')
+
+vmicart_zoom = vmicart.zoom_circle(fit.rmax)
+logger.debug('zoom of original image calculated')
+
+# Plotting - set up a 3x2 grid of plots, but have the radial spectra span two
+# plot columns
+fig = plot.figure()
+grid = matplotlib.gridspec.GridSpec(3, 2)
+
+# Plot radial spectrum
+ax1 = plot.subplot(grid[0, :]) # Span both columns
+ax1.plot(r1, spec)
+
+# Plot beta coefficents overlaid on dashed radial spectrum
+ax2 = plot.subplot(grid[1, :]) # Span both columns
+ax2.plot(r1, spec, ':')
+ax3 = ax2.twinx()
+ax3.set_autoscaley_on(False)
+ax3.set_ybound(-5, 5)
+
+for b in numpy.arange(1, beta.shape[0]):
+    ax3.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
+plot.legend()
+
+# Plot zoomed experimental image
+ax4 = plot.subplot(grid[2, 0])
+im = ax4.imshow(vmicart_zoom.image.transpose(), origin='lower',
+                extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
+                        vmicart_zoom.y[0], vmicart_zoom.y[-1]),
+                cmap=plot.cm.gist_heat)
+fig.colorbar(im)
+
+# Plot inverted image
+ax5 = plot.subplot(grid[2, 1])
+im = ax5.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower', 
+                extent=(invimg_cart.x[0], invimg_cart.x[-1],
+                        invimg_cart.y[0], invimg_cart.y[-1]),
+                cmap=plot.cm.gist_heat)
+
+fig.colorbar(im)
+
+#plot.show()
+plot.savefig(args.vmi_file + '.pdf')
+
