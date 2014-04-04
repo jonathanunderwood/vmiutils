@@ -26,8 +26,9 @@ class PbasexFit():
         self.rkstep = None
         self.rfactor = None
         self.rmax = None
+        self.rscale = None
         self.__metadata = ['kmax', 'lmax', 'oddl', 'sigma',
-                          'rkstep', 'rfactor', 'rmax']
+                           'rkstep', 'rfactor', 'rmax', 'rscale']
 
     def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None):
         if not isinstance(image, vmi.PolarImage):
