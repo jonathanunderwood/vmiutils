@@ -1,5 +1,7 @@
 import logging
 import numpy.linalg
+import cPickle as pickle
+
 import vmiutils as vmi
 import matrix as pbm
 from _fit import *
@@ -18,7 +20,7 @@ logger.addHandler(__null_handler)
 
 class PbasexFit():
     def __init__(self):
-        self.coefs = None
+        self.coef = None
         self.kmax = None
         self.lmax = None
         self.oddl = None
@@ -147,7 +149,7 @@ class PbasexFit():
         not the bin number. If rmax is None (default) then the maximum radius
         in the input image is used."""
 
-        if self.fit_done is False:
+        if self.coef is None:
             logger.error('no fit done')
             raise AttributeError
         
@@ -164,7 +166,7 @@ class PbasexFit():
         return r, spec
 
     def cartesian_distribution(self, bins=500, rmax=None):
-        if self.fit_done is False:
+        if self.coef is None:
             logger.error('no fit done')
             raise AttributeError
         
@@ -186,6 +188,10 @@ class PbasexFit():
         
 
     def beta_coefficients(self, rbins=500, rmax=None):
+        if self.coef is None:
+            logger.error('no fit done')
+            raise AttributeError
+
         if rmax == None:
             rmax = self.rmax
 
@@ -201,7 +207,7 @@ class PbasexFit():
 
         for object in self.__metadata:
             pickle.dump(getattr(self, object), fd, protocol=2)
-        numpy.save(fd, self.coefs)
+        numpy.save(fd, self.coef)
 
         fd.close()
 
@@ -211,7 +217,7 @@ class PbasexFit():
         try:
             for object in self.__metadata:
                 setattr(self, object, pickle.load(fd))
-            self.coefs = numpy.load(fd)
+            self.coef = numpy.load(fd)
         finally:
             fd.close()
 
