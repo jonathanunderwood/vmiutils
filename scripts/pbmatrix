@@ -5,7 +5,8 @@ import logging
 import vmiutils.pbasex as pb
 
 # Set up logging - output all log message to stdout
-logging.basicConfig()
+#logging.basicConfig()
+logging.basicConfig(format="%(threadName)s:%(message)s",level=logging.DEBUG)
 logger = logging.getLogger('pbmatrix')
 
 # Define functions that will be called by the sub-commands
@@ -16,8 +17,11 @@ def calc(args):
         oddl = True
 
     mtx = pb.PbasexMatrix()
-    mtx.calc_matrix(args.Rbins, args.Thetabins, args.kmax, args.lmax, args.sigma,
-                    oddl, args.epsabs, args.epsrel, args.wkspsize)
+    logger.info('Starting pBasex matrix calculation')
+    mtx.calc_matrix_threaded(args.Rbins, args.Thetabins, args.kmax, args.lmax, args.sigma,
+                             oddl, args.epsabs, args.epsrel, args.wkspsize, args.nthreads)
+    # mtx.calc_matrix(args.Rbins, args.Thetabins, args.kmax, args.lmax, args.sigma,
+    #                 oddl, args.epsabs, args.epsrel, args.wkspsize)
     mtx.dump(args.filename)
 
 def info(args):
@@ -61,6 +65,8 @@ parser_calc.add_argument('--epsrel', type=float, default=1.0e-7,
                     help='Relative integration tolerance for numerical integration')
 parser_calc.add_argument('--wkspsize', type=int, default=100000,
                     help='Maximum number of divisions in numerical integration')
+parser_calc.add_argument('--nthreads', type=int, default=None,
+                    help='Number of threads to use')
 
 # info sub-command
 parser_info = subparsers.add_parser('info', 
