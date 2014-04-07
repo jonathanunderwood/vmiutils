@@ -25,6 +25,8 @@ parser.add_argument('--swapxy', action='store_true',
 parser.add_argument('--filetype', default='matrix',
                     choices=['matrix', 'threecolumn'],
                     help='Specifies the type of data file')
+parser.add_argument('--delimiter', default=None,
+                    help='Specifies the delimiter used (defaults to whitespace)')
 
 args = parser.parse_args()
 
@@ -41,7 +43,10 @@ logger.debug('matrix loaded')
 if args.filetype == 'matrix':
     logger.debug('loading VMI matrix file: {0}'.format(args.vmi_file))
     try:
-        img = numpy.loadtxt(args.vmi_file)
+        if args.delimiter is not None:
+            img = numpy.loadtxt(args.vmi_file, delimiter = args.delimiter)
+        else:
+            img = numpy.loadtxt(args.vmi_file)
         x = None
         y = None
     except IOError:
