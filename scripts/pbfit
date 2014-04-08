@@ -16,6 +16,8 @@ parser.add_argument('vmi_file', help='Name of file containing VMI image')
 parser.add_argument('matrix_file', help='Name of file containing PBASEX matrix')
 parser.add_argument('output_file', help='Name of output file to save fit to')
 
+parser.add_argument('--lmax', type=int, default=-1,
+                    help='Specify highest order Legendre Polynomial to include in the fit')
 parser.add_argument('--no-oddl', action='store_true', 
                     help='Specify whether to include odd order Legendre Polynomials')
 parser.add_argument('--centre', nargs=2, type=float, default=None,
@@ -29,6 +31,11 @@ parser.add_argument('--delimiter', default=None,
                     help='Specifies the delimiter used (defaults to whitespace)')
 
 args = parser.parse_args()
+
+if args.lmax is -1:
+    lmax = None
+else:
+    lmax = args.lmax
 
 if args.no_oddl is True:
     oddl = False
@@ -98,7 +105,7 @@ logger.debug('image converted to polar coordinates')
 
 logger.debug('fitting polar image...')
 fit = pb.PbasexFit()
-fit.fit_data(vmipolar, mtx, oddl=oddl)
+fit.fit_data(vmipolar, mtx, oddl=oddl, lmax=lmax)
 logger.debug('data fit')
 
 logger.debug('writing data to {0}'.format(args.output_file))
