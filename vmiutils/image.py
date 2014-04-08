@@ -151,11 +151,29 @@ class CartesianImage():
         centred on the image centre and containing the circular section of the
         image specified by rmax in image coordinates (not bins).
         """
+        if self.centre is None:
+            logger.error('image centre has not been defined prior to asking for zoom_circle')
+            raise RuntimeError('image centre undefined')
+
         xminb = _round_int((self.centre[0] - rmax - self.x[0]) / self.xbinw) 
+        if xminb < 0:
+            logger.error('xminb less than zero in zoom_circle')
+            raise RuntimeError('xminb less than zero')
+
         xmaxb = _round_int((self.centre[0] + rmax - self.x[0]) / self.xbinw)
+        if xmaxb > self.image.shape[0]:
+            logger.error('xmaxb greater than image size in zoom_circle')
+            raise RuntimeError('xmaxb greater than image size')
 
         yminb = _round_int((self.centre[1] - rmax - self.y[0]) / self.ybinw)
+        if yminb < 0:
+            logger.error('yminb less than zero in zoom_circle')
+            raise RuntimeError('yminb less than zero')
+
         ymaxb = _round_int((self.centre[1] + rmax - self.y[0]) / self.ybinw)
+        if ymaxb > self.image.shape[0]:
+            logger.error('ymaxb greater than image size in zoom_circle')
+            raise RuntimeError('ymaxb greater than image size')
         
         return self.zoom_rect_pix([xminb, xmaxb, yminb, ymaxb])
 
