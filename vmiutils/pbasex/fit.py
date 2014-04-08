@@ -1,3 +1,5 @@
+# TODO: there's a redundancy here between self.rmax and self.rscale
+
 import logging
 import numpy.linalg
 import cPickle as pickle
@@ -134,8 +136,6 @@ class PbasexFit():
         # rfactor holds the scaling factor to convert from radial bin number
         # in the polar image to actual position in the original image 
         self.rscale = image.r[1] - image.r[0]
-
-        self.fit_done = True
 
     def calc_radial_spectrum(self, rbins=500, rmax=None):
         """Calculate a radial spectrum from the parameters of a fit. Returns a
