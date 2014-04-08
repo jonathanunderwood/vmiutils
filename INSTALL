@@ -5,6 +5,7 @@ Fedora 20
    gsl-devel
    gcc
    numpy
+   scipy
 
 2) Run the command:
    python setup.py build
