@@ -123,9 +123,9 @@ class PbasexFit():
         self.oddl = oddl
         self.sigma = matrix.sigma
 
-        # rmax is the maximum radial bin number we can sensibly consider
-        # i.e. without extrapolating outside the input data
-        self.rmax = Rbins - 1
+        # rmax is the largest value of R in the
+        # image we have fit - store this for scaling the fit.
+        self.rmax = image.r[-1]
 
         # rkstep holds the spacing between the centres of adjacent Gaussian
         # radial basis functions
@@ -138,14 +138,14 @@ class PbasexFit():
         self.fit_done = True
 
     def calc_radial_spectrum(self, rbins=500, rmax=None):
-        """Calculate a raidal spectrum from the parameters of a fit. Returns a
+        """Calculate a radial spectrum from the parameters of a fit. Returns a
         tuple (r, intensity) containing the r values and the corresponding
         intensities. 
 
         rbins determines the number of points in the returned spectrum.
 
         rmax is the maximum radius to consider, i.e. the spectrum is
-        claculated for r=0..rmax. Note: rmax is the desired radial value and
+        calculated for r=0..rmax. Note: rmax is the desired radial value and
         not the bin number. If rmax is None (default) then the maximum radius
         in the input image is used."""
 
