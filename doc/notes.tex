@@ -15,35 +15,43 @@
 We adopt the convention that the observed image $F(x,z)$ lies in the
 $xz$-plane, with $z$ designated as the axis of cylindrical symmetry. We also
 wish to express the image in polar coordinates, $F(R, \Theta)$ such that
-\begin{gather}
-  z=R\cos\Theta\\
-  x=R\sin\Theta\\
-  R^2=x^2+z^2
-\end{gather}
+\begin{subequations}
+  \begin{align}
+    z&=R\cos\Theta\\
+    x&=R\sin\Theta\\
+    R^2&=x^2+z^2
+  \end{align}
+\end{subequations}
 The distribution of photofragments is most naturally expressed in polar
 coordinates, $f(r, \theta, \phi)\equiv f(r, \theta)$. We assume a
 cylindrically symmetric distribution of fragments. We choose a system of
 coordinates such that the $x$ and $z$ directions are coincident to that used
 for the image plane.
-\begin{gather}
-  z=r\cos\theta\\
-  x=r\sin\theta\cos\phi\\
-  y=r\sin\theta\sin\phi\\
-  r^2=x^2+y^2+z^2
-\end{gather}
+\begin{subequations}
+  \begin{align}
+    z&=r\cos\theta\\
+    x&=r\sin\theta\cos\phi\\
+    y&=r\sin\theta\sin\phi\\
+    r^2&=x^2+y^2+z^2
+  \end{align}
+\end{subequations}
 It is useful to define the quantity $\rho$ representing the distance from the
 tip of the vector $\mathbf{r}$ to the $z$-axis
-\begin{gather}
-  \rho=r\sin\theta\\
-  \rho^2=x^2+y^2
-\end{gather}
+\begin{subequations}
+  \begin{align}
+    \rho&=r\sin\theta\\
+    \rho^2&=x^2+y^2
+  \end{align}
+\end{subequations}
 We also note the following relationships
-\begin{gather}
-  r^2=R^2+y^2\\
-  \rho^2=r^2-z^2\\
-  R=\frac{r\cos\theta}{\cos\Theta}\\
-  \tan\Theta=\frac{x}{z}=\tan\theta\cos\phi
-\end{gather}
+\begin{subequations}
+  \begin{align}
+    r^2&=R^2+y^2\\
+    \rho^2&=r^2-z^2\\
+    R&=\frac{r\cos\theta}{\cos\Theta}\\
+    \tan\Theta&=\frac{x}{z}\\&=\tan\theta\cos\phi
+  \end{align}
+\end{subequations}
 
 \section{Forward Abel integral expressed in Cartesian coordinates}
 We can express the image $F(x,z)$ in terms of the distribution expressed in
@@ -177,11 +185,7 @@ similar strategy, setting $\mathrm{FWHM}=w$, where $w$ is the basis function
 radial separation given in terms of the number of radial basis functions $N_k$
 and maximum radial distance (in pixels) as $w=r_\mathrm{max}/N_k$.
 
-\section{Polar matrix inversion method}
-This method aims to be an analogous method to that of Cho and Na but in
-spherical polar coordinates so as to concentrate the noise in the image
-centre. 
-
+\section{Inclusion of a detection function in the Pbasex method}
 For a single value of $r$, we can write
 \begin{equation}
   \label{eq:Ff}
@@ -198,7 +202,7 @@ coordinate system:
 $S_{R\Theta}$ may be re-written as 
 \begin{equation}
   \label{eq:SRTheta}
-  S_{R\Theta}=|\mathbf{J}|\;\dee\theta\;\dee\phi,
+  \dee R\;\dee\Theta=|\mathbf{J}|\;\dee\theta\;\dee\phi,
 \end{equation}
 where the determinant of the Jacobian $\mathbf{J}$ is given by
 \begin{equation}
@@ -214,9 +218,21 @@ Substituting \eqref{eq:Sthetaphi}, \eqref{eq:SRTheta} and \eqref{eq:Jacobian}
 into \eqref{eq:Ff} we can write
 \begin{equation}
   F(R, \Theta)=
-  \frac{f(r,\theta)r^2\sin\theta}{|\mathbf{J}|}.
+  \frac{f(r,\theta)r^2\sin\theta}{R|\mathbf{J}|}.
 \end{equation}
-Using 
+Noting that
+\begin{subequations}
+  \begin{align}
+    R&=r\sqrt{\cos^2\theta+\sin^2\theta\sin^2\phi}\\
+    \Theta&=\arctan(\sin\phi\tan\theta)
+  \end{align}
+\end{subequations}
+we can write the Jacobian as
+\begin{equation}
+  J = -\frac{2 r \sin ^2(\theta ) \cos (\phi )}
+  {\sqrt{2 \cos (2 \theta ) \cos ^2(\phi )-\cos (2 \phi )+3}}
+\end{equation}
+
 \end{document}
 %%% Local Variables: 
 %%% mode: latex
