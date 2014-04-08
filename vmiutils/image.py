@@ -18,8 +18,28 @@ def _round_int(x):
     return int(round(x))
 
 class CartesianImage():
-    """ Class used to represent a VMI image stored as a cartesian
+    """Class used to represent a VMI image stored as a cartesian
     array.
+
+    image specifies the image data. If image is a 2D numpy ndarray,
+    this will be stored in the returned instance. If image is any of
+    the strings "empty" or "Empty" a 2D numpy.empty ndarray is
+    created. If image is either of the strings "zeros" or "Zeros", a
+    2D numpy.zeros ndarray is created. If image is not specified, or
+    None, the image data is not initialized.
+
+    if image is "empty", "Empty, "zeros" or "Zeros", xbins and ybins
+    specify the size of the image to create.
+
+    x specifies the x coordinates of the image data. If no x argument
+    is specified, the bin number is used.
+
+    y specifies the y coordinates of the image data. If no y argument
+    is specified, the bin number is used.
+
+    centre specifies the centre of the image. If not specified, the
+    centre coordinate of the image array is used.
+
     """
     def __init__(self, image=None, x=None, y=None, 
                  xbins=None, ybins=None, centre=None):
