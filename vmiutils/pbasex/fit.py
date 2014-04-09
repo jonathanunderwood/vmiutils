@@ -23,7 +23,7 @@ logger.addHandler(__null_handler)
 #
 # The matrix is calculated in unitless dimensions i.e. pixel
 # number. When fitting an image, the image is necessarily resampled
-# onto a (R, Theta) grid o the same dimensions as the matrix. As such
+# onto a (R, Theta) grid of the same dimensions as the matrix. As such
 # there is a scaling factor we need to keep track of which relates the
 # pixel number in the resampled image, and the fit, to the original
 # image dimensions. This is stored as self.rscale. Also, for
