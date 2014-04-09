@@ -74,11 +74,8 @@ else:
 vmicart = vmi.CartesianImage(image=img, x=x, y=y)
 
 # Set centre
-# if centre is None:
-#     centre = vmicart.centre_of_gravity()
-#     logger.info('image centre of gravity used as centre: {0}'.format(centre))
-
-# vmicart.set_centre(centre)
+if centre is not None:
+    vmicart.set_centre(centre)
 
 logger.debug('image loaded and converted to cartesian image')
 
