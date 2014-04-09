@@ -166,7 +166,7 @@ class PbasexFit():
         self.rkstep = float(Rbins) / kdim
 
         # rfactor holds the scaling factor to convert from radial bin number
-        # in the polar image to actual position in the original image 
+        # in the fit to actual position in the original image 
         self.rscale = image.r[1] - image.r[0]
 
     def calc_radial_spectrum(self, rbins=500, rmax=None):
