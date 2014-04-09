@@ -191,9 +191,9 @@ class PbasexFit():
             logger.error('rmax exceeds that of original data')
             raise ValueError
 
-        spec = radial_spectrum(float(rmax), rbins, self.coef, self.kmax, 
+        spec = radial_spectrum(rmax/self.rscale, rbins, self.coef, self.kmax,
                                self.rkstep, self.sigma)
-        r = numpy.linspace(0.0, rmax * self.rscale, rbins)
+        r = numpy.linspace(0.0, rmax, rbins)
 
         return r, spec
 
@@ -243,7 +243,7 @@ class PbasexFit():
         if rmax == None:
             rmax = self.rmax
 
-        beta = beta_coeffs(rmax, rbins, self.coef, self.kmax, 
+        beta = beta_coeffs(rmax/self.rscale, rbins, self.coef, self.kmax,
                            self.rkstep, self.sigma, self.lmax)
 
         r = numpy.linspace(0.0, rmax, rbins)
