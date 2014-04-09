@@ -62,6 +62,9 @@ class PbasexFit():
         Theta in the range 0..-Pi will be fit. "positive" specifies
         that only the image section in the range 0..Pi will be fit.
 
+        image must have the same number of Rbins and Thetabins as
+        matrix.
+
         '''
 
         if not isinstance(image, vmi.PolarImage):
