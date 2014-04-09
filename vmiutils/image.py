@@ -321,7 +321,7 @@ class PolarImage():
             self.theta = theta.copy()
 
     def from_CartesianImage(self, cimage, rbins=None, 
-                               thetabins=None, rmax=None, order=3):
+                            thetabins=None, rmax=None, order=3):
         """Calculate a polar represenation of a CartesianImage instance.
 
         cimage is a CartesianImage instance.
