@@ -1,5 +1,3 @@
-# TODO: there's a redundancy here between self.rmax and self.rscale
-
 import logging
 import numpy.linalg
 import cPickle as pickle
@@ -17,8 +15,23 @@ class __NullHandler(logging.Handler):
 __null_handler = __NullHandler()
 logger.addHandler(__null_handler)
 
-# Note: the way the matrix is calculated and stored is such that the indices
-# are in the order matrix[k, l, Rbin, Thetabin]
+# Implementation note
+# --------------------
+# The way the matrix is calculated and stored is
+# such that the indices are in the order 
+# matrix[k, l, Rbin, Thetabin]. 
+#
+# The matrix is calculated in unitless dimensions i.e. pixel
+# number. When fitting an image, the image is necessarily resampled
+# onto a (R, Theta) grid o the same dimensions as the matrix. As such
+# there is a scaling factor we need to keep track of which relates the
+# pixel number in the resampled image, and the fit, to the original
+# image dimensions. This is stored as self.rscale. Also, for
+# convenience we store the value of the larges radius sampled in the
+# original image, self.rmax. When we calculate any property from the
+# fitted coefficients, we have to do that calculation in the unitless
+# dimensions of the original matrix, so we have to take insto account
+# self.rscale.
 
 class PbasexFit():
     def __init__(self):
@@ -166,6 +179,15 @@ class PbasexFit():
         return r, spec
 
     def cartesian_distribution(self, bins=500, rmax=None):
+        """Calculates a cartesian image of the fitted distribution.
+        
+        bins specifes the number of bins in the x and y dimension to
+        calculate.
+
+        rmax specifies the maximum radius to consider in the
+        image. This is specified in coordinates of the original image
+        that was fitted to.
+        """
         if self.coef is None:
             logger.error('no fit done')
             raise AttributeError
@@ -176,18 +198,25 @@ class PbasexFit():
             logger.error('rmax exceeds that of original data')
             raise ValueError
         
-        dist = cartesian_distribution(rmax, bins, self.coef, self.kmax,
+        # Note that the calculation here is done in scaled (pixel)
+        # coordinates, not absolute scaled coordinates.
+        dist = cartesian_distribution(rmax/self.rscale, bins, self.coef, self.kmax,
                                       self.rkstep, self.sigma, self.lmax)
 
         x = numpy.linspace(-rmax, rmax, bins)
         y = numpy.linspace(-rmax, rmax, bins)
 
         return vmi.CartesianImage(x=x, y=y, image=dist)
-        # TODO: would be better to return a CartesianImage instance here.
-#        return x, y, dist
-        
 
     def beta_coefficients(self, rbins=500, rmax=None):
+        '''Calculates the beta coefficients for the fit as a function 
+        of r up to rmax.
+        
+        rbins specifies the number of data points calculated
+
+        rmax specifies the maximum radius to consider and is specified
+        in fdimensions of the original image that was fitted.
+        '''
         if self.coef is None:
             logger.error('no fit done')
             raise AttributeError
@@ -198,7 +227,7 @@ class PbasexFit():
         beta = beta_coeffs(rmax, rbins, self.coef, self.kmax, 
                            self.rkstep, self.sigma, self.lmax)
 
-        r = numpy.linspace(0.0, rmax * self.rscale, rbins)
+        r = numpy.linspace(0.0, rmax, rbins)
         
         return r, beta
 
