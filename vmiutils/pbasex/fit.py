@@ -48,6 +48,22 @@ class PbasexFit():
                            'rkstep', 'rfactor', 'rmax', 'rscale']
 
     def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None):
+        '''Performs a fit to the data stored in the vmi.PolarImage instance
+        image using the PbasexMatrix instance matrix previously calculated.
+
+        lmax specifies the maximum value of to consider when fitting.
+
+        oddl specifies whether or not to consider odd Legendre
+        polynomials when fitting.
+
+        section specifies which part of the image to fit. The default
+        is "whole" which means the entire image will be
+        fit. "negative" specifies that only the image section with
+        Theta in the range 0..-Pi will be fit. "positive" specifies
+        that only the image section in the range 0..Pi will be fit.
+
+        '''
+
         if not isinstance(image, vmi.PolarImage):
             logger.error("image is not an instance of PolarImage")
             raise TypeError
