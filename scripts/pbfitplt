@@ -89,49 +89,92 @@ logger.debug('radial spectrum calculated')
 r2, beta = fit.beta_coefficients()
 logger.debug('beta coefficients calculated')
 
-invimg_cart = fit.cartesian_distribution()
+invimg_cart = fit.cartesian_distribution(bins=100)
 logger.debug('cartesian distribution calculated')
 
 vmicart_zoom = vmicart.zoom_circle(fit.rmax)
 logger.debug('zoom of original image calculated')
 
-# Plotting - set up a 3x2 grid of plots, but have the radial spectra span two
-# plot columns
-fig = plot.figure()
-grid = matplotlib.gridspec.GridSpec(3, 2)
+# Generate plots in a multi page PDF file
+from matplotlib.backends.backend_pdf import PdfPages
+ 
+pdf_pages = PdfPages(args.vmi_file + '.pdf')
 
-# Plot radial spectrum
-ax1 = plot.subplot(grid[0, :]) # Span both columns
-ax1.plot(r1, spec)
+# First page contains plots of the image data and the reconstructed
+# distribution. Plot with two different coloour maps.
+fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
 
-# Plot beta coefficents overlaid on dashed radial spectrum
-ax2 = plot.subplot(grid[1, :]) # Span both columns
-ax2.plot(r1, spec, ':')
-ax3 = ax2.twinx()
-ax3.set_autoscaley_on(False)
-ax3.set_ybound(-5, 5)
-
-for b in numpy.arange(1, beta.shape[0]):
-    ax3.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
-plot.legend()
-
-# Plot zoomed experimental image
-ax4 = plot.subplot(grid[2, 0])
-im = ax4.imshow(vmicart_zoom.image.transpose(), origin='lower',
+ax = plot.subplot2grid((2, 2), (0, 0))
+im = plot.imshow(vmicart_zoom.image.transpose(), origin='lower',
                 extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
                         vmicart_zoom.y[0], vmicart_zoom.y[-1]),
                 cmap=plot.cm.gist_heat)
-fig.colorbar(im)
+ax.set_title('Experimental data')
+fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
-# Plot inverted image
-ax5 = plot.subplot(grid[2, 1])
-im = ax5.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower', 
+ax = plot.subplot2grid((2, 2), (0, 1))
+im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower', 
                 extent=(invimg_cart.x[0], invimg_cart.x[-1],
                         invimg_cart.y[0], invimg_cart.y[-1]),
                 cmap=plot.cm.gist_heat)
+ax.set_title('pBasex reconstruction')
+fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
-fig.colorbar(im)
+ax = plot.subplot2grid((2, 2), (1, 0))
+im = plot.imshow(vmicart_zoom.image.transpose(), origin='lower',
+                extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
+                        vmicart_zoom.y[0], vmicart_zoom.y[-1]),
+                 cmap=plot.cm.spectral)
+ax.set_title('Experimental data')
+fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
-#plot.show()
-plot.savefig(args.vmi_file + '.pdf')
+ax = plot.subplot2grid((2, 2), (1, 1))
+im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower', 
+                extent=(invimg_cart.x[0], invimg_cart.x[-1],
+                        invimg_cart.y[0], invimg_cart.y[-1]),
+                 cmap=plot.cm.spectral)
+ax.set_title('pBasex reconstruction')
+fig.colorbar(im, use_gridspec=True, shrink=0.6)
+
+pdf_pages.savefig(fig)
+
+# Second page containing the radial spectrum and beta parameters. We
+# potentially need a big area for the beta value plot legend, so we
+# let this plot be twice as large as the radial spectrum.
+fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
+
+# radial spectrum
+ax1 = plot.subplot2grid((3, 1), (0, 0), colspan=2, rowspan=1)
+ax1.plot(r1, spec)
+
+# beta parameters
+ax1 = plot.subplot2grid((3, 1), (1, 0), colspan=2, rowspan=2)
+
+ax1.plot(r1, spec, ':')
+ax2 = ax1.twinx()
+ax2.set_autoscaley_on(False)
+ax2.set_ybound(-5, 5)
+
+if fit.oddl == True:
+    inc = 1
+    bstart = 1
+else:
+    inc = 2
+    bstart = 2
+
+for b in numpy.arange(bstart, beta.shape[0], inc):
+    ax2.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
+
+box = ax1.get_position()
+ax1.set_position([box.x0,box.y0,box.width,0.5*box.height])
+ax2.set_position([box.x0,box.y0,box.width,0.5*box.height])
+
+
+plot.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+            ncol=8, mode="expand", borderaxespad=0.)
+
+pdf_pages.savefig(fig)
+
+# Close PDF file
+pdf_pages.close()
 
