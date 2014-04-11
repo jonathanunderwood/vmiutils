@@ -366,7 +366,7 @@ cartesian_distribution_point(PyObject *self, PyObject *args)
       for (l = 0; l <= lmax; l++)
 	{
 	  double ang = gsl_sf_legendre_Pl(l, costheta);
-	  double c = coef [k * lmax + l];
+	  double c = coef [k * (lmax + 1) + l];
 
 	  val += c * rad * ang;
 	}

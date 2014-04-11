@@ -1,6 +1,10 @@
 import logging
 import numpy.linalg
 import cPickle as pickle
+import Queue
+import threading
+import multiprocessing
+import math
 
 import vmiutils as vmi
 import matrix as pbm
@@ -256,24 +260,31 @@ class PbasexFit():
         xvals = numpy.linspace(-rmax, rmax, bins)
         yvals = numpy.linspace(-rmax, rmax, bins)
 
-        dist = numpy.empty[bins, bins]
+        dist = numpy.zeros((bins, bins))
         queue = Queue.Queue(0)
 
         # Here we exploit the mirror symmetry in the y axis
-        for x in xvals[bins/2:bins-1]:
-            for y in yvals[0:bins-1]:
-                queue.put({'x': this_x, 'y': this_y})
+        for xbin in numpy.arange(bins/2, bins):
+            xval = xvals[xbin]
+            xval2 = xval * xval
+            for ybin in numpy.arange(bins):
+                yval = yvals[ybin]
+                yval2 = yval * yval
+                if math.sqrt(xval2 + yval2) <= self.rmax:
+                    queue.put({'xbin': xbin, 'ybin': ybin, 'xval': xval, 'yval': yval})
 
         def __worker():
             while not queue.empty():
                 job = queue.get()
-                x = job['x']
-                y = job['y']
-                logger.debug('Calculating cartesian distribution at x={0}, y={1}'.format(x, y))
-                dist[x, y] = cartesian_distribution_point (
-                    x, y, self.coef, self.kmax, self.rkstep, 
-                    self.sigma, self.lmax)
-                logger.debug('Finished calculating cartesian distribution at x={0}, y={1}'.format(x, y))
+                xbin = job['xbin']
+                ybin = job['ybin']
+                xval = job['xval'] / self.rscale
+                yval = job['yval'] / self.rscale
+
+                #logger.debug('Calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
+                dist[xbin, ybin] = cartesian_distribution_point (
+                    xval, yval, self.coef, self.kmax, self.rkstep, self.sigma, self.lmax)
+                #logger.debug('Finished calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
                 queue.task_done()
 
         if nthreads is None:
@@ -287,9 +298,12 @@ class PbasexFit():
         queue.join()
 
         # Mirror symmetry
-        dist[bins/2:0] = dist[bins/2:bins - 1]
+        if bins % 2 != 0: # bins is odd
+            dist[bins/2 - 1::-1] = dist[bins/2 + 1:bins]
+        else: # bins is even
+            dist[bins/2 - 1::-1] = dist[bins/2:bins]
 
-        return vmi.CartesianImage(x=x, y=y, image=dist)
+        return vmi.CartesianImage(x=xvals, y=yvals, image=dist)
 
     def beta_coefficients(self, rbins=500, rmax=None):
         '''Calculates the beta coefficients for the fit as a function 
