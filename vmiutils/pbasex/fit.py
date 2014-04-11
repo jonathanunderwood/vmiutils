@@ -273,6 +273,11 @@ class PbasexFit():
                 if math.sqrt(xval2 + yval2) <= self.rmax:
                     queue.put({'xbin': xbin, 'ybin': ybin, 'xval': xval, 'yval': yval})
 
+        if self.oddl:
+            oddl = 1
+        else:
+            oddl = 0
+
         def __worker():
             while not queue.empty():
                 job = queue.get()
@@ -280,10 +285,10 @@ class PbasexFit():
                 ybin = job['ybin']
                 xval = job['xval'] / self.rscale
                 yval = job['yval'] / self.rscale
-
+                
                 #logger.debug('Calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
                 dist[xbin, ybin] = cartesian_distribution_point (
-                    xval, yval, self.coef, self.kmax, self.rkstep, self.sigma, self.lmax)
+                    xval, yval, self.coef, self.kmax, self.rkstep, self.sigma, self.lmax, oddl)
                 #logger.debug('Finished calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
                 queue.task_done()
 

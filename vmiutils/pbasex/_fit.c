@@ -323,20 +323,27 @@ static PyObject *
 cartesian_distribution_point(PyObject *self, PyObject *args)
 {
   PyObject *coefarg = NULL, *pycoef = NULL;
-  int k, kmax, lmax;
+  int k, kmax, lmax, oddl, linc;
   double x, y, costheta, r, rkstep, sigma, s, val;
   double * coef;
 
   /* TODO: we should pass oddl as an argument to this function, and
      skip over odd l values if appropriate. */
 
-  if (!PyArg_ParseTuple(args, "ddOiddi",
-			&x, &y, &coefarg, &kmax, &rkstep, &sigma, &lmax))
+  if (!PyArg_ParseTuple(args, "ddOiddii",
+			&x, &y, &coefarg, &kmax, &rkstep, &sigma, &lmax, &oddl))
     {
       PyErr_SetString (PyExc_TypeError, 
 		       "Bad argument to cartesian_distribution");
       return NULL;
     }
+
+  if (oddl == 1)
+    linc = 1;
+  else if (oddl == 0)
+    linc = 2;
+  else
+    return NULL;
 
   pycoef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE, 
 			    NPY_ARRAY_IN_ARRAY);
@@ -355,6 +362,7 @@ cartesian_distribution_point(PyObject *self, PyObject *args)
   r = sqrt (x * x + y * y);
   costheta = cos(atan2(x, y));
 
+
   val = 0.0;
   for (k = 0; k <= kmax; k++)
     {
@@ -363,7 +371,7 @@ cartesian_distribution_point(PyObject *self, PyObject *args)
       double rad = exp(-(a * a) / s);
       int l;
 		  
-      for (l = 0; l <= lmax; l++)
+      for (l = 0; l <= lmax; l += linc)
 	{
 	  double ang = gsl_sf_legendre_Pl(l, costheta);
 	  double c = coef [k * (lmax + 1) + l];
