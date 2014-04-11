@@ -25,15 +25,8 @@ def calc(args):
         except IOError:
             logger.error('could not read file: {0}'.format(args.detectfn))
 
-        if args.alpha is None:
-            alpha = 0.0;
-        else:
-            alpha = math.radians(args.alpha)
-
-        if args.beta is None:
-            beta = 0.0;
-        else:
-            beta = math.radians(args.alpha)
+        alpha = math.radians(args.alpha)
+        beta = math.radians(args.beta)
 
     mtx = pb.PbasexMatrix()
     logger.info('Starting pBasex matrix calculation')
@@ -91,9 +84,9 @@ parser_calc.add_argument('--nthreads', type=int, default=None,
                          help='Number of threads to use')
 parser_calc.add_argument('--detectfn', default=None,
                          help='Name of file containing a detection function')
-parser_calc.add_argument('--alpha', default=None,
+parser_calc.add_argument('--alpha', type=float, default=0.0,
                          help='Azimuthal angle between the detector frame and lab frame (degrees)')
-parser_calc.add_argument('--beta', default=None,
+parser_calc.add_argument('--beta', type=float, default=0.0,
                          help='Polar angle between the detector frame and lab frame (degrees)')
 
 # info sub-command
