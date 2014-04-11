@@ -89,11 +89,11 @@ parser_calc.add_argument('--wkspsize', type=int, default=100000,
                     help='Maximum number of divisions in numerical integration')
 parser_calc.add_argument('--nthreads', type=int, default=None,
                     help='Number of threads to use')
-parser.add_argument('--detectfn', default=None,
+parser_calc.add_argument('--detectfn', default=None,
                     help='Name of file containing a detection function')
-parser.add_argument('--alpha', default=None,
+parser_calc.add_argument('--alpha', default=None,
                     help='Azimuthal angle between the detector frame and lab frame (degrees)')
-parser.add_argument('--beta', default=None,
+parser_calc.add_argument('--beta', default=None,
                     help='Polar angle between the detector frame and lab frame (degrees)')
 
 # info sub-command
