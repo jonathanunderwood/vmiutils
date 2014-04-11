@@ -101,7 +101,9 @@ class PbasexMatrix():
         self.epsrel = epsrel
 
     def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax, sigma=None, oddl=True,
-                             epsabs=0.0, epsrel=1.0e-7, wkspsize=100000, nthreads=None):
+                             epsabs=0.0, epsrel=1.0e-7, wkspsize=100000,
+                             detectionfn=None, alpha=None, beta=None,
+                             nthreads=None):
         """Calculates an inversion matrix using multiple threads.
 
         kmax determines the number of radial basis functions (from k=0..kmax).
@@ -130,11 +132,37 @@ class PbasexMatrix():
         wkspsize specifies the maximum number of subintervals used for the
         numerical integration of the basis functions.
 
+        detectionfn specifies a detection function. At present this
+        can be None, or an instance of PbasexFit from a previous fit.
+
+        alpha specifies the azimuthal angle between the frame that the
+        detection function is specified in and the lab frame. This is
+        in radians. If None, we assume 0.0 for this angle.
+
+        beta specifies the polar angle between the frame that the
+        detection function is specified in and the lab frame. This is
+        in radians. If None, we assume 0.0 for this angle.
+
         nthreads specifies the number of threads to use. If this has
         the default value of None, the number of threads used will be
         equal to the number of CPU cores.
 
         """
+        if detectionfn is not None:
+            if isinstance(detectfn, pbasex.PbasexFit):
+                import vmiutils.pbasex.fit as pbasex
+                if alpha == None:
+                    _alpha = 0.0
+                else:
+                    _alpha = alpha
+
+                if beta == None:
+                    _beta = 0.0
+                else:
+                    _beta = beta
+            else:
+                raise NotImplementedError
+
         # Spacing of radial basis function centres
         rkspacing = Rbins / (kmax + 1.0)
 
@@ -162,8 +190,14 @@ class PbasexMatrix():
                 logger.info('Calculating basis function for k={0}, l={1}'.format(k, l))
 
                 try:
-                    bf = basisfn (k, l, Rbins, Thetabins, sigma, rk, 
-                                  epsabs, epsrel, wkspsize)
+                    if detectionfn == None:
+                        bf = basisfn (k, l, Rbins, Thetabins, sigma, rk,
+                                      epsabs, epsrel, wkspsize)
+                    elif isinstance(detectionfn, pbasex.PbasexFit):
+                        bf = basisfn_detfn1 (k, l, Rbins, Thetabins, sigma, rk,
+                                             epsabs, epsrel, wkspsize,
+                                             detectionfn, _alpha, _beta)
+
                 except IntegrationError as errstring:
                     logger.info(errstring)
                     # Should do something about killing all threads here.
