@@ -320,6 +320,68 @@ cartesian_distribution(PyObject *self, PyObject *args)
 }
 
 static PyObject *
+cartesian_distribution_point(PyObject *self, PyObject *args)
+{
+  PyObject *coefarg = NULL, *pycoef = NULL;
+  int k, kmax, lmax;
+  double x, y, costheta, r, rkstep, sigma, s, val;
+  double * coef;
+
+  /* TODO: we should pass oddl as an argument to this function, and
+     skip over odd l values if appropriate. */
+
+  if (!PyArg_ParseTuple(args, "ddOiddi",
+			&x, &y, &coefarg, &kmax, &rkstep, &sigma, &lmax))
+    {
+      PyErr_SetString (PyExc_TypeError, 
+		       "Bad argument to cartesian_distribution");
+      return NULL;
+    }
+
+  pycoef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE, 
+			    NPY_ARRAY_IN_ARRAY);
+  if (!pycoef)
+    {
+      Py_XDECREF(pycoef);
+      return NULL;
+    }
+
+  coef = (double *) PyArray_DATA((PyArrayObject *) pycoef);
+
+  /* Release GIL here as no longer accessing python objects. */
+  Py_BEGIN_ALLOW_THREADS
+
+  s = 2.0 * sigma * sigma;
+  r = sqrt (x * x + y * y);
+  costheta = cos(atan2(x, y));
+
+  val = 0.0;
+  for (k = 0; k <= kmax; k++)
+    {
+      double rk = k * rkstep;
+      double a = r - rk;
+      double rad = exp(-(a * a) / s);
+      int l;
+		  
+      for (l = 0; l <= lmax; l++)
+	{
+	  double ang = gsl_sf_legendre_Pl(l, costheta);
+	  double c = coef [k * lmax + l];
+
+	  val += c * rad * ang;
+	}
+    }
+
+  /* Regain GIL */
+  Py_END_ALLOW_THREADS
+
+  Py_DECREF (pycoef);
+
+  return Py_BuildValue("d", val);
+}
+
+
+static PyObject *
 radial_spectrum(PyObject *self, PyObject *args)
 {
   PyArrayObject *coef = NULL, *spec = NULL;
@@ -406,6 +468,8 @@ static PyMethodDef FitMethods[] = {
      "Returns a simulated angular integrated radial spectrum from fit coefficients."},
     {"cartesian_distribution",  cartesian_distribution, METH_VARARGS,
      "Returns a simulated distribution cartesian image from fit coefficients."},
+    {"cartesian_distribution_point",  cartesian_distribution_point, METH_VARARGS,
+     "Returns a (x, y) point in the simulated distribution cartesian image from fit coefficients."},
     {"polar_distribution",  polar_distribution, METH_VARARGS,
      "Returns a simulated distribution polar image from fit coefficients."},
     {"beta_coeffs",  beta_coeffs, METH_VARARGS,

@@ -227,6 +227,70 @@ class PbasexFit():
 
         return vmi.CartesianImage(x=x, y=y, image=dist)
 
+    def cartesian_distribution_threaded(self, bins=500, rmax=None, 
+                                        nthreads=None):
+        """Calculates a cartesian image of the fitted distribution using
+        multiple threads for speed.
+        
+        bins specifes the number of bins in the x and y dimension to
+        calculate.
+
+        rmax specifies the maximum radius to consider in the
+        image. This is specified in coordinates of the original image
+        that was fitted to.
+        
+        nthreads specifies the number of threads to use. If None, then
+        we'll use all available cores
+
+        """
+        if self.coef is None:
+            logger.error('no fit done')
+            raise AttributeError
+        
+        if rmax is None:
+            rmax = self.rmax
+        elif rmax > self.rmax:
+            logger.error('rmax exceeds that of original data')
+            raise ValueError
+        
+        xvals = numpy.linspace(-rmax, rmax, bins)
+        yvals = numpy.linspace(-rmax, rmax, bins)
+
+        dist = numpy.empty[bins, bins]
+        queue = Queue.Queue(0)
+
+        # Here we exploit the mirror symmetry in the y axis
+        for x in xvals[bins/2:bins-1]:
+            for y in yvals[0:bins-1]:
+                queue.put({'x': this_x, 'y': this_y})
+
+        def __worker():
+            while not queue.empty():
+                job = queue.get()
+                x = job['x']
+                y = job['y']
+                logger.debug('Calculating cartesian distribution at x={0}, y={1}'.format(x, y))
+                dist[x, y] = cartesian_distribution_point (
+                    x, y, self.coef, self.kmax, self.rkstep, 
+                    self.sigma, self.lmax)
+                logger.debug('Finished calculating cartesian distribution at x={0}, y={1}'.format(x, y))
+                queue.task_done()
+
+        if nthreads is None:
+            nthreads = multiprocessing.cpu_count()
+
+        for i in range(nthreads):
+            t = threading.Thread(target=__worker)
+            t.daemon = True
+            t.start()
+
+        queue.join()
+
+        # Mirror symmetry
+        dist[bins/2:0] = dist[bins/2:bins - 1]
+
+        return vmi.CartesianImage(x=x, y=y, image=dist)
+
     def beta_coefficients(self, rbins=500, rmax=None):
         '''Calculates the beta coefficients for the fit as a function 
         of r up to rmax.
