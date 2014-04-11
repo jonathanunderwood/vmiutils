@@ -9,7 +9,7 @@ import matplotlib
 matplotlib.use('PDF')
 import matplotlib.pyplot as plot
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(format="%(threadName)s:%(message)s",level=logging.DEBUG)
 logger = logging.getLogger('pbfit')
 
 parser = argparse.ArgumentParser(
@@ -89,7 +89,7 @@ logger.debug('radial spectrum calculated')
 r2, beta = fit.beta_coefficients()
 logger.debug('beta coefficients calculated')
 
-invimg_cart = fit.cartesian_distribution(bins=100)
+invimg_cart = fit.cartesian_distribution_threaded(bins=500)
 logger.debug('cartesian distribution calculated')
 
 vmicart_zoom = vmicart.zoom_circle(fit.rmax)
