@@ -9,7 +9,8 @@ import multiprocessing
 import Queue
 import threading
 
-#import vmiutils.pbasex.fit
+import fit as pbfit
+
 from _matrix import *
 
 # Set up logging and create a null handler in case the application doesn't
@@ -149,7 +150,7 @@ class PbasexMatrix():
 
         """
         if detectionfn is not None:
-            if isinstance(detectfn, pbasex.PbasexFit):
+            if isinstance(detectionfn, pbfit.PbasexFit):
                 import vmiutils.pbasex.fit as pbasex
                 if alpha == None:
                     _alpha = 0.0
@@ -193,7 +194,7 @@ class PbasexMatrix():
                     if detectionfn == None:
                         bf = basisfn (k, l, Rbins, Thetabins, sigma, rk,
                                       epsabs, epsrel, wkspsize)
-                    elif isinstance(detectionfn, pbasex.PbasexFit):
+                    elif isinstance(detectionfn, pbfit.PbasexFit):
                         bf = basisfn_detfn1 (k, l, Rbins, Thetabins, sigma, rk,
                                              epsabs, epsrel, wkspsize,
                                              detectionfn, _alpha, _beta)

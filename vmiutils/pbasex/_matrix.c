@@ -5,6 +5,7 @@
 
 /* Note that Python.h must be included before any other header files. */
 #include <Python.h>
+#include <stdio.h>
 
 /* For numpy we need to specify the API version we're targetting so
    that deprecated API warnings are issued when appropriate. */
@@ -705,7 +706,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   gsl_function fn;
   int_params_detfn1 params;
   gsl_integration_qaws_table *table;
-  PyObject *numpy_matrix, detectfn;
+  PyObject *numpy_matrix, *detectfn;
   double alpha, beta;
   PyObject *pbasex_fit_module, *pbasex_fit_module_dict, *pbasex_fit_class;
   unsigned short int correct_type;
@@ -726,7 +727,8 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   pbasex_fit_module = PyImport_ImportModule("vmiutils.pbasex.fit"); /* New reference */
   pbasex_fit_module_dict = PyModule_GetDict(pbasex_fit_module); /* Borrowed reference */
   pbasex_fit_class = PyDict_GetItemString(pbasex_fit_module_dict, "PbasexFit"); /* Borrowed reference */
-  correct_type = PyObject_IsInstance (&detectfn, pbasex_fit_class);
+  correct_type = PyObject_IsInstance (detectfn, pbasex_fit_class);
+
   Py_XDECREF(pbasex_fit_module);
 
   if (!correct_type)
@@ -737,32 +739,33 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   else
     {
       PyObject *p = NULL;
-      PyArrayObject * detectfn_coefs = NULL;
+      PyArrayObject *detectfn_coefs = NULL;
       
       params.df_alpha = alpha;
       params.df_cos_beta = cos (beta);
       params.df_sin_beta = sin (beta);
-      
-      if (get_pyint_attr(&detectfn, "kmax", &(params.df_kmax)) ||
-	  get_pyint_attr(&detectfn, "lmax", &(params.df_lmax)) ||
-	  get_pybool_attr(&detectfn, "oddl", &(params.df_oddl))
+
+
+      if (get_pyint_attr(detectfn, "kmax", &(params.df_kmax)) ||
+	  get_pyint_attr(detectfn, "lmax", &(params.df_lmax)) ||
+	  get_pybool_attr(detectfn, "oddl", &(params.df_oddl))
 	  )
 	return NULL;
-      
+
       /* Grab the fit coefficients from the pbasex fit. We want to
 	 store these as a normal C array, rather than having to access
 	 them as a numpy array during the integration so we can
 	 release the GIL. */
-      p = PyObject_GetAttrString (&detectfn, "coefs");
+      p = PyObject_GetAttrString (detectfn, "coef");
       if (p == NULL)
 	{
 	  Py_XDECREF(p); /* Belt & braces */
 	  return NULL;
 	}
-      
+
       /* Note the last argument here assures an aligned, contiguous array is returned. */
       detectfn_coefs = 
-	(PyArrayObject *) PyArray_FROM_OTF(&detectfn, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	(PyArrayObject *) PyArray_FROM_OTF(p, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
       
       if (detectfn_coefs == NULL)
 	{
@@ -784,7 +787,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 	 below.
       */
       params.df_coefs = (double *) PyArray_DATA(detectfn_coefs);
-      
+
       /* Sanity check */
       if (params.df_coefs == NULL || 
 	  PyArray_SIZE(detectfn_coefs) != (params.df_lmax + 1) * (params.df_kmax + 1))
@@ -795,6 +798,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 	  return NULL;
 	}
     }
+
 
   /* Release GIL, as we're not accessing any Python objects for the
      main calculation. Any return statements will need to be preceeded
