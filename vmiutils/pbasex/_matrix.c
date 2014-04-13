@@ -553,12 +553,12 @@ basisfn(PyObject *self, PyObject *args)
  ****************************************************************/
 typedef struct 
 {
-  int l, df_oddl;
+  int l, df_linc;
   long df_kmax, df_lmax;
   double R, rk, two_sigma2, RcosTheta, RsinTheta;
   double df_two_sigma2, df_rkstep, df_rmax;
   double df_alpha, df_cos_beta, df_sin_beta;
-  double *df_coefs;
+  double *df_coefs, *df_legpol;
 } int_params_detfn1;
 
 
@@ -576,17 +576,23 @@ static double integrand_detfn1 (double r, void *params)
   double phi = asin(p.RsinTheta / (r * sin_theta));
   double cos_theta_det_frame = p.df_cos_beta * cos_theta + 
     p.df_sin_beta * sin_theta * cos (phi - p.df_alpha);
-  int df_linc = p.df_oddl ? 1 : 2;
   double a, rad, ang, val, df_val;
-  int k;
+  int k, l, df_lidx;
 
   /* Usual basis function for pbasex */
   a = r - p.rk;
   rad = exp (-(a * a) / p.two_sigma2);
   ang = gsl_sf_legendre_Pl (p.l, cos_theta);
 
-  /* Detection function at this r, theta.
-     TODO: we could save time here by only considering radial basis
+  /* Detection function at this r, theta.*/
+  df_lidx = -1;
+  for (l = 0; l <= p.df_lmax; l += p.df_linc)
+    {
+      df_lidx++;
+      p.df_legpol[df_lidx] = gsl_sf_legendre_Pl(l, cos_theta_det_frame);
+    }
+
+  /* TODO: we could save time here by only considering radial basis
      functions within say 5 sigma of this value of r */
   df_val = 0.0;
   for (k = 0; k <= p.df_kmax; k++)
@@ -594,12 +600,16 @@ static double integrand_detfn1 (double r, void *params)
       double rk = k * p.df_rkstep;
       double a = r - rk;
       double rad = exp(-(a * a) / p.df_two_sigma2);
-      int l;
 
-      for (l = 0; l <= p.df_lmax; l += df_linc)
+      df_lidx = -1;
+
+      for (l = 0; l <= p.df_lmax; l += p.df_linc)
 	{
 	  double c1 = p.df_coefs[k * (p.df_lmax + 1) + l];
-	  double c2 = gsl_sf_legendre_Pl(l, cos_theta_det_frame);
+	  double c2;
+
+	  df_lidx ++;
+	  c2 = p.df_legpol[df_lidx];
 	  df_val += rad * c1 * c2;
 	}
     }
@@ -707,9 +717,11 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   int_params_detfn1 params;
   gsl_integration_qaws_table *table;
   PyObject *numpy_matrix, *detectfn;
+  size_t df_ldim;
   double alpha, beta;
   PyObject *pbasex_fit_module, *pbasex_fit_module_dict, *pbasex_fit_class;
   unsigned short int correct_type;
+  int df_oddl;
 
   if (!PyArg_ParseTuple(args, "iiiiddddiOdd",
 			&k, &l, &Rbins, &Thetabins, &sigma, &rk, &epsabs, &epsrel, &wkspsize,
@@ -748,7 +760,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 
       if (get_pyint_attr(detectfn, "kmax", &(params.df_kmax)) ||
 	  get_pyint_attr(detectfn, "lmax", &(params.df_lmax)) ||
-	  get_pybool_attr(detectfn, "oddl", &(params.df_oddl))
+	  get_pybool_attr(detectfn, "oddl", &(df_oddl))
 	  )
 	return NULL;
 
@@ -799,7 +811,6 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 	}
     }
 
-
   /* Release GIL, as we're not accessing any Python objects for the
      main calculation. Any return statements will need to be preceeded
      by Py_BLOCK_THREADS - see /usr/include/pythonX/ceval.h */
@@ -807,10 +818,34 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 
   fn.function = &integrand_detfn1;
   fn.params = &params;
+  /* For speed in the integrand function we need to store the Legendre
+     polynomials. But, we don't want to be malloc'ing and freeing
+     storage in every call to the integrand function, so here we set
+     upthe storage. To ensure minimal cache misses, when we're not
+     considering odd l values, we close pack the Legendre
+     polynomials.  */
+  if (df_oddl)
+    {
+      df_ldim = params.df_lmax + 1;
+      params.df_linc = 1;
+    }
+  else
+    {
+      df_ldim = params.df_lmax / 2 + 1;
+      params.df_linc = 2;
+    }
+
+  params.df_legpol = malloc(df_ldim * sizeof(double));
+  if (params.df_legpol == NULL)
+    {
+      Py_BLOCK_THREADS
+      return PyErr_NoMemory();
+    }
 
   matrix = malloc(Rbins * Thetabins * sizeof (double));
   if (matrix == NULL)
     {
+      free (params.df_legpol);
       Py_BLOCK_THREADS
       return PyErr_NoMemory(); 
     }
@@ -822,6 +857,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   if (!wksp)
     {
       free (matrix);
+      free (params.df_legpol);
       Py_BLOCK_THREADS
       return PyErr_NoMemory();
     }
@@ -830,6 +866,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   if (!table)
     {
       free (matrix);
+      free (params.df_legpol);
       gsl_integration_workspace_free(wksp);
       Py_BLOCK_THREADS
       return PyErr_NoMemory();
@@ -910,6 +947,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 
 	      gsl_integration_workspace_free(wksp);
 	      gsl_integration_qaws_table_free(table);
+	      free (params.df_legpol);
 	      free (matrix);
 
 	      switch (status)
@@ -973,6 +1011,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 
   gsl_integration_workspace_free(wksp);
   gsl_integration_qaws_table_free(table);
+  free (params.df_legpol);
 
   /* Regain GIL as we'll now access some Python objects. */
   NPY_END_ALLOW_THREADS
