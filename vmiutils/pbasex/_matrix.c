@@ -556,7 +556,7 @@ typedef struct
   int l, df_linc;
   long df_kmax, df_lmax;
   double R, rk, two_sigma2, RcosTheta, RsinTheta;
-  double df_two_sigma2, df_rkstep, df_rmax;
+  double df_sigma, df_two_sigma2, df_rkstep, df_rmax;
   double df_alpha, df_cos_beta, df_sin_beta;
   double *df_coefs, *df_legpol;
 } int_params_detfn1;
@@ -576,8 +576,8 @@ static double integrand_detfn1 (double r, void *params)
   double phi = asin(p.RsinTheta / (r * sin_theta));
   double cos_theta_det_frame = p.df_cos_beta * cos_theta + 
     p.df_sin_beta * sin_theta * cos (phi - p.df_alpha);
-  double a, rad, ang, val, df_val;
-  int k, l, df_lidx;
+  double a, rad, ang, val, df_val, delta;
+  int k, l, df_lidx, kmin, kmax;
 
   /* Usual basis function for pbasex */
   a = r - p.rk;
@@ -594,8 +594,16 @@ static double integrand_detfn1 (double r, void *params)
 
   /* TODO: we could save time here by only considering radial basis
      functions within say 5 sigma of this value of r */
+  delta = 5.0 * p.df_sigma;
+  kmin = floor((r - delta) / p.df_rkstep);
+  kmax = ceil((r + delta) / p.df_rkstep);
+  if (kmin < 0)
+    kmin = 0;
+  if (kmax > p.df_kmax)
+    kmax = p.df_kmax;
+
   df_val = 0.0;
-  for (k = 0; k <= p.df_kmax; k++)
+  for (k = kmin; k <= kmax; k++)
     {	      
       double rk = k * p.df_rkstep;
       double a = r - rk;
@@ -625,27 +633,27 @@ static double integrand_detfn1 (double r, void *params)
     return 0.0;
 }
 
-/* static int */
-/* get_pyfloat_attr (PyObject *obj, const char *attr, double *val) */
-/* /\* Retrieve a float attribute attr from object obj and store it as a */
-/*    double precision number at val. Returns 0 on success, -1 otherwise. *\/ */
-/* { */
-/*   PyObject *p = PyObject_GetAttrString(obj, attr); */
+static int
+get_pyfloat_attr (PyObject *obj, const char *attr, double *val)
+/* Retrieve a float attribute attr from object obj and store it as a
+   double precision number at val. Returns 0 on success, -1 otherwise. */
+{
+  PyObject *p = PyObject_GetAttrString(obj, attr);
 
-/*   if (p == NULL) */
-/*     { */
-/*       Py_XDECREF(p); /\* Belt & braces *\/ */
-/*       return -1; */
-/*     } */
+  if (p == NULL)
+    {
+      Py_XDECREF(p); /* Belt & braces */
+      return -1;
+    }
   
-/*   *val = PyFloat_AsDouble (p); */
-/*   Py_DECREF(p); */
+  *val = PyFloat_AsDouble (p);
+  Py_DECREF(p);
 
-/*   if (PyErr_Occurred()) */
-/*     return -1; */
+  if (PyErr_Occurred())
+    return -1;
 
-/*   return 0; */
-/* } */
+  return 0;
+}
 
 static int
 get_pyint_attr (PyObject *obj, const char *attr, long *val)
@@ -760,9 +768,13 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 
       if (get_pyint_attr(detectfn, "kmax", &(params.df_kmax)) ||
 	  get_pyint_attr(detectfn, "lmax", &(params.df_lmax)) ||
-	  get_pybool_attr(detectfn, "oddl", &(df_oddl))
+	  get_pybool_attr(detectfn, "oddl", &(df_oddl)) ||
+	  get_pyfloat_attr(detectfn, "sigma", &(params.df_sigma)) ||
+	  get_pyfloat_attr(detectfn, "rkstep", &(params.df_rkstep))
 	  )
 	return NULL;
+
+	  params.df_two_sigma2 = 2.0 * params.df_sigma  * params.df_sigma;
 
       /* Grab the fit coefficients from the pbasex fit. We want to
 	 store these as a normal C array, rather than having to access
