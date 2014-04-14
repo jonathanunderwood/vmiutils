@@ -159,18 +159,23 @@ class PbasexFit():
         self.kmax = matrix.kmax
         self.lmax = lmax
         self.oddl = oddl
+
+        # Sigma is stored, and taken from the matrix - as such it is
+        # expressed in bin numbers, not image coordinates.
         self.sigma = matrix.sigma
 
         # rmax is the largest value of R in the
         # image we have fit - store this for scaling the fit.
         self.rmax = image.r[-1]
 
-        # rkstep holds the spacing between the centres of adjacent Gaussian
-        # radial basis functions
+        # rkstep holds the spacing between the centres of adjacent
+        # Gaussian radial basis functions. This is also expressed in
+        # bin numbers, not image coordinates.
         self.rkstep = float(Rbins) / kdim
 
-        # rfactor holds the scaling factor to convert from radial bin number
-        # in the fit to actual position in the original image 
+        # rfactor holds the scaling factor to convert from radial bin
+        # number in the fit to actual position in the original
+        # image. This can also be used to scale rkstep and sigma
         self.rscale = image.r[1] - image.r[0]
 
     def calc_radial_spectrum(self, rbins=500, rmax=None):
