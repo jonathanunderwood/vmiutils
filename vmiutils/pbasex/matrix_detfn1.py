@@ -1,6 +1,3 @@
-from __future__ import print_function
-
-import sys
 import numpy
 import cPickle as pickle
 import math as m
@@ -9,6 +6,7 @@ import multiprocessing
 import Queue
 import threading
 
+from _matrix_detfn1 import *
 import fit as pbfit
 
 # Set up logging and create a null handler in case the application doesn't
@@ -24,6 +22,12 @@ logger.addHandler(__null_handler)
 
 
 class PbasexMatrixDetFn1 (PbasexMatrix):
+    def __init__(self):
+        super(PbasexMatrixDetFn1, self).__init__()
+        self.rmax = None
+        self.rscale = None
+        self.__metadata += ['rmax', 'rscale']
+    
     def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax,
                              detectionfn, alpha=0.0, beta=0.0,
                              sigma=None, oddl=True,
@@ -105,7 +109,7 @@ class PbasexMatrixDetFn1 (PbasexMatrix):
                 try:
                     bf = basisfn_detfn1 (k, l, Rbins, Thetabins, sigma, rk,
                                          epsabs, epsrel, wkspsize,
-                                         detectionfn, _alpha, _beta)
+                                         detectionfn, alpha, beta)
                 except IntegrationError as errstring:
                     logger.info(errstring)
                     # Should do something about killing all threads here.
@@ -135,3 +139,9 @@ class PbasexMatrixDetFn1 (PbasexMatrix):
         self.Thetabins = Thetabins
         self.epsabs = epsabs
         self.epsrel = epsrel
+
+        # It's important we save these as part of the matrix object,
+        # as subsequent fits with this matrix are only valid if they
+        # have the same binning and scaling
+        self.rmax = detectionfn.rmax
+        self.rscale = detectionfn.rscale
