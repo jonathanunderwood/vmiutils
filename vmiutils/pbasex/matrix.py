@@ -9,8 +9,6 @@ import multiprocessing
 import Queue
 import threading
 
-import fit as pbfit
-
 from _matrix import *
 
 # Set up logging and create a null handler in case the application doesn't

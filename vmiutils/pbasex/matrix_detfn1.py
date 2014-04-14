@@ -24,7 +24,7 @@ logger.addHandler(__null_handler)
 
 
 class PbasexMatrixDetFn1 (PbasexMatrix):
-    def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax, 
+    def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax,
                              detectionfn, alpha=0.0, beta=0.0,
                              sigma=None, oddl=True,
                              epsabs=0.0, epsrel=1.0e-7, wkspsize=100000,
