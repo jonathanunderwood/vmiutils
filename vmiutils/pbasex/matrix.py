@@ -1,6 +1,3 @@
-from __future__ import print_function
-
-import sys
 import numpy
 import cPickle as pickle
 import math as m
