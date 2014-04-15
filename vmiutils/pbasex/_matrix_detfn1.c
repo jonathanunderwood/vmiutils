@@ -30,7 +30,7 @@ typedef struct
   double R, rk, two_sigma2, RcosTheta, RsinTheta;
   double df_sigma, df_two_sigma2, df_rkstep, df_rmax;
   double df_alpha, df_cos_beta, df_sin_beta;
-  double *df_coefs, *df_legpol;
+  double *df_coef, *df_legpol;
 } int_params_detfn1;
 
 
@@ -85,7 +85,7 @@ static double integrand_detfn1 (double r, void *params)
 
       for (l = 0; l <= p.df_lmax; l += p.df_linc)
 	{
-	  double c1 = p.df_coefs[k * (p.df_lmax + 1) + l];
+	  double c1 = p.df_coef[k * (p.df_lmax + 1) + l];
 	  double c2;
 
 	  df_lidx ++;
@@ -196,103 +196,67 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   gsl_function fn;
   int_params_detfn1 params;
   gsl_integration_qaws_table *table;
-  PyObject *numpy_matrix, *detectfn;
+  PyObject *numpy_matrix, *df_coef_arg;
   size_t df_ldim;
-  double alpha, beta;
-  PyObject *pbasex_fit_module, *pbasex_fit_module_dict, *pbasex_fit_class;
-  unsigned short int correct_type;
+  double df_beta;
   int df_oddl;
+  PyArrayObject *df_coef = NULL;
 
-  if (!PyArg_ParseTuple(args, "iiiiddddiOdd",
-			&k, &l, &Rbins, &Thetabins, &sigma, &rk, &epsabs, &epsrel, &wkspsize,
-			&detectfn, &alpha, &beta))
+  // TODO: we may not need to be passing k in here?
+  if (!PyArg_ParseTuple(args, "iiiiddddiOiddiidd",
+			&k, &(params.l), &Rbins, &Thetabins, &sigma, &(params.rk),
+			&epsabs, &epsrel, &wkspsize,
+			&df_coef_arg, &(params.df_kmax), &(params.df_sigma),
+			&(params.df_rkstep), &(params.df_lmax), &df_oddl,
+			&(params.df_alpha), &df_beta
+			))
     {
       PyErr_SetString (PyExc_TypeError, "Bad arguments to basisfn");
       return NULL;
     }
 
-  /* detectionfn is a python object containing a representation of the
-     detection function as a pbasex fit, and so assumes the detection
-     function has cylindrical symmetry about some axis. (alpha, beta)
-     specify the angles between the lab frame symmetry axis, and the
-     detection frame symmetry axis. */
-  pbasex_fit_module = PyImport_ImportModule("vmiutils.pbasex.fit"); /* New reference */
-  pbasex_fit_module_dict = PyModule_GetDict(pbasex_fit_module); /* Borrowed reference */
-  pbasex_fit_class = PyDict_GetItemString(pbasex_fit_module_dict, "PbasexFit"); /* Borrowed reference */
-  correct_type = PyObject_IsInstance (detectfn, pbasex_fit_class);
+  /* Grab the fit coefficients from the pbasex fit. We want to store
+     these as a normal C array, rather than having to access them as a
+     numpy array during the integration so we can release the
+     GIL. Note the last argument here assures an aligned, contiguous
+     array is returned. */
+  df_coef =
+    (PyArrayObject *) PyArray_FROM_OTF(df_coef_arg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
 
-  Py_XDECREF(pbasex_fit_module);
+  Py_DECREF(df_coef_arg); /* No longer require reference to this object. */
 
-  if (!correct_type)
+  if (df_coef == NULL)
     {
-      PyErr_SetString (PyExc_TypeError, "Unrecognized object for detection function");
+      Py_XDECREF(df_coef);
       return NULL;
     }
-  else
+
+  if (PyArray_SIZE(df_coef) != (params.df_lmax + 1) * (params.df_kmax + 1))
     {
-      PyObject *p = NULL;
-      PyArrayObject *detectfn_coefs = NULL;
+      PyErr_SetString (PyExc_RuntimeError, "Size of detection function coefficient array incompatible with kmax and lmax");
+      Py_DECREF(df_coef);
+      return NULL;
+    }
       
-      params.df_alpha = alpha;
-      params.df_cos_beta = cos (beta);
-      params.df_sin_beta = sin (beta);
-
-
-      if (get_pyint_attr(detectfn, "kmax", &(params.df_kmax)) ||
-	  get_pyint_attr(detectfn, "lmax", &(params.df_lmax)) ||
-	  get_pybool_attr(detectfn, "oddl", &(df_oddl)) ||
-	  get_pyfloat_attr(detectfn, "sigma", &(params.df_sigma)) ||
-	  get_pyfloat_attr(detectfn, "rkstep", &(params.df_rkstep))
-	  )
-	return NULL;
-
-	  params.df_two_sigma2 = 2.0 * params.df_sigma  * params.df_sigma;
-
-      /* Grab the fit coefficients from the pbasex fit. We want to
-	 store these as a normal C array, rather than having to access
-	 them as a numpy array during the integration so we can
-	 release the GIL. */
-      p = PyObject_GetAttrString (detectfn, "coef");
-      if (p == NULL)
-	{
-	  Py_XDECREF(p); /* Belt & braces */
-	  return NULL;
-	}
-
-      /* Note the last argument here assures an aligned, contiguous array is returned. */
-      detectfn_coefs = 
-	(PyArrayObject *) PyArray_FROM_OTF(p, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-      
-      if (detectfn_coefs == NULL)
-	{
-	  Py_XDECREF(p);
-	  Py_XDECREF(detectfn_coefs);
-	  return NULL;
-	}
-      
-      /* Now we set up a pointer to the data array in
-	 detectfn_coefs. Note that below we drop the GIL, but will
-	 still continue to read data from this data array, itself
-	 owned by a Python object. This could be problematic from a
-	 GIL point of view, but this suggests not:
+  /* Now we set up a pointer to the data array in detectfn_coefs. Note
+     that below we drop the GIL, but will still continue to read data
+     from this data array, itself owned by a Python object. This could
+     be problematic from a GIL point of view, but this suggests not:
 	 
-	 http://stackoverflow.com/questions/8824739/global-interpreter-lock-and-access-to-data-eg-for-numpy-arrays
+     http://stackoverflow.com/questions/8824739/global-interpreter-lock-and-access-to-data-eg-for-numpy-arrays
 	 
-	 The 100% safe alternative would be to copy the data to a
-	 new memory location and use that once the GIL is dropped
-	 below.
-      */
-      params.df_coefs = (double *) PyArray_DATA(detectfn_coefs);
+     The 100% safe alternative would be to copy the data to a new
+     memory location and use that once the GIL is dropped below.
 
-      /* Sanity check */
-      if (params.df_coefs == NULL || 
-	  PyArray_SIZE(detectfn_coefs) != (params.df_lmax + 1) * (params.df_kmax + 1))
-	{
-	  Py_XDECREF(p);
-	  Py_XDECREF(detectfn_coefs);
-	  PyErr_SetString (PyExc_RuntimeError, "Failed to get a usable reference to detection function coefficients");
-	  return NULL;
-	}
+     Note that we can't decref df_coef until we have finished
+     accessing its data via our C pointer.
+  */
+  params.df_coef = (double *) PyArray_DATA(df_coef);
+
+  if (params.df_coef == NULL)
+    {
+      Py_DECREF(df_coef);
+      return NULL;
     }
 
   /* Release GIL, as we're not accessing any Python objects for the
@@ -300,12 +264,15 @@ basisfn_detfn1(PyObject *self, PyObject *args)
      by Py_BLOCK_THREADS - see /usr/include/pythonX/ceval.h */
   Py_BEGIN_ALLOW_THREADS
 
-  fn.function = &integrand_detfn1;
-  fn.params = &params;
+  params.two_sigma2 = 2.0 * sigma * sigma;
+  params.df_cos_beta = cos (df_beta);
+  params.df_sin_beta = sin (df_beta);
+  params.df_two_sigma2 = 2.0 * params.df_sigma  * params.df_sigma;
+
   /* For speed in the integrand function we need to store the Legendre
      polynomials. But, we don't want to be malloc'ing and freeing
      storage in every call to the integrand function, so here we set
-     upthe storage. To ensure minimal cache misses, when we're not
+     up the storage. To ensure minimal cache misses, when we're not
      considering odd l values, we close pack the Legendre
      polynomials.  */
   if (df_oddl)
@@ -323,6 +290,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   if (params.df_legpol == NULL)
     {
       Py_BLOCK_THREADS
+      Py_DECREF(df_coef);
       return PyErr_NoMemory();
     }
 
@@ -331,8 +299,12 @@ basisfn_detfn1(PyObject *self, PyObject *args)
     {
       free (params.df_legpol);
       Py_BLOCK_THREADS
+      Py_DECREF(df_coef);
       return PyErr_NoMemory(); 
     }
+
+  fn.function = &integrand_detfn1;
+  fn.params = &params;
 
   /* Turn off gsl error handler - we'll check return codes. */
   gsl_set_error_handler_off ();
@@ -353,12 +325,9 @@ basisfn_detfn1(PyObject *self, PyObject *args)
       free (params.df_legpol);
       gsl_integration_workspace_free(wksp);
       Py_BLOCK_THREADS
+      Py_DECREF(df_coef);
       return PyErr_NoMemory();
     }
-
-  params.two_sigma2 = 2.0 * sigma * sigma;
-  params.rk = rk;
-  params.l = l;
 
   /* We create a matrix for Theta = -Pi..Pi inclusive of both endpoints, despite
      the redundancy of the last (or first) endpoint. We use the symmetry of the
@@ -384,7 +353,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
       ThetabinsOdd = 1;
     }
 
-  upper_bound = rk + __UPPER_BOUND_FACTOR * sigma;
+  upper_bound = params.rk + __UPPER_BOUND_FACTOR * sigma;
   
   for (R = 0; R < Rbins; R++)
     {
@@ -487,6 +456,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 		{
 		  PyErr_SetString (IntegrationError, "Couldn't allocate storage for further detail on this error, sorry\n");
 		}
+	      Py_DECREF(df_coef);
 	      
 	      return NULL;
 	    }
@@ -499,6 +469,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 
   /* Regain GIL as we'll now access some Python objects. */
   NPY_END_ALLOW_THREADS
+  Py_DECREF(df_coef);
 
   /* Make a numpy array from matrix. */
   dims[0] = (npy_intp) Rbins;
