@@ -188,7 +188,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   int wkspsize; /* Suggest: wkspsize = 100000. */
   int midTheta;
   double sigma, epsabs, epsrel; /* Suggest epsabs = 0.0, epsrel = 1.0e-7 */   
-  double dTheta, rk, upper_bound;
+  double dTheta, upper_bound;
   unsigned short int ThetabinsOdd;
   npy_intp dims[2];
   double *matrix = NULL;
@@ -202,7 +202,6 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   int df_oddl;
   PyArrayObject *df_coef = NULL;
 
-  // TODO: we may not need to be passing k in here?
   if (!PyArg_ParseTuple(args, "iiiiddddiOiddiidd",
 			&k, &(params.l), &Rbins, &Thetabins, &sigma, &(params.rk),
 			&epsabs, &epsrel, &wkspsize,
