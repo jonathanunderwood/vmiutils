@@ -109,7 +109,9 @@ class PbasexMatrixDetFn1 (PbasexMatrix):
                 try:
                     bf = basisfn_detfn1 (k, l, Rbins, Thetabins, sigma, rk,
                                          epsabs, epsrel, wkspsize,
-                                         detectionfn, alpha, beta)
+                                         detectionfn.coef, detectionfn.kmax, detectionfn.sigma,
+                                         detectionfn.rkstep, detectionfn.lmax, detectionfn.oddl,
+                                         alpha, beta)
                 except IntegrationError as errstring:
                     logger.info(errstring)
                     # Should do something about killing all threads here.
