@@ -23,22 +23,24 @@ def _odd(x):
     return x & 1
 
 class PbasexMatrix(object):
-    def __init__(self):
-        self.matrix = None
-        self.kmax = None
-        self.sigma = None
-        self.lmax = None
-        self.oddl = None
-        self.Rbins = None
-        self.Thetabins = None
-        self.epsabs = None
-        self.epsrel = None
-        self.description = 'pbasex_matrix'
+    matrix = None
+    kmax = None
+    sigma = None
+    lmax = None
+    oddl = None
+    Rbins = None
+    Thetabins = None
+    epsabs = None
+    epsrel = None
+    description = 'pbasex_matrix'
 
-        # This private attribute is a list containing the variables that should be
-        # saved to a file when self.dump is called and read when self.load is called.
-        self.__metadata = ['Rbins', 'Thetabins', 'kmax', 'sigma', 'lmax', 'oddl',
-                           'epsabs', 'epsrel', 'description']
+    # This private attribute is a list containing the variables that should be
+    # saved to a file when dump is called and read when load is called.
+    _metadata = ['Rbins', 'Thetabins', 'kmax', 'sigma', 'lmax', 'oddl',
+                 'epsabs', 'epsrel', 'description']
+
+    def __init__(self):
+        pass
 
     def calc_matrix(self, Rbins, Thetabins, kmax, lmax, sigma=None, oddl=True,
                     epsabs=0.0, epsrel=1.0e-7, wkspsize=100000):
@@ -195,7 +197,7 @@ class PbasexMatrix(object):
     def dump(self, file):
         fd = open(file, 'w')
 
-        for object in self.__metadata:
+        for object in self._metadata:
             pickle.dump(getattr(self, object), fd, protocol=2)
         numpy.save(fd, self.matrix)
 
@@ -205,13 +207,13 @@ class PbasexMatrix(object):
         fd = open(file, 'r')
         
         try:
-            for object in self.__metadata:
+            for object in self._metadata:
                 setattr(self, object, pickle.load(fd))
             self.matrix = numpy.load(fd)
         finally:
             fd.close()
 
     def print_params(self):
-        for object in self.__metadata:
+        for object in self._metadata:
             print('{0}: {1}'.format(object, getattr(self, object)))
                 
