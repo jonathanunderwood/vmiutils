@@ -3,7 +3,8 @@ import sys
 import argparse
 import logging
 import math
-import vmiutils.pbasex.detfn1 as pb
+import vmiutils.pbasex as pbasex
+import vmiutils.pbasex.detfn1 as pbasex_detfn1
 
 # Set up logging - output all log message to stdout
 #logging.basicConfig()
@@ -18,7 +19,7 @@ def calc(args):
         oddl = True
 
     
-    detectfn = pb.PbasexFit()
+    detectfn = pbasex.PbasexFit()
     logger.info ('loading detector function file: {0}'.format(args.detectfn))
     try:
         detectfn.load(args.detectfn)
@@ -28,12 +29,12 @@ def calc(args):
     alpha = math.radians(args.alpha)
     beta = math.radians(args.beta)
 
-    mtx = pb.PbasexMatrixDetFn1()
+    mtx = pbasex_detfn1.PbasexMatrixDetFn1()
     logger.info('Starting pBasex matrix calculation')
     mtx.calc_matrix_threaded(Rbins=args.Rbins, Thetabins=args.Thetabins, kmax=args.kmax, lmax=args.lmax,
+                             detectionfn=detectfn, alpha=alpha, beta=beta,
                              sigma=args.sigma, oddl=oddl,
                              epsabs=args.epsabs, epsrel=args.epsrel, wkspsize=args.wkspsize,
-                             detectionfn=detectfn, alpha=alpha, beta=beta,
                              nthreads=args.nthreads)
     logger.info('Finished pBasex matrix calculation')
 
@@ -43,7 +44,7 @@ def calc(args):
 
 def info(args):
     try:
-        mtx = pb.PbasexMatrixDetFn1()
+        mtx = pbasex_detfn1.PbasexMatrixDetFn1()
         mtx.load(args.filename)
         mtx.print_params()
     except IOError:
