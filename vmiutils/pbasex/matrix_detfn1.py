@@ -26,6 +26,7 @@ class PbasexMatrixDetFn1 (PbasexMatrix):
         super(PbasexMatrixDetFn1, self).__init__()
         self.rmax = None
         self.rscale = None
+        self.description = 'pbasex_detfn1_matrix'
         self.__metadata += ['rmax', 'rscale']
     
     def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax,

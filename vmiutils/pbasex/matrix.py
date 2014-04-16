@@ -33,11 +33,12 @@ class PbasexMatrix():
         self.Thetabins = None
         self.epsabs = None
         self.epsrel = None
+        self.description = 'pbasex_matrix'
 
         # This private attribute is a list containing the variables that should be
         # saved to a file when self.dump is called and read when self.load is called.
         self.__metadata = ['Rbins', 'Thetabins', 'kmax', 'sigma', 'lmax', 'oddl',
-                           'epsabs', 'epsrel']
+                           'epsabs', 'epsrel', 'description']
 
     def calc_matrix(self, Rbins, Thetabins, kmax, lmax, sigma=None, oddl=True,
                     epsabs=0.0, epsrel=1.0e-7, wkspsize=100000):
