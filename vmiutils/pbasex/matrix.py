@@ -22,7 +22,7 @@ logger.addHandler(__null_handler)
 def _odd(x):
     return x & 1
 
-class PbasexMatrix():
+class PbasexMatrix(object):
     def __init__(self):
         self.matrix = None
         self.kmax = None
