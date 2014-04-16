@@ -442,9 +442,9 @@ static PyMethodDef MatrixMethods[] = {
 };
 
 /* Module initialization function, must be caled initNAME, where NAME is the
-   compiled module name, in this case _matrix. */
+   compiled module name, in this case _matrix_detfn1. */
 PyMODINIT_FUNC
-init_matrix(void)
+init_matrix_detfn1(void)
 {
   PyObject *mod;
 
