@@ -1,0 +1,101 @@
+#!/usr/bin/python
+import sys
+import argparse
+import logging
+import math
+import vmiutils.pbasex.detfn1 as pb
+
+# Set up logging - output all log message to stdout
+#logging.basicConfig()
+logging.basicConfig(format="%(threadName)s:%(message)s",level=logging.DEBUG)
+logger = logging.getLogger('pbmatrix_detfn1')
+
+# Define functions that will be called by the sub-commands
+def calc(args):
+    if args.no_oddl is True:
+        oddl = False
+    else:
+        oddl = True
+
+    
+    detectfn = pb.PbasexFit()
+    logger.info ('loading detector function file: {0}'.format(args.detectfn))
+    try:
+        detectfn.load(args.detectfn)
+    except IOError:
+        logger.error('could not read file: {0}'.format(args.detectfn))
+
+    alpha = math.radians(args.alpha)
+    beta = math.radians(args.beta)
+
+    mtx = pb.PbasexMatrixDetFn1()
+    logger.info('Starting pBasex matrix calculation')
+    mtx.calc_matrix_threaded(Rbins=args.Rbins, Thetabins=args.Thetabins, kmax=args.kmax, lmax=args.lmax,
+                             sigma=args.sigma, oddl=oddl,
+                             epsabs=args.epsabs, epsrel=args.epsrel, wkspsize=args.wkspsize,
+                             detectionfn=detectfn, alpha=alpha, beta=beta,
+                             nthreads=args.nthreads)
+    logger.info('Finished pBasex matrix calculation')
+
+    logger.info('Writing to {0}'.format(args.filename))
+    mtx.dump(args.filename)
+    logger.info('done')
+
+def info(args):
+    try:
+        mtx = pb.PbasexMatrixDetFn1()
+        mtx.load(args.filename)
+        mtx.print_params()
+    except IOError:
+        logger.error('File not found')
+        sys.exit(1)
+
+parser = argparse.ArgumentParser(
+    description='Utility for calculating Pbasex matrices including a detection function defined as a previous Pbasex fit.')
+
+subparsers = parser.add_subparsers()
+
+# calculate sub-command
+parser_calc = subparsers.add_parser('calc',
+                                    help='Calculate a Pbasex matrix and store in a file')
+parser_calc.set_defaults(func=calc)
+parser_calc.add_argument('Rbins', type=int, 
+                         help='Number of radial bins in polar image')
+parser_calc.add_argument('Thetabins', type=int, 
+                         help='Number of angular bins in polar image')
+parser_calc.add_argument('kmax', type=int, 
+                         help='Maximum index of radial fitting functions')
+parser_calc.add_argument('lmax', type=int,
+                         help='Maximum order of Legendre polynomial in fitting functions')
+parser_calc.add_argument('detectfn',
+                         help='Name of file containing a detection function')
+parser_calc.add_argument('filename', 
+                         help='Name of file to store matrix')
+parser_calc.add_argument('--alpha', type=float, default=0.0,
+                         help='Azimuthal angle between the detector frame and lab frame (degrees)')
+parser_calc.add_argument('--beta', type=float, default=0.0,
+                         help='Polar angle between the detector frame and lab frame (degrees)')
+parser_calc.add_argument('--no-oddl', action='store_true', 
+                         help='Specify whether to include odd order Legendre Polynomials')
+parser_calc.add_argument('--sigma', type=float, default=None,
+                         help='The value of sigma in the radial functions')
+parser_calc.add_argument('--epsabs', type=float, default=0.0,
+                         help='Absolute integration tolerance for numerical integration')
+parser_calc.add_argument('--epsrel', type=float, default=1.0e-7,
+                         help='Relative integration tolerance for numerical integration')
+parser_calc.add_argument('--wkspsize', type=int, default=100000,
+                         help='Maximum number of divisions in numerical integration')
+parser_calc.add_argument('--nthreads', type=int, default=None,
+                         help='Number of threads to use')
+
+# info sub-command
+parser_info = subparsers.add_parser('info', 
+                                    help='Extract parameters from a Pbasex matrix file')
+parser_info.set_defaults(func=info)
+parser_info.add_argument('filename',
+                         help='Pbasex matrix file to query parameters from')
+
+args = parser.parse_args()
+args.func(args)
+
+
