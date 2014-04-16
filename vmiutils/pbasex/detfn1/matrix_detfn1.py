@@ -28,7 +28,7 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         self.rmax = None
         self.rscale = None
         self.description = 'pbasex_detfn1_matrix'
-        self.__metadata += ['rmax', 'rscale']
+        self._metadata += ['rmax', 'rscale']
     
     def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax,
                              detectionfn, alpha=0.0, beta=0.0,
@@ -82,6 +82,8 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         if not isinstance(detectionfn, pbasex.PbasexFit):
             raise TypeError('detectionfn is not an instance of PbasexFit')
 
+
+        print detectionfn.kmax, detectionfn.lmax, detectionfn.coef.shape
         # Spacing of radial basis function centres
         rkspacing = Rbins / (kmax + 1.0)
 

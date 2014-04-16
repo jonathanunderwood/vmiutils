@@ -1,3 +1,4 @@
+      
 /****************************************************************
  * Structures and functions for pBasex incorporating a detection
  * function specified as a previous pBasex fit.
@@ -145,11 +146,11 @@ basisfn_detfn1(PyObject *self, PyObject *args)
      these as a normal C array, rather than having to access them as a
      numpy array during the integration so we can release the
      GIL. Note the last argument here assures an aligned, contiguous
-     array is returned. */
+     array is returned. Note that we can't decref df_coef_arg here, as
+     it seems that this function returns a stolen reference (in other
+     words, decref'ing df_coef_arg does causes segfault. */
   df_coef =
     (PyArrayObject *) PyArray_FROM_OTF(df_coef_arg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-
-  Py_DECREF(df_coef_arg); /* No longer require reference to this object. */
 
   if (df_coef == NULL)
     {
@@ -157,13 +158,6 @@ basisfn_detfn1(PyObject *self, PyObject *args)
       return NULL;
     }
 
-  if (PyArray_SIZE(df_coef) != (params.df_lmax + 1) * (params.df_kmax + 1))
-    {
-      PyErr_SetString (PyExc_RuntimeError, "Size of detection function coefficient array incompatible with kmax and lmax");
-      Py_DECREF(df_coef);
-      return NULL;
-    }
-      
   /* Now we set up a pointer to the data array in detectfn_coefs. Note
      that below we drop the GIL, but will still continue to read data
      from this data array, itself owned by a Python object. This could
@@ -395,6 +389,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 
   /* Regain GIL as we'll now access some Python objects. */
   NPY_END_ALLOW_THREADS
+
   Py_DECREF(df_coef);
 
   /* Make a numpy array from matrix. */
