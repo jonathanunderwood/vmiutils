@@ -6,8 +6,9 @@ import multiprocessing
 import Queue
 import threading
 
+import vmiutils.pbasex as pbasex
+
 from _matrix_detfn1 import *
-import fit as pbfit
 
 # Set up logging and create a null handler in case the application doesn't
 # provide a log handler
@@ -21,7 +22,7 @@ __null_handler = __NullHandler()
 logger.addHandler(__null_handler)
 
 
-class PbasexMatrixDetFn1 (PbasexMatrix):
+class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
     def __init__(self):
         super(PbasexMatrixDetFn1, self).__init__()
         self.rmax = None
@@ -78,7 +79,7 @@ class PbasexMatrixDetFn1 (PbasexMatrix):
         equal to the number of CPU cores.
 
         """
-        if not isinstance(detectionfn, pbfit.PbasexFit):
+        if not isinstance(detectionfn, pbasex.PbasexFit):
             raise TypeError('detectionfn is not an instance of PbasexFit')
 
         # Spacing of radial basis function centres
