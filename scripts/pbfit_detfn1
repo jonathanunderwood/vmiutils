@@ -1,0 +1,111 @@
+#!/usr/bin/python
+
+import argparse
+import logging
+import numpy
+import vmiutils as vmi
+import vmiutils.pbasex as pb
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('pbfit')
+
+parser = argparse.ArgumentParser(
+    description='Utility for inverting a VMI image using a PBASEX matrix')
+
+parser.add_argument('vmi_file', help='Name of file containing VMI image')
+parser.add_argument('matrix_file', help='Name of file containing PBASEX matrix')
+parser.add_argument('output_file', help='Name of output file to save fit to')
+
+parser.add_argument('--lmax', type=int, default=-1,
+                    help='Specify highest order Legendre Polynomial to include in the fit')
+parser.add_argument('--no-oddl', action='store_true', 
+                    help='Specify whether to include odd order Legendre Polynomials')
+parser.add_argument('--centre', nargs=2, type=float, default=None,
+                    help='The x and y coordinates of the image centre (before swapping axes, if requested)')
+parser.add_argument('--swapxy', action='store_true',
+                    help='If specified, the image data will have the axes swapped before fitting')
+parser.add_argument('--filetype', default='matrix',
+                    choices=['matrix', 'threecolumn'],
+                    help='Specifies the type of data file')
+parser.add_argument('--delimiter', default=None,
+                    help='Specifies the delimiter used (defaults to whitespace)')
+
+args = parser.parse_args()
+
+if args.lmax is -1:
+    lmax = None
+else:
+    lmax = args.lmax
+
+if args.no_oddl is True:
+    oddl = False
+else:
+    oddl = True
+
+mtx = pb.PbasexMatrix()
+logger.debug('loading matrix file: {0}'.format(args.matrix_file))
+mtx.load(args.matrix_file)
+logger.debug('matrix loaded')
+
+if args.filetype == 'matrix':
+    logger.debug('loading VMI matrix file: {0}'.format(args.vmi_file))
+    try:
+        if args.delimiter is not None:
+            img = numpy.loadtxt(args.vmi_file, delimiter = args.delimiter)
+        else:
+            img = numpy.loadtxt(args.vmi_file)
+        x = None
+        y = None
+    except IOError:
+        logger.error('could not read file: {0}'.format(args.vmi_file))
+        sys.exit(74)
+elif args.filetype == 'threecolumn':
+    import vmiutils.threecolumns
+    try:
+        x, y, img = vmiutils.threecolumns.threecolumns_read(args.vmi_file)
+    except IOError:
+        logger.error('could not read file: {0}'.format(args.vmi_file))
+        sys.exit(74)
+else:
+    raise NotImplementedError
+
+# Wrap VMI data into instance of CartesianImage
+if args.swapxy is True:
+    img = img.transpose()
+    if x is not None and y is not None:
+        newx = y
+        newy = x
+        x = newx
+        y = newy
+    if args.centre is not None:
+        centre = (args.centre[1], args.centre[0])
+    else:
+        centre = None
+else:
+    if args.centre is not None:
+        centre = (args.centre[0], args.centre[1])
+    else:
+        centre = None
+
+vmicart = vmi.CartesianImage(image=img, x=x, y=y)
+
+# Set centre
+if centre is not None:
+    vmicart.set_centre(centre)
+
+logger.debug('image loaded and converted to cartesian image')
+
+# Convert to polar image
+vmipolar = vmi.PolarImage()
+vmipolar.from_CartesianImage(vmicart, rbins=mtx.Rbins, thetabins=mtx.Thetabins)
+
+logger.debug('image converted to polar coordinates')
+
+logger.debug('fitting polar image...')
+fit = pb.PbasexFit()
+fit.fit_data(vmipolar, mtx, oddl=oddl, lmax=lmax)
+logger.debug('data fit')
+
+logger.debug('writing data to {0}'.format(args.output_file))
+fit.dump(args.output_file)
+logger.debug('done')
