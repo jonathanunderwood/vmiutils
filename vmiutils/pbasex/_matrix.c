@@ -225,9 +225,9 @@ matrix(PyObject *self, PyObject *args)
 		      break;
 
 		    case GSL_EMAXITER:
-		      if (!asprintf(&errstring,
-				    "Failed to integrate: max number of subdivisions exceeded.\nk: %d l: %d R: %d Theta: %f\n", 
-				    k, l, R, Theta))
+		      if (asprintf(&errstring,
+				   "Failed to integrate: max number of subdivisions exceeded.\nk: %d l: %d R: %d Theta: %f\n", 
+				   k, l, R, Theta) < 0)
 			{
 			  PyErr_SetString (IntegrationError, errstring);
 			  free (errstring);
@@ -240,9 +240,9 @@ matrix(PyObject *self, PyObject *args)
 		      goto fail;
 		      
 		    case GSL_EROUND:
-		      if(!asprintf(&errstring,
-				   "Failed to integrate: round-off error.\nk: %d l: %d R: %d Theta: %f\n", 
-				   k, l, R, Theta))
+		      if(asprintf(&errstring,
+				  "Failed to integrate: round-off error.\nk: %d l: %d R: %d Theta: %f\n", 
+				  k, l, R, Theta) < 0)
 			{
 			  PyErr_SetString (IntegrationError, errstring);
 			  free (errstring);
@@ -254,9 +254,9 @@ matrix(PyObject *self, PyObject *args)
 		      goto fail;
 		      
 		    case GSL_ESING:
-		      if (!asprintf(&errstring,
-				    "Failed to integrate: singularity.\nk: %d l: %d R: %d Theta: %f\n", 
-				    k, l, R, Theta))
+		      if (asprintf(&errstring,
+				   "Failed to integrate: singularity.\nk: %d l: %d R: %d Theta: %f\n", 
+				   k, l, R, Theta) < 0)
 			{
 			  PyErr_SetString (IntegrationError, errstring);
 			  free (errstring);
@@ -268,9 +268,9 @@ matrix(PyObject *self, PyObject *args)
 		      goto fail;
 		      
 		    case GSL_EDIVERGE:
-		      if (!asprintf(&errstring,
+		      if (asprintf(&errstring,
 				    "Failed to integrate: divergent.\nk: %d l: %d R: %d Theta: %f\n", 
-				    k, l, R, Theta))
+				    k, l, R, Theta) < 0)
 			{
 			  PyErr_SetString (IntegrationError, errstring);
 			  free (errstring);
@@ -282,9 +282,9 @@ matrix(PyObject *self, PyObject *args)
 		      goto fail;
 		      
 		    default:
-		      if (!asprintf(&errstring,
-				    "Failed to integrate: unknown error. status: %d.\nk: %d l: %d R: %d Theta: %f\n", 
-				    status, k, l, R, Theta))
+		      if (asprintf(&errstring,
+				   "Failed to integrate: unknown error. status: %d.\nk: %d l: %d R: %d Theta: %f\n", 
+				   status, k, l, R, Theta) < 0)
 			{
 			  PyErr_SetString (IntegrationError, errstring);
 			  free (errstring);
@@ -456,7 +456,7 @@ basisfn(PyObject *self, PyObject *args)
 		case GSL_EMAXITER:
 		  if (asprintf(&errstring,
 			       "Failed to integrate: max number of subdivisions exceeded.\nk: %d l: %d R: %d Theta: %f\n", 
-			       k, l, R, Theta))
+			       k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
 		  break;
@@ -464,7 +464,7 @@ basisfn(PyObject *self, PyObject *args)
 		case GSL_EROUND:
 		  if (asprintf(&errstring,
 			       "Failed to integrate: round-off error.\nk: %d l: %d R: %d Theta: %f\n", 
-			       k, l, R, Theta))
+			       k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
 		  break;
@@ -472,7 +472,7 @@ basisfn(PyObject *self, PyObject *args)
 		case GSL_ESING:
 		  if (asprintf(&errstring,
 			       "Failed to integrate: singularity.\nk: %d l: %d R: %d Theta: %f\n", 
-			       k, l, R, Theta))
+			       k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
 		  break;
@@ -480,7 +480,7 @@ basisfn(PyObject *self, PyObject *args)
 		case GSL_EDIVERGE:
 		  if (asprintf(&errstring,
 			       "Failed to integrate: divergent.\nk: %d l: %d R: %d Theta: %f\n", 
-			       k, l, R, Theta))
+			       k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
 		  break;
@@ -488,7 +488,7 @@ basisfn(PyObject *self, PyObject *args)
 		default:
 		  if (asprintf(&errstring,
 			       "Failed to integrate: unknown error. status: %d.\nk: %d l: %d R: %d Theta: %f\n", 
-			       status, k, l, R, Theta))
+			       status, k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
 		  break;
