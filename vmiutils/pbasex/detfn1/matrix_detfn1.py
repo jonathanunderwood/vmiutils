@@ -82,8 +82,6 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         if not isinstance(detectionfn, pbasex.PbasexFit):
             raise TypeError('detectionfn is not an instance of PbasexFit')
 
-
-        print detectionfn.kmax, detectionfn.lmax, detectionfn.coef.shape
         # Spacing of radial basis function centres
         rkspacing = Rbins / (kmax + 1.0)
 
@@ -94,37 +92,44 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
             sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
 
         mtx = numpy.empty([kmax + 1, lmax + 1, Rbins, Thetabins])
+
         queue = Queue.Queue(0)
 
         for k in range(kmax + 1):
             for l in range(lmax + 1):
                 queue.put({'k': k, 'l': l})
 
+        shutdown_event = threading.Event()
+
         def __worker():
             while not queue.empty():
-                job = queue.get()
-                k = job['k']
-                l = job['l']
+                if not shutdown_event.is_set():
+                    job = queue.get()
+                    k = job['k']
+                    l = job['l']
 
-                rk = rkspacing * k
+                    rk = rkspacing * k
 
-                logger.info('Calculating basis function for k={0}, l={1}'.format(k, l))
+                    logger.info('Calculating basis function for k={0}, l={1}'.format(k, l))
 
-                try:
-                    bf = basisfn_detfn1 (k, l, Rbins, Thetabins, sigma, rk,
-                                         epsabs, epsrel, wkspsize,
-                                         detectionfn.coef, detectionfn.kmax, detectionfn.sigma,
-                                         detectionfn.rkstep, detectionfn.lmax, detectionfn.oddl,
-                                         alpha, beta)
-                except IntegrationError as errstring:
-                    logger.info(errstring)
-                    # Should do something about killing all threads here.
-                    raise
+                    try:
+                        bf = basisfn_detfn1 (
+                            k, l, Rbins, Thetabins, sigma, rk,
+                            epsabs, epsrel, wkspsize,
+                            detectionfn.coef, detectionfn.kmax, detectionfn.sigma,
+                            detectionfn.rkstep, detectionfn.lmax, detectionfn.oddl,
+                            alpha, beta
+                        )
+                    except _matrix_detfn1.IntegrationError as errstring:
+                        logger.error(errstring)
+                        shutdown_event.set() # shutdown all threads
+                        raise
 
-                mtx[k, l] = bf
-                logger.info('Finished calculating basis function for k={0}, l={1}'.format(k, l))
-                queue.task_done()
-            
+                    mtx[k, l] = bf
+                    logger.info(
+                        'Finished calculating basis function for k={0}, l={1}'.format(k, l)
+                    )
+                    queue.task_done()
         
         if nthreads is None:
             nthreads = multiprocessing.cpu_count()
@@ -135,19 +140,23 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
             t.start()
 
         queue.join()
+        
+        if shutdown_event.is_set():
+            logger.error('Error occured, calculation aborted')
+            raise RuntimeError
+        else:
+            self.matrix = mtx
+            self.kmax = kmax
+            self.sigma = sigma
+            self.lmax = lmax
+            self.oddl = oddl
+            self.Rbins = Rbins
+            self.Thetabins = Thetabins
+            self.epsabs = epsabs
+            self.epsrel = epsrel
 
-        self.matrix = mtx
-        self.kmax = kmax
-        self.sigma = sigma
-        self.lmax = lmax
-        self.oddl = oddl
-        self.Rbins = Rbins
-        self.Thetabins = Thetabins
-        self.epsabs = epsabs
-        self.epsrel = epsrel
-
-        # It's important we save these as part of the matrix object,
-        # as subsequent fits with this matrix are only valid if they
-        # have the same binning and scaling
-        self.rmax = detectionfn.rmax
-        self.rscale = detectionfn.rscale
+            # It's important we save these as part of the matrix object,
+            # as subsequent fits with this matrix are only valid if they
+            # have the same binning and scaling
+            self.rmax = detectionfn.rmax
+            self.rscale = detectionfn.rscale
