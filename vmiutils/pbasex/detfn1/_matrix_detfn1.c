@@ -57,6 +57,11 @@ static double integrand_detfn1 (double r, void *params)
   rad = exp (-(a * a) / p.two_sigma2);
   ang = gsl_sf_legendre_Pl (p.l, cos_theta);
 
+  val = rad * ang * r / sqrt(r + p.R);
+
+  if (fabs(val) < __SMALL)
+    return 0.0;
+
   /* Detection function at this r, theta.*/
   df_lidx = -1;
   for (l = 0; l <= p.df_lmax; l += p.df_linc)
@@ -95,7 +100,7 @@ static double integrand_detfn1 (double r, void *params)
 	}
     }
 
-  val = df_val * rad * ang * r / sqrt(r + p.R);
+  val = df_val * val;
 
   /* Round small values to 0 otherwise the integration error becomes dominated
      by the numerical error in exp such that the relative error is huge and the
