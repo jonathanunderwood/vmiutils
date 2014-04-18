@@ -120,7 +120,7 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
                             detectionfn.rkstep, detectionfn.lmax, detectionfn.oddl,
                             alpha, beta
                         )
-                    except _matrix_detfn1.IntegrationError as errstring:
+                    except IntegrationError as errstring:
                         logger.error(errstring)
                         shutdown_event.set() # shutdown all threads
                         raise
