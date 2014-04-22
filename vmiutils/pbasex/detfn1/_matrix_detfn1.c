@@ -39,17 +39,38 @@ static double integrand_detfn1 (double r, void *params)
    previous PBASEX fit. Here we calculate the detection frame theta
    angle using Zare Eq 3.86 from theta and phi in the lab frame, and
    the angles alpha and beta between the lab frame and detection
-   frame.*/
+   frame.
+
+   In theory the angle phi in the code below could be calculated like this:
+
+        double phi = asin (p.RsinTheta / (r * sin_theta));
+
+   However, in practice, lack of precision in the numerator and
+   denominator causes a problem when the argument should evaluate to
+   -1.0, it ends up evaluating to slightly less than -1.0, and asin
+   returns NaN. And so below we have to work around this by testing if
+   sin_phi lies outside the range [-1,1], and if so, force it back
+   into that range. This is very ugly, and can mask other problems. I
+   wish there was a better way!
+*/
 {
   int_params_detfn1 p = *(int_params_detfn1 *) params;
-  double theta = p.RcosTheta / r;
-  double cos_theta = cos (theta);
-  double sin_theta = sin (theta);
-  double phi = asin(p.RsinTheta / (r * sin_theta));
-  double cos_theta_det_frame = p.df_cos_beta * cos_theta + 
-    p.df_sin_beta * sin_theta * cos (phi - p.df_alpha);
+  double cos_theta = p.RcosTheta / r;
+  double sin_theta = sqrt ((1.0 + cos_theta) * (1.0 - cos_theta));/* sin (acos(cos_theta)) */
+  double sin_phi = p.RsinTheta / (r * sin_theta);
+  double phi, cos_theta_det_frame;
   double a, rad, ang, val, df_val, delta;
   int k, l, df_lidx, kmin, kmax;
+
+  if (sin_phi < -1.0)
+    phi = -M_PI / 2.0;
+  else if (sin_phi > 1.0)
+    phi = M_PI;
+  else
+    phi = asin (sin_phi);
+
+  cos_theta_det_frame = p.df_cos_beta * cos_theta + 
+    p.df_sin_beta * sin_theta * cos (phi - p.df_alpha);
 
   /* Usual basis function for pbasex */
   a = r - p.rk;
@@ -58,8 +79,8 @@ static double integrand_detfn1 (double r, void *params)
 
   val = rad * ang * r / sqrt(r + p.R);
 
-  if (fabs(val) < __SMALL)
-    return 0.0;
+  /* if (fabs(val) < __SMALL) */
+  /*   return 0.0; */
 
   /* Detection function at this r, theta.*/
   df_lidx = -1;
@@ -142,7 +163,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 			&df_alpha, &df_beta
 			))
     {
-      PyErr_SetString (PyExc_TypeError, "Bad arguments to basisfn");
+      PyErr_SetString (PyExc_TypeError, "Bad arguments to basisfn_detfn1");
       return NULL;
     }
 
