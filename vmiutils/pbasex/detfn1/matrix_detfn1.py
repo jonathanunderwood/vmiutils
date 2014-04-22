@@ -177,9 +177,9 @@ if __name__ == "__main__":
     kmax = 128
     rkspacing = Rbins / (kmax + 1.0)
     sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
-    k = 98
+    k = 9
     rk = k * rkspacing
-    l = 9
+    l = 2
     alpha = m.radians(0.0)
     beta = m.radians(90.0)
     epsabs = 0.0

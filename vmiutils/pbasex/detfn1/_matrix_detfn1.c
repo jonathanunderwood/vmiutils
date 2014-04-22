@@ -34,7 +34,8 @@ typedef struct
 } int_params_detfn1;
 
 
-static double integrand_detfn1 (double r, void *params)
+static double 
+integrand_detfn1 (double r, void *params)
 /* Integrand for PBASEX with a detection function defined by a
    previous PBASEX fit. Here we calculate the detection frame theta
    angle using Zare Eq 3.86 from theta and phi in the lab frame, and
