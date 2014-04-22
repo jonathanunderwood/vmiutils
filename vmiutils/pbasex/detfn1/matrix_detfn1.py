@@ -169,3 +169,35 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
             # have the same binning and scaling
             self.rmax = detectionfn.rmax
             self.rscale = detectionfn.rscale
+
+
+if __name__ == "__main__":
+    Rbins = 256
+    Thetabins = 256
+    kmax = 128
+    rkspacing = Rbins / (kmax + 1.0)
+    sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
+    k = 98
+    rk = k * rkspacing
+    l = 9
+    alpha = m.radians(0.0)
+    beta = m.radians(90.0)
+    epsabs = 0.0
+    epsrel = 1.0e-7
+    wkspsize = 100000
+    dffile = '/home/jgu/Code/vmi_invert/aarhus/junderwood/Probe.pbfit'
+    detectionfn = pbasex.PbasexFit()
+    detectionfn.load(dffile)
+
+    if detectionfn.oddl is True:
+        df_oddl = 1
+    else:
+        df_oddl = 0
+
+    bf = basisfn_detfn1 (
+        k, l, Rbins, Thetabins, sigma, rk,
+        epsabs, epsrel, wkspsize,
+        detectionfn.coef, detectionfn.kmax, detectionfn.sigma,
+        detectionfn.rkstep, detectionfn.lmax, df_oddl,
+        alpha, beta)
+
