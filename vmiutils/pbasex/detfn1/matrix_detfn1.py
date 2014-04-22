@@ -91,6 +91,11 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
             # Gaussians equal to the Gaussian separation
             sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
 
+        if detectionfn.oddl is True:
+            df_oddl = 1
+        else:
+            df_oddl = 0
+
         mtx = numpy.empty([kmax + 1, lmax + 1, Rbins, Thetabins])
 
         queue = Queue.Queue(0)
@@ -117,10 +122,9 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
                             k, l, Rbins, Thetabins, sigma, rk,
                             epsabs, epsrel, wkspsize,
                             detectionfn.coef, detectionfn.kmax, detectionfn.sigma,
-                            detectionfn.rkstep, detectionfn.lmax, detectionfn.oddl,
-                            alpha, beta
-                        )
-                    except IntegrationError, MemoryError as errstring:
+                            detectionfn.rkstep, detectionfn.lmax, df_oddl,
+                            alpha, beta)
+                    except (IntegrationError, MemoryError) as errstring:
                         logger.error(errstring)
                         shutdown_event.set() # shutdown all threads
                         raise
@@ -130,17 +134,22 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
                         'Finished calculating basis function for k={0}, l={1}'.format(k, l)
                     )
                     queue.task_done()
-        
+                else:
+                    break
+
         if nthreads is None:
             nthreads = multiprocessing.cpu_count()
 
+        threads = []
         for i in range(nthreads):
             t = threading.Thread(target=__worker)
             t.daemon = True
             t.start()
+            threads.append(t)
 
-        queue.join()
-        
+        for thread in threads:
+            thread.join()
+
         if shutdown_event.is_set():
             logger.error('Error occured, calculation aborted')
             raise RuntimeError

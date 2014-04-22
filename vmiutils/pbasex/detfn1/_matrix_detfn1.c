@@ -26,8 +26,7 @@ static PyObject *IntegrationError;
 
 typedef struct 
 {
-  int l, df_linc;
-  long df_kmax, df_lmax;
+  int l, df_linc, df_kmax, df_lmax;
   double R, rk, two_sigma2, RcosTheta, RsinTheta;
   double df_sigma, df_two_sigma2, df_rkstep, df_rmax;
   double df_alpha, df_cos_beta, df_sin_beta;
@@ -119,28 +118,28 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 {
   int Rbins, Thetabins, k, l, R;
   int wkspsize; /* Suggest: wkspsize = 100000. */
-  int midTheta;
-  double sigma, epsabs, epsrel; /* Suggest epsabs = 0.0, epsrel = 1.0e-7 */   
-  double dTheta, upper_bound;
+  int midTheta, df_oddl;
   unsigned short int ThetabinsOdd;
-  npy_intp dims[2];
+  int df_kmax, df_lmax;
+  double df_sigma, df_rkstep, df_alpha, df_beta;
+  double sigma, epsabs, epsrel; /* Suggest epsabs = 0.0, epsrel = 1.0e-7 */   
+  double rk, dTheta, upper_bound;
   double *matrix = NULL;
   gsl_integration_workspace *wksp;
   gsl_function fn;
-  int_params_detfn1 params;
   gsl_integration_qaws_table *table;
+  int_params_detfn1 params;
+  npy_intp dims[2];
   PyObject *numpy_matrix, *df_coef_arg;
-  size_t df_ldim;
-  double df_beta;
-  int df_oddl;
   PyArrayObject *df_coef = NULL;
+  size_t df_ldim;
 
   if (!PyArg_ParseTuple(args, "iiiiddddiOiddiidd",
-			&k, &(params.l), &Rbins, &Thetabins, &sigma, &(params.rk),
+			&k, &l, &Rbins, &Thetabins, &sigma, &rk,
 			&epsabs, &epsrel, &wkspsize,
-			&df_coef_arg, &(params.df_kmax), &(params.df_sigma),
-			&(params.df_rkstep), &(params.df_lmax), &df_oddl,
-			&(params.df_alpha), &df_beta
+			&df_coef_arg, &df_kmax, &df_sigma,
+			&df_rkstep, &df_lmax, &df_oddl,
+			&df_alpha, &df_beta
 			))
     {
       PyErr_SetString (PyExc_TypeError, "Bad arguments to basisfn");
@@ -155,7 +154,8 @@ basisfn_detfn1(PyObject *self, PyObject *args)
      it seems that this function returns a stolen reference (in other
      words, decref'ing df_coef_arg does causes segfault. */
   df_coef =
-    (PyArrayObject *) PyArray_FROM_OTF(df_coef_arg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+    (PyArrayObject *) PyArray_FROM_OTF(df_coef_arg, NPY_DOUBLE, 
+				       NPY_ARRAY_IN_ARRAY);
 
   if (df_coef == NULL)
     {
@@ -190,9 +190,16 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   Py_BEGIN_ALLOW_THREADS
 
   params.two_sigma2 = 2.0 * sigma * sigma;
+  params.rk = rk;
+  params.l = l;
+  params.df_lmax = df_lmax;
+  params.df_kmax = df_kmax;
+  params.df_sigma = df_sigma;
+  params.df_two_sigma2 = 2.0 * df_sigma  * df_sigma;
+  params.df_rkstep = df_rkstep;
+  params.df_alpha = df_alpha;
   params.df_cos_beta = cos (df_beta);
   params.df_sin_beta = sin (df_beta);
-  params.df_two_sigma2 = 2.0 * params.df_sigma  * params.df_sigma;
 
   /* For speed in the integrand function we need to store the Legendre
      polynomials. But, we don't want to be malloc'ing and freeing
@@ -200,18 +207,19 @@ basisfn_detfn1(PyObject *self, PyObject *args)
      up the storage. To ensure minimal cache misses, when we're not
      considering odd l values, we close pack the Legendre
      polynomials.  */
+
   if (df_oddl)
     {
-      df_ldim = params.df_lmax + 1;
+      df_ldim = df_lmax + 1;
       params.df_linc = 1;
     }
   else
     {
-      df_ldim = params.df_lmax / 2 + 1;
+      df_ldim = df_lmax / 2 + 1;
       params.df_linc = 2;
     }
 
-  params.df_legpol = malloc(df_ldim * sizeof(double));
+  params.df_legpol = malloc(df_ldim * sizeof (double));
   if (params.df_legpol == NULL)
     {
       Py_BLOCK_THREADS
