@@ -28,13 +28,13 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         self.rmax = None
         self.rscale = None
         self.description = 'pbasex_detfn1_matrix'
-        self._metadata += ['rmax', 'rscale']
+        self._metadata += ['method', 'threshold','rmax', 'rscale']
     
     def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax,
                              detectionfn, alpha=0.0, beta=0.0,
-                             sigma=None, oddl=True,
-                             epsabs=0.0, epsrel=1.0e-7, wkspsize=100000,
-                             nthreads=None):
+                             sigma=None, oddl=True, method='cquad',
+                             epsabs=0.0, epsrel=1.0e-7, threshold=1.0e-18, 
+                             wkspsize=100000, nthreads=None):
         """Calculates an inversion matrix using multiple threads.
 
         kmax determines the number of radial basis functions (from k=0..kmax).
@@ -54,14 +54,24 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         the half-maximum of the Gaussian occurs midway between each radial
         function.
 
+        method specifies the integration method to be used. Currently
+        supported values are 'qaws', 'qags' and 'cquad' corresponding
+        to the different GSL integration functions of the same name.
+
         epsabs and epsrel specify the desired integration tolerance when
         calculating the basis functions. The defaults should suffice.
 
-        tolerance specifies the acceptable relative error returned from the
-        numerical integration. The default value should suffice.
-
         wkspsize specifies the maximum number of subintervals used for the
         numerical integration of the basis functions.
+
+        threshold specifies the lowest value of the integrand which will
+        not be set to zero during the basis function calculation at
+        each point. I.e. any value of the intgrand below thresh will
+        be set to zero. This is necessary because numerical noise in
+        the integrand can prevent the integration routine from
+        converging. A value of 1.0e-18 is probably sufficient, but it
+        may need to be increased if the detection function is
+        particularly badly behaved.
 
         detectionfn specifies a detection function. At present this
         can be None, or an instance of PbasexFit from a previous fit.
@@ -120,10 +130,10 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
                     try:
                         bf = basisfn_detfn1 (
                             k, l, Rbins, Thetabins, sigma, rk,
-                            epsabs, epsrel, wkspsize,
+                            epsabs, epsrel, wkspsize, threshold,
                             detectionfn.coef, detectionfn.kmax, detectionfn.sigma,
                             detectionfn.rkstep, detectionfn.lmax, df_oddl,
-                            alpha, beta)
+                            alpha, beta, method)
                     except (IntegrationError, MemoryError) as errstring:
                         logger.error(errstring)
                         shutdown_event.set() # shutdown all threads
@@ -163,7 +173,8 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
             self.Thetabins = Thetabins
             self.epsabs = epsabs
             self.epsrel = epsrel
-
+            self.method = method
+            self.threshold = threshold
             # It's important we save these as part of the matrix object,
             # as subsequent fits with this matrix are only valid if they
             # have the same binning and scaling
@@ -196,8 +207,8 @@ if __name__ == "__main__":
 
     bf = basisfn_detfn1 (
         k, l, Rbins, Thetabins, sigma, rk,
-        epsabs, epsrel, wkspsize,
+        epsabs, epsrel, wkspsize, 1.0e-18,
         detectionfn.coef, detectionfn.kmax, detectionfn.sigma,
         detectionfn.rkstep, detectionfn.lmax, df_oddl,
-        alpha, beta)
+        alpha, beta, 'qaws')
 

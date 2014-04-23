@@ -18,21 +18,35 @@
 #include <gsl/gsl_sf_legendre.h>
 #include <gsl/gsl_errno.h>
 
-#define __SMALL 1.0e-30
-#define __UPPER_BOUND_FACTOR 15.0
+/* This factor determines how many Gaussian sigmas in r we consider
+   when setting the upper bound in the integration. */
+#define __UPPER_BOUND_FACTOR 10.0
+
+/* This factor determines how many detection function basis functions
+   either side of r to consider when calculating the integrand. It
+   probably makes most sense to set this the same as
+   __UPPER_BOUND_FACTOR above. */
+#define __DF_N_SIGMA 10.0
+
 
 /* Exceptions for this module. */
 static PyObject *IntegrationError;
+
+typedef enum
+{
+  qags, qaws, cquad
+} integration_method;
 
 typedef struct 
 {
   int l, df_linc, df_kmax, df_lmax;
   double R, rk, two_sigma2, RcosTheta, RsinTheta;
+  double threshold;
   double df_sigma, df_two_sigma2, df_rkstep, df_rmax;
   double df_alpha, df_cos_beta, df_sin_beta;
   double *df_coef, *df_legpol;
+  integration_method method;
 } int_params_detfn1;
-
 
 static double 
 integrand_detfn1 (double r, void *params)
@@ -78,9 +92,12 @@ integrand_detfn1 (double r, void *params)
   rad = exp (-(a * a) / p.two_sigma2);
   ang = gsl_sf_legendre_Pl (p.l, cos_theta);
 
-  val = rad * ang * r / sqrt(r + p.R);
+  if (p.method == qaws)
+    val = rad * ang * r / sqrt(r + p.R);
+  else /* p.method == qags || p.method == cquad */
+    val = rad * ang * r / sqrt((r + p.R) * (r - p.R));
 
-  /* if (fabs(val) < __SMALL) */
+  /* if (fabs(val) < p.threshold) */
   /*   return 0.0; */
 
   /* Detection function at this r, theta.*/
@@ -91,9 +108,10 @@ integrand_detfn1 (double r, void *params)
       p.df_legpol[df_lidx] = gsl_sf_legendre_Pl(l, cos_theta_det_frame);
     }
 
-  /* TODO: we could save time here by only considering radial basis
-     functions within say 5 sigma of this value of r */
-  delta = 5.0 * p.df_sigma;
+  /* When calculating the detector function at r, we only consider
+     basis functions which are a maximum delta away from this value of
+     r. */
+  delta = __DF_N_SIGMA * p.df_sigma;
   kmin = floor((r - delta) / p.df_rkstep);
   kmax = ceil((r + delta) / p.df_rkstep);
   if (kmin < 0)
@@ -123,10 +141,26 @@ integrand_detfn1 (double r, void *params)
 
   val = df_val * val;
 
-  /* Round small values to 0 otherwise the integration error becomes dominated
-     by the numerical error in exp such that the relative error is huge and the
-     integration fails. */
-  if (fabs(val) > __SMALL)
+  /* Round small values to 0 otherwise the integration error becomes
+     dominated by the numerical error in exp such that the relative
+     error is huge and the integration fails. Also, for qaws and qags,
+     we need to ensure that NAN is not returned which happens when
+     when R=r=0.0. cquad is designed to handle nan values. Be careful
+     here with future changes to the code, as this switching of nan
+     for 0.0 could hide other problems. Note also that here any
+     occurences of inf will be set to 0.0 for all methods - at present
+     these don't occur, but any changes to the code should be careful
+     of this. If in doubt, comment out what follows and examine all
+     values being returned. */
+  if (isnan(val))
+    {
+      if (p.method == cquad)
+	return val;
+      else
+	return 0.0;
+    }
+
+  if (fabs(val) > p.threshold)
     return val;
   else
     return 0.0;
@@ -145,23 +179,25 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   int df_kmax, df_lmax;
   double df_sigma, df_rkstep, df_alpha, df_beta;
   double sigma, epsabs, epsrel; /* Suggest epsabs = 0.0, epsrel = 1.0e-7 */   
-  double rk, dTheta, upper_bound;
+  double rk, dTheta, upper_bound, threshold;
   double *matrix = NULL;
-  gsl_integration_workspace *wksp;
+  void *wksp;
   gsl_function fn;
-  gsl_integration_qaws_table *table;
+  gsl_integration_qaws_table *table = NULL;
   int_params_detfn1 params;
+  integration_method method;
+  char * method_str;
   npy_intp dims[2];
   PyObject *numpy_matrix, *df_coef_arg;
   PyArrayObject *df_coef = NULL;
   size_t df_ldim;
 
-  if (!PyArg_ParseTuple(args, "iiiiddddiOiddiidd",
+  if (!PyArg_ParseTuple(args, "iiiiddddidOiddiidds",
 			&k, &l, &Rbins, &Thetabins, &sigma, &rk,
-			&epsabs, &epsrel, &wkspsize,
+			&epsabs, &epsrel, &wkspsize, &threshold,
 			&df_coef_arg, &df_kmax, &df_sigma,
 			&df_rkstep, &df_lmax, &df_oddl,
-			&df_alpha, &df_beta
+			&df_alpha, &df_beta, &method_str
 			))
     {
       PyErr_SetString (PyExc_TypeError, "Bad arguments to basisfn_detfn1");
@@ -222,7 +258,17 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   params.df_alpha = df_alpha;
   params.df_cos_beta = cos (df_beta);
   params.df_sin_beta = sin (df_beta);
+  params.threshold = threshold;
+  
+  /* method_str should be one of 'qags', 'qaws', or 'cquad' */
+  if (!strncmp(method_str, "qaws", 4))
+    method = qaws;
+  else if (!strncmp(method_str, "qags", 4))
+    method = qags;
+  else
+    method = cquad;
 
+  params.method = method;
   /* For speed in the integrand function we need to store the Legendre
      polynomials. But, we don't want to be malloc'ing and freeing
      storage in every call to the integrand function, so here we set
@@ -264,7 +310,11 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   /* Turn off gsl error handler - we'll check return codes. */
   gsl_set_error_handler_off ();
 
-  wksp = gsl_integration_workspace_alloc(wkspsize);
+  if (method == cquad)
+    wksp = gsl_integration_cquad_workspace_alloc(wkspsize);
+  else
+    wksp = gsl_integration_workspace_alloc(wkspsize);
+
   if (!wksp)
     {
       free (matrix);
@@ -273,15 +323,18 @@ basisfn_detfn1(PyObject *self, PyObject *args)
       return PyErr_NoMemory();
     }
 
-  table = gsl_integration_qaws_table_alloc(-0.5, 0.0, 0.0, 0.0);
-  if (!table)
+  if (method == qaws)
     {
-      free (matrix);
-      free (params.df_legpol);
-      gsl_integration_workspace_free(wksp);
-      Py_BLOCK_THREADS
-      Py_DECREF(df_coef);
-      return PyErr_NoMemory();
+      table = gsl_integration_qaws_table_alloc(-0.5, 0.0, 0.0, 0.0);
+      if (!table)
+	{
+	  free (matrix);
+	  free (params.df_legpol);
+	  gsl_integration_workspace_free(wksp);
+	  Py_BLOCK_THREADS
+	  Py_DECREF(df_coef);
+	  return PyErr_NoMemory();
+	}
     }
 
   /* We create a matrix for Theta = -Pi..Pi inclusive of both endpoints, despite
@@ -326,9 +379,25 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 	  
 	  if (upper_bound > R)
 	    {
-	      status = gsl_integration_qaws (&fn, (double) R, upper_bound, table,
-					     epsabs, epsrel, wkspsize,
-					     wksp, &result, &abserr);
+	      switch (method)
+		{
+		case qaws:
+		  status = gsl_integration_qaws (&fn, (double) R, upper_bound, table,
+						 epsabs, epsrel, wkspsize,
+						 wksp, &result, &abserr);
+		  break;
+		case qags:
+		  status = gsl_integration_qags (&fn, (double) R, upper_bound,
+						 epsabs, epsrel, wkspsize,
+						 wksp, &result, &abserr);
+		  break;
+		case cquad:
+		  status = gsl_integration_cquad (&fn, (double) R, upper_bound,
+						  epsabs, epsrel,
+						  wksp, &result, &abserr, 
+						  (size_t *) &wkspsize);
+		  break;
+		}
 	    }
 	  else 
 	    {
@@ -336,7 +405,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 	      result = 0.0;
 	      abserr = 0.0;
 	    }
-	  
+
 	  if (status == GSL_SUCCESS)
 	    {
 	      matrix[R * Thetabins + j] = result;
@@ -352,9 +421,19 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 	  else
 	    {
 	      char *errstring;
+	      switch (method)
+		{
+		case cquad:
+		  gsl_integration_cquad_workspace_free(wksp);
+		  break;
+		case qaws:
+		  gsl_integration_qaws_table_free(table);
+		  /* No break intentionally */
+		case qags:
+		  gsl_integration_workspace_free(wksp);
+		  break;
+		}
 
-	      gsl_integration_workspace_free(wksp);
-	      gsl_integration_qaws_table_free(table);
 	      free (params.df_legpol);
 	      free (matrix);
 
@@ -418,8 +497,19 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 	}
     }
 
-  gsl_integration_workspace_free(wksp);
-  gsl_integration_qaws_table_free(table);
+  switch (method)
+    {
+    case cquad:
+      gsl_integration_cquad_workspace_free(wksp);
+      break;
+    case qaws:
+      gsl_integration_qaws_table_free(table);
+      /* No break intentionally */
+    case qags:
+      gsl_integration_workspace_free(wksp);
+      break;
+    }
+
   free (params.df_legpol);
 
   /* Regain GIL as we'll now access some Python objects. */
@@ -491,5 +581,5 @@ init_matrix_detfn1(void)
   PyModule_AddObject(mod, "IntegrationError", IntegrationError);
 }
 
-#undef __SMALL
 #undef __UPPER_BOUND_FACTOR 
+#undef __DF_N_SIGMA
