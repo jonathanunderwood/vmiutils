@@ -2,7 +2,7 @@ Fedora 20
 =========
 1) Install the following packages:
    python-devel
-   gsl-devel
+   gsl-devel 1.16 or later (1.15 and earlier have a cquad bug)
    gcc
    numpy
    scipy
