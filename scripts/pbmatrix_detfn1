@@ -101,7 +101,7 @@ parser_calc.add_argument('--threshold', type=float, default=1.0e-18,
                          help='Value below which basis function integrand is set to 0')
 parser_calc.add_argument('--nthreads', type=int, default=None,
                          help='Number of threads to use')
-parser_calc.add_argument('--method', default='qaws', choices=['qags', 'qaws', 'cquad'],
+parser_calc.add_argument('--method', default='cquad', choices=['qags', 'qaws', 'cquad'],
                          help='Integration method to use for calculation')
 
 # info sub-command
