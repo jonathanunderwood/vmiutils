@@ -188,14 +188,16 @@ if __name__ == "__main__":
     kmax = 128
     rkspacing = Rbins / (kmax + 1.0)
     sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
-    k = 9
+    k = 10
     rk = k * rkspacing
-    l = 2
+    l = 11
     alpha = m.radians(0.0)
     beta = m.radians(90.0)
     epsabs = 0.0
     epsrel = 1.0e-7
     wkspsize = 100000
+    method = 'cquad'
+    threshold = 1.0e-18
     dffile = '/home/jgu/Code/vmi_invert/aarhus/junderwood/Probe.pbfit'
     detectionfn = pbasex.PbasexFit()
     detectionfn.load(dffile)
@@ -207,8 +209,8 @@ if __name__ == "__main__":
 
     bf = basisfn_detfn1 (
         k, l, Rbins, Thetabins, sigma, rk,
-        epsabs, epsrel, wkspsize, 1.0e-18,
+        epsabs, epsrel, wkspsize, threshold,
         detectionfn.coef, detectionfn.kmax, detectionfn.sigma,
         detectionfn.rkstep, detectionfn.lmax, df_oddl,
-        alpha, beta, 'qaws')
+        alpha, beta, method)
 
