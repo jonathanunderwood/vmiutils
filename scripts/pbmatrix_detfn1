@@ -31,10 +31,18 @@ def calc(args):
 
     mtx = pbasex_detfn1.PbasexMatrixDetFn1()
     logger.info('Starting pBasex matrix calculation')
-    mtx.calc_matrix_threaded(Rbins=args.Rbins, Thetabins=args.Thetabins, kmax=args.kmax, lmax=args.lmax,
-                             detectionfn=detectfn, alpha=alpha, beta=beta,
-                             sigma=args.sigma, oddl=oddl,
-                             epsabs=args.epsabs, epsrel=args.epsrel, wkspsize=args.wkspsize,
+    mtx.calc_matrix_threaded(Rbins=args.Rbins, 
+                             Thetabins=args.Thetabins, 
+                             kmax=args.kmax, 
+                             lmax=args.lmax,
+                             detectionfn=detectfn, 
+                             alpha=alpha, 
+                             beta=beta,
+                             sigma=args.sigma, 
+                             oddl=oddl,
+                             epsabs=args.epsabs, 
+                             epsrel=args.epsrel, 
+                             wkspsize=args.wkspsize,
                              nthreads=args.nthreads)
     logger.info('Finished pBasex matrix calculation')
 
