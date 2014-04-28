@@ -105,7 +105,7 @@ logger.debug('zoom of original image calculated')
 
 # Convert to polar image
 vmipolar = vmi.PolarImage()
-vmipolar.from_CartesianImage(vmicart, rbins=mtx.Rbins, thetabins=mtx.Thetabins)
+vmipolar.from_CartesianImage(vmicart_zoom, rbins=mtx.Rbins, thetabins=mtx.Thetabins)
 
 logger.debug('image converted to polar coordinates')
 
