@@ -100,7 +100,7 @@ logger.debug('image loaded and converted to cartesian image')
 # previous pbasex fit, and so (unlike the general pbasex case) the
 # matrix is only meaningful for a polar image with the same radial bin
 # width and maximum radius.
-vmicart_zoom = vmicart.zoom_circle(mtx.rmax)
+vmicart_zoom = vmicart.zoom_circle(mtx.rmax, pad=True)
 logger.debug('zoom of original image calculated')
 
 # Convert to polar image
