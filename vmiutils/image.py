@@ -231,7 +231,7 @@ class CartesianImage():
 
         if xmin >= 0:
             x1 = xmin
-            xstart = xmin
+            xstart = 0
         else:
             if pad == True:
                 x1 = 0
@@ -251,7 +251,7 @@ class CartesianImage():
 
         if ymin >= 0:
             y1 = ymin
-            ystart = ymin
+            ystart = 0
         else:
             if pad == True:
                 y1 = 0
@@ -271,11 +271,11 @@ class CartesianImage():
 
         newimg = numpy.zeros((xmax - xmin + 1, ymax - ymin + 1))
 
-        newimg[xstart:xstart + (x2 - x1 + 1),
-               ystart:ystart + (y2 - y1 + 1)] = self.image[x1:x2, y1:y2]
+        newimg[xstart:xstart + (x2 - x1),
+               ystart:ystart + (y2 - y1)] = self.image[x1:x2, y1:y2]
 
-        newx = numpy.linspace(xmin * xbinw, xmax * xbinw, newimg.shape[0])
-        newy = numpy.linspace(ymin * ybinw, ymax * ybinw, newimg.shape[1])
+        newx = numpy.linspace(xmin * self.xbinw, xmax * self.xbinw, newimg.shape[0])
+        newy = numpy.linspace(ymin * self.ybinw, ymax * self.ybinw, newimg.shape[1])
 
         return CartesianImage(image=newimg, x=newx, y=newy, centre=self.centre)
 
