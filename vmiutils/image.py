@@ -166,7 +166,7 @@ class CartesianImage():
         else:
             self.image[qslice] = data
 
-    def zoom_circle(self, rmax):
+    def zoom_circle(self, rmax, pad=False):
         """ Return a new CartesianImage instance containing a square section
         centred on the image centre and containing the circular section of the
         image specified by rmax in image coordinates (not bins).
@@ -176,26 +176,26 @@ class CartesianImage():
             raise RuntimeError('image centre undefined')
 
         xminb = _round_int((self.centre[0] - rmax - self.x[0]) / self.xbinw) 
-        if xminb < 0:
+        if xminb < 0 and pad is False:
             logger.error('xminb less than zero in zoom_circle')
             raise RuntimeError('xminb less than zero')
 
         xmaxb = _round_int((self.centre[0] + rmax - self.x[0]) / self.xbinw)
-        if xmaxb > self.image.shape[0]:
+        if xmaxb > self.image.shape[0] and pad is False:
             logger.error('xmaxb greater than image size in zoom_circle')
             raise RuntimeError('xmaxb greater than image size')
 
         yminb = _round_int((self.centre[1] - rmax - self.y[0]) / self.ybinw)
-        if yminb < 0:
+        if yminb < 0 and pad is False:
             logger.error('yminb less than zero in zoom_circle')
             raise RuntimeError('yminb less than zero')
 
         ymaxb = _round_int((self.centre[1] + rmax - self.y[0]) / self.ybinw)
-        if ymaxb > self.image.shape[0]:
+        if ymaxb > self.image.shape[0] and pad is False:
             logger.error('ymaxb greater than image size in zoom_circle')
             raise RuntimeError('ymaxb greater than image size')
         
-        return self.zoom_rect_pix([xminb, xmaxb, yminb, ymaxb])
+        return self.zoom_rect_pix([xminb, xmaxb, yminb, ymaxb], pad=pad)
 
     def zoom_rect_coord(self, rect):
         """ Return a new CartesianImage instance containing the zoomed image
@@ -212,29 +212,72 @@ class CartesianImage():
     
         return self.zoom_rect_pix([xminb, xmaxb, yminb, ymaxb])
         
-    def zoom_rect_pix(self, rect):
-        """ Return a new CartesianImage instance containing the zoomed image
+    def zoom_rect_pix(self, rect, pad=False):
+        """Return a new CartesianImage instance containing the zoomed image
         specified by rect. 
 
         rect is a list containing the rectanlge to zoom specified in terms of
         bins: [xmin, xmax, ymin, ymax]. As such, all elements of rect should
         be integer.
+
+        if pad is True, then if any of the requested area doesn't lie
+        within the image data, then where no data is available, 0s are
+        substituted.
         """
-        try:
-            xmin = rect[0]
-            xmax = rect[1]
-            ymin = rect[2]
-            ymax = rect[3]
-            z = CartesianImage(image=self.image[xmin:xmax, ymin:ymax],
-                               x=self.x[xmin:xmax], y=self.y[ymin:ymax],
-                               centre=self.centre)
-            return z
-        except IndexError:
-            logger.error('rect outside image')
-            raise
-        except TypeError:
-            logger.error('rect must be a list of integers (bins)')
-            raise
+        xmin = rect[0]
+        xmax = rect[1]
+        ymin = rect[2]
+        ymax = rect[3]
+
+        if xmin >= 0:
+            x1 = xmin
+            xstart = xmin
+        else:
+            if pad == True:
+                x1 = 0
+                xstart = -xmin
+            else:
+                logger.error('xmin outside of image in zoom_rect_pix')
+                raise RuntimeError('xmin outside of image')
+
+        if xmax <= self.image.shape[0]:
+            x2 = xmax
+        else:
+            if pad == True:
+                x2 = self.image.shape[0] - 1
+            else:
+                logger.error('xmax outside of image in zoom_rect_pix')
+                raise RuntimeError('xmax outside of image')
+
+        if ymin >= 0:
+            y1 = ymin
+            ystart = ymin
+        else:
+            if pad == True:
+                y1 = 0
+                ystart = -ymin
+            else:
+                logger.error('ymin outside of image in zoom_rect_pix')
+                raise RuntimeError('ymin outside of image')
+
+        if ymax <= self.image.shape[0]:
+            y2 = ymax
+        else:
+            if pad == True:
+                y2 = self.image.shape[0] - 1
+            else:
+                logger.error('ymax outside of image in zoom_rect_pix')
+                raise RuntimeError('ymax outside of image')
+
+        newimg = numpy.zeros((xmax - xmin + 1, ymax - ymin + 1))
+
+        newimg[xstart:xstart + (x2 - x1 + 1),
+               ystart:ystart + (y2 - y1 + 1)] = self.image[x1:x2, y1:y2]
+
+        newx = numpy.linspace(xmin * xbinw, xmax * xbinw, newimg.shape[0])
+        newy = numpy.linspace(ymin * ybinw, ymax * ybinw, newimg.shape[1])
+
+        return CartesianImage(image=newimg, x=newx, y=newy, centre=self.centre)
 
     def from_PolarImage(self, pimage, order=3):
         """ Initialise from a PolarImage object by interpolation onto a
