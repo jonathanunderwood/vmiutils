@@ -92,7 +92,7 @@ logger.debug('beta coefficients calculated')
 invimg_cart = fit.cartesian_distribution_threaded(bins=500)
 logger.debug('cartesian distribution calculated')
 
-vmicart_zoom = vmicart.zoom_circle(fit.rmax)
+vmicart_zoom = vmicart.zoom_circle(fit.rmax, pad=True)
 logger.debug('zoom of original image calculated')
 
 # Generate plots in a multi page PDF file
