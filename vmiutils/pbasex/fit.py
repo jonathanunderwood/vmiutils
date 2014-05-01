@@ -23,6 +23,7 @@ logger.addHandler(__null_handler)
 # --------------------
 # The way the matrix is calculated and stored is
 # such that the indices are in the order 
+#
 # matrix[k, l, Rbin, Thetabin]. 
 #
 # The matrix is calculated in unitless dimensions i.e. pixel
@@ -33,9 +34,9 @@ logger.addHandler(__null_handler)
 # image dimensions. This is stored as self.rscale. Also, for
 # convenience we store the value of the larges radius sampled in the
 # original image, self.rmax. When we calculate any property from the
-# fitted coefficients, we have to do that calculation in the unitless
-# dimensions of the original matrix, so we have to take insto account
-# self.rscale.
+# fitted coefficients it is necessary to ensure we scale to the
+# dimensions in the original image. So, once fittd, we store sigma,
+# rkstep etc rescaled to the original image.
 
 class PbasexFit():
     def __init__(self):
@@ -45,11 +46,13 @@ class PbasexFit():
         self.oddl = None
         self.sigma = None
         self.rkstep = None
-        self.rfactor = None
         self.rmax = None
-        self.rscale = None
-        self.__metadata = ['kmax', 'lmax', 'oddl', 'sigma',
-                           'rkstep', 'rfactor', 'rmax', 'rscale']
+        self.__metadata = ['kmax',
+                           'lmax',
+                           'oddl',
+                           'sigma',
+                           'rkstep',
+                           'rmax']
 
     def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None):
         '''Performs a fit to the data stored in the vmi.PolarImage instance
@@ -160,9 +163,13 @@ class PbasexFit():
         self.lmax = lmax
         self.oddl = oddl
 
-        # Sigma is stored, and taken from the matrix - as such it is
-        # expressed in bin numbers, not image coordinates.
-        self.sigma = matrix.sigma
+        # rscale is the scaling factor to convert from radial bin
+        # number in the fit to actual position in the original
+        # image. This can also be used to scale rkstep and sigma
+        rscale = image.r[1] - image.r[0]
+
+        # We need to store sigma in image dimensions.
+        self.sigma = matrix.sigma * rscale
 
         # rmax is the largest value of R in the
         # image we have fit - store this for scaling the fit.
@@ -171,12 +178,7 @@ class PbasexFit():
         # rkstep holds the spacing between the centres of adjacent
         # Gaussian radial basis functions. This is also expressed in
         # bin numbers, not image coordinates.
-        self.rkstep = float(Rbins) / kdim
-
-        # rfactor holds the scaling factor to convert from radial bin
-        # number in the fit to actual position in the original
-        # image. This can also be used to scale rkstep and sigma
-        self.rscale = image.r[1] - image.r[0]
+        self.rkstep = mtx.rkspacing * rscale
 
     def calc_radial_spectrum(self, rbins=500, rmax=None):
         """Calculate a radial spectrum from the parameters of a fit. Returns a
@@ -200,7 +202,7 @@ class PbasexFit():
             logger.error('rmax exceeds that of original data')
             raise ValueError
 
-        spec = radial_spectrum(rmax/self.rscale, rbins, self.coef, self.kmax,
+        spec = radial_spectrum(rmax, rbins, self.coef, self.kmax,
                                self.rkstep, self.sigma)
         r = numpy.linspace(0.0, rmax, rbins)
 
@@ -228,7 +230,7 @@ class PbasexFit():
         
         # Note that the calculation here is done in scaled (pixel)
         # coordinates, not absolute scaled coordinates.
-        dist = cartesian_distribution(rmax/self.rscale, bins, self.coef, self.kmax,
+        dist = cartesian_distribution(rmax, bins, self.coef, self.kmax,
                                       self.rkstep, self.sigma, self.lmax)
 
         x = numpy.linspace(-rmax, rmax, bins)
@@ -288,8 +290,8 @@ class PbasexFit():
                 job = queue.get()
                 xbin = job['xbin']
                 ybin = job['ybin']
-                xval = job['xval'] / self.rscale
-                yval = job['yval'] / self.rscale
+                xval = job['xval']
+                yval = job['yval']
                 
                 #logger.debug('Calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
                 dist[xbin, ybin] = cartesian_distribution_point (
@@ -322,7 +324,7 @@ class PbasexFit():
         rbins specifies the number of data points calculated
 
         rmax specifies the maximum radius to consider and is specified
-        in fdimensions of the original image that was fitted.
+        in dimensions of the original image that was fitted.
         '''
         if self.coef is None:
             logger.error('no fit done')
@@ -331,7 +333,7 @@ class PbasexFit():
         if rmax == None:
             rmax = self.rmax
 
-        beta = beta_coeffs(rmax/self.rscale, rbins, self.coef, self.kmax,
+        beta = beta_coeffs(rmax, rbins, self.coef, self.kmax,
                            self.rkstep, self.sigma, self.lmax)
 
         r = numpy.linspace(0.0, rmax, rbins)

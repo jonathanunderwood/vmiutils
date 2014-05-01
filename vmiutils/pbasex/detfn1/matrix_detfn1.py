@@ -37,32 +37,37 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
                              wkspsize=100000, nthreads=None):
         """Calculates an inversion matrix using multiple threads.
 
-        kmax determines the number of radial basis functions (from k=0..kmax).
+        kmax determines the number of radial basis functions (from
+        k=0..kmax).
 
-        lmax determines the maximum value of l for the legendre polynomials
-        (l=0..lmax). 
+        lmax determines the maximum value of l for the legendre
+        polynomials (l=0..lmax).
 
-        Rbins specifies the number of radial bins in the image to be inverted.
-
-        Thetabins specifies the number of angular bins in the image to be
+        Rbins specifies the number of radial bins in the image to be
         inverted.
 
-        sigma specifes the width of the Gaussian radial basis functions. This is
-        defined according to the normal convention for Gaussian functions
-        i.e. FWHM=2*sigma*sqrt(2*ln2), and NOT as defined in the Garcia, Lahon,
-        Powis paper. If sigma is not specified it is set automatically such that
-        the half-maximum of the Gaussian occurs midway between each radial
-        function.
+        Thetabins specifies the number of angular bins in the image to
+        be inverted.
+
+        sigma specifes the width of the Gaussian radial basis
+        functions. This is defined according to the normal convention
+        for Gaussian functions i.e. FWHM=2*sigma*sqrt(2*ln2), and NOT
+        as defined in the Garcia, Lahon, Powis paper. If sigma is not
+        specified it is set automatically such that the half-maximum
+        of the Gaussian occurs midway between each radial
+        function. Note that sigma is specified indimension of bins of
+        the image, NOT in the dimensions of the detection function.
 
         method specifies the integration method to be used. Currently
         supported values are 'qaws', 'qags' and 'cquad' corresponding
         to the different GSL integration functions of the same name.
 
-        epsabs and epsrel specify the desired integration tolerance when
-        calculating the basis functions. The defaults should suffice.
+        epsabs and epsrel specify the desired integration tolerance
+        when calculating the basis functions. The defaults should
+        suffice.
 
-        wkspsize specifies the maximum number of subintervals used for the
-        numerical integration of the basis functions.
+        wkspsize specifies the maximum number of subintervals used for
+        the numerical integration of the basis functions.
 
         threshold specifies the lowest value of the integrand which will
         not be set to zero during the basis function calculation at
@@ -101,6 +106,20 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
             # Gaussians equal to the Gaussian separation
             sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
 
+        # We need to rescale the detection function parameters to
+        # express them in terms of bins for the actual matrix
+        # calculation. The detection function rmax specifies the
+        # maximum radial value we can sensibly consider. The stored
+        # values of rkstep and sigma in the detection function are
+        # currently scaled according to that rmax (i.e. are in
+        # dimensions of the image used to generate the detection
+        # function fit). So, since our matrix calculation is actually
+        # done in terms of bins, rather than absolute scale, we need
+        # to rescale the detection function parameters accordingly.
+        df_rscale = detectionfn.rmax / Rbins
+        df_rkstep = detectionfn.rkstep / df_rscale
+        df_sigma = detectionfn.sigma  / df_rscale
+
         if detectionfn.oddl is True:
             df_oddl = 1
         else:
@@ -131,8 +150,8 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
                         bf = basisfn_detfn1 (
                             k, l, Rbins, Thetabins, sigma, rk,
                             epsabs, epsrel, wkspsize, threshold,
-                            detectionfn.coef, detectionfn.kmax, detectionfn.sigma,
-                            detectionfn.rkstep, detectionfn.lmax, df_oddl,
+                            detectionfn.coef, detectionfn.kmax, df_sigma,
+                            df_rkstep, detectionfn.lmax, df_oddl,
                             alpha, beta, method)
                     except (IntegrationError, MemoryError) as errstring:
                         logger.error(errstring)
@@ -183,14 +202,19 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
 
 
 if __name__ == "__main__":
+    import vmiutils as vmi
+    import pylab
+    import matplotlib
+    import matplotlib.pyplot as plot
+
     Rbins = 256
     Thetabins = 256
     kmax = 128
     rkspacing = Rbins / (kmax + 1.0)
     sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
-    k = 10
+    k = 32
     rk = k * rkspacing
-    l = 11
+    l = 2
     alpha = m.radians(0.0)
     beta = m.radians(90.0)
     epsabs = 0.0
@@ -214,3 +238,19 @@ if __name__ == "__main__":
         detectionfn.rkstep, detectionfn.lmax, df_oddl,
         alpha, beta, method)
 
+    r = numpy.arange(Rbins) * detectionfn.rscale
+    theta = numpy.linspace(-numpy.pi, numpy.pi, Thetabins)
+
+    polarimg = vmi.PolarImage()
+    polarimg.from_numpy_array(bf, r, theta)
+
+    cartimg = vmi.CartesianImage()
+    cartimg.from_PolarImage(polarimg)
+
+    pylab.figure()
+    im = pylab.imshow(cartimg.image.transpose(), origin='lower',
+                      extent=(cartimg.x[0], cartimg.x[-1],
+                              cartimg.y[0], cartimg.y[-1]),
+                      cmap=plot.cm.gist_heat)
+    plot.colorbar(im, use_gridspec=True)
+    pylab.show()

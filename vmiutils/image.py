@@ -279,17 +279,22 @@ class CartesianImage():
 
         return CartesianImage(image=newimg, x=newx, y=newy, centre=self.centre)
 
-    def from_PolarImage(self, pimage, order=3):
-        """ Initialise from a PolarImage object by interpolation onto a
+    def from_PolarImage(self, pimage, xbins=None, ybins=None, order=3):
+        """Initialise from a PolarImage object by interpolation onto a
         cartesian grid.
 
+        xbins and ybins specify the desired number of x and y bins. If
+        these are None, the number of bins in each direction will
+        be equal to the number of radial bins in the polar image.
+
         order specifies the interpolaton order used in the conversion.
+
         """
-        raise NotImplementedError
-    
-        # self.x, self.y, self.image = pimage.cartesian_rep()
-        #     self.shape = self.image.shape
-        #     self.set_centre(self.centre_of_grid())
+        self.x, self.y, self.image = pimage.cartesian_rep(xbins, ybins, order)
+        self.shape = self.image.shape
+        self.xbinw = self.x[1] - self.x[0]
+        self.ybinw = self.y[1] - self.y[0]
+        self.set_centre(self.centre_of_grid())
 
     def polar_rep(self, rbins=None, thetabins=None, rmax=None, order=3):
         """ Returns a tuple (r, theta, pimage) containing the coordinates and
