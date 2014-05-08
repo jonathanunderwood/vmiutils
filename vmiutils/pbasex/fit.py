@@ -167,7 +167,7 @@ class PbasexFit():
         # number in the fit to actual position in the original
         # image. This can also be used to scale rkstep and sigma
         rscale = image.r[1] - image.r[0]
-
+        
         # We need to store sigma in image dimensions.
         self.sigma = matrix.sigma * rscale
 
@@ -177,7 +177,7 @@ class PbasexFit():
 
         # rkstep holds the spacing between the centres of adjacent
         # Gaussian radial basis functions.
-        self.rkstep = mtx.rkspacing * rscale
+        self.rkstep = rscale * Rbins / kdim
 
     def calc_radial_spectrum(self, rbins=500, rmax=None):
         """Calculate a radial spectrum from the parameters of a fit. Returns a
