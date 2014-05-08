@@ -176,8 +176,7 @@ class PbasexFit():
         self.rmax = image.r[-1]
 
         # rkstep holds the spacing between the centres of adjacent
-        # Gaussian radial basis functions. This is also expressed in
-        # bin numbers, not image coordinates.
+        # Gaussian radial basis functions.
         self.rkstep = mtx.rkspacing * rscale
 
     def calc_radial_spectrum(self, rbins=500, rmax=None):
