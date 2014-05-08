@@ -61,8 +61,8 @@ class CartesianImage():
                 xbins = x.shape[0]
                 ybins = y.shape[0]
             elif xbins is not None and ybins is not None:
-                self.x = numpy.arange(xbins)
-                self.y = numpy.arange(xbins)
+                self.x = numpy.arange(float(xbins))
+                self.y = numpy.arange(float(ybins))
             else:
                 logger.error(
                     'x and y dimensions of CartesianImage not specified')
@@ -76,12 +76,12 @@ class CartesianImage():
             self.image = image.copy()
 
             if x is None:
-                self.x = numpy.arange(self.image.shape[0])
+                self.x = numpy.arange(float(self.image.shape[0]))
             else:
                 self.x = x.copy()
 
             if y is None:
-                self.y = numpy.arange(self.image.shape[1])
+                self.y = numpy.arange(float(self.image.shape[1]))
             else:
                 self.y = y.copy()
                     
@@ -359,7 +359,7 @@ class PolarImage():
         self.image = image.copy()
 
         if r is None:
-            self.r = numpy.arange(self.image.shape[0])
+            self.r = numpy.arange(float(self.image.shape[0]))
         else:
             self.r = r.copy()
 
@@ -415,7 +415,7 @@ class PolarImage():
         expansion in Legendre polynomials up to order lmax. oddl specifies
         whether odd l coefficients are fit or not.
         """
-
+        
         costheta = numpy.cos(self.theta)
         A = numpy.c_[[legpol(lmax, ct)[0] for ct in costheta]]
         logger.debug(

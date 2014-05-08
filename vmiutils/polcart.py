@@ -61,10 +61,10 @@ def cart2pol(image, x=None, y=None, centre=None,
     """
     
     if x is None:
-        x = numpy.arange(image.shape[0])
+        x = numpy.arange(float(image.shape[0]))
 
     if y is None:
-        y = numpy.arange(image.shape[1])
+        y = numpy.arange(float(image.shape[1]))
 
     if centre is None:
         xc = 0.5 * (x[0] + x[-1])
@@ -124,7 +124,7 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
     """
 
     if r is None:
-        r = numpy.arange(image.shape[0])
+        r = numpy.arange(float(image.shape[0]))
 
     rbw = r[1] - r[0] # Assume equally spaced
 
