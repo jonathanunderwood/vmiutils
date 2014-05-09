@@ -194,12 +194,10 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
             self.epsrel = epsrel
             self.method = method
             self.threshold = threshold
-            # It's important we save these as part of the matrix object,
+            # It's important we save this as part of the matrix object,
             # as subsequent fits with this matrix are only valid if they
             # have the same binning and scaling
             self.rmax = detectionfn.rmax
-            self.rscale = detectionfn.rscale
-
 
 if __name__ == "__main__":
     import vmiutils as vmi
