@@ -26,9 +26,10 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
     def __init__(self):
         super(PbasexMatrixDetFn1, self).__init__()
         self.rmax = None
-        self.rscale = None
         self.description = 'pbasex_detfn1_matrix'
-        self._metadata += ['method', 'threshold','rmax', 'rscale']
+        self._metadata += ['method', 
+                           'threshold',
+                           'rmax']
     
     def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax,
                              detectionfn, alpha=0.0, beta=0.0,
@@ -194,9 +195,12 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
             self.epsrel = epsrel
             self.method = method
             self.threshold = threshold
-            # It's important we save this as part of the matrix object,
-            # as subsequent fits with this matrix are only valid if they
-            # have the same binning and scaling
+            # It's important we save this as part of the matrix
+            # object, as subsequent fits with this matrix are only
+            # valid if they have the same binning and scaling. Note
+            # that we can always calculate the relevant rscale from
+            # (self.Rbins / self.rmax) if needs be, so we don't save
+            # that.
             self.rmax = detectionfn.rmax
 
 if __name__ == "__main__":
