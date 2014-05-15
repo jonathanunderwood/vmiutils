@@ -23,13 +23,15 @@ def __P(i, j):
     """
     Calculates the Cho and Na P matrix elements assuming d = 1.
     """
-    # Note that here we get away with casting i and j to float, which is
-    # surprising. Note that in the future, if this is required, it is achieved
-    # by jj = j + 1.0, i.astype(float) etc.
-    jj = j + 1.0
-    theta = numpy.arccos(i / jj)
-    return numpy.where(j >= i, 
-                       0.5 * (jj * jj * theta - i * i * numpy.tan(theta)), 
+    # The following results in "RuntimeWarning: invalid value encountered in arccos"
+    # theta = numpy.where(j >= i, numpy.arccos(i / j + 1.0), 0.0)
+    # because the arrcos is evaluated for i and j before the where.
+    # See:
+    # http://mail.scipy.org/pipermail/numpy-discussion/2013-January/064987.html
+    # http://mail.scipy.org/pipermail/numpy-discussion/2013-January/064988.html
+    theta = numpy.arccos(numpy.where(j >= i, i / (j + 1.0), 0.0))
+    return numpy.where(j >= i, 0.5 * (numpy.power(j + 1.0, 2) * theta -
+                                      numpy.power(i, 2) * numpy.tan(theta)),
                        0.0)
 
 def area_matrix(dim):
