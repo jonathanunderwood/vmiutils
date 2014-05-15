@@ -50,13 +50,22 @@ class NewtonSphere(object):
         section through it). In other words, this is the modelled
         distribution, rather than the corresponding VMI image.
         """
+        if (bins % 2) != 0:
+            logger.error ('bins needs to be an even integer')
+            raise ValueError('bins needs to be an even integer')
+
         d = numpy.fromfunction(self._cart_dist, (bins, bins))
 
         return vmi.CartesianImage(image=d)
 
     def vmi_image(self, bins):
-        """Returns a simulated VMI image for this distribution. 
+        """Returns a simulated VMI image for this distribution as a cartesian
+        grid of binsxbins size. bins should be an even number.
         """
+        if (bins % 2) != 0:
+            logger.error ('bins needs to be an even integer')
+            raise ValueError('bins needs to be an even integer')
+
         d = numpy.fromfunction(self._cart_dist, (bins, bins))
         dist = vmi.CartesianImage(image=d)
         vmi_img = vmi.CartesianImage(image='empty', xbins=bins, ybins=bins)
