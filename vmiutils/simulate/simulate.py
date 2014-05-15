@@ -21,8 +21,12 @@ class NewtonSphere(object):
         """
         xc = x.shape[0] / 2.0
         yc = y.shape[0] / 2.0
-        xx = x - xc
-        yy = y - yc
+
+        # Since x and y are pixel indices, we need to calculate the
+        # distance from the *centre* of the pixel (i.e. [x+0.5,
+        # y+0.5]) from the image centre
+        xx = (x + 0.5) - xc
+        yy = (y + 0.5) - yc
 
         r = numpy.sqrt (xx**2 + yy**2)
 
@@ -76,8 +80,8 @@ if __name__ == "__main__":
 
     ions = NewtonSphere(40.0, 2.0, [1.0, 0.0, 2.0/math.sqrt(5.0)])
 
-    dist = ions.cartesian_distribution(127)
-    vmi_img = ions.vmi_image(127)
+    dist = ions.cartesian_distribution(128)
+    vmi_img = ions.vmi_image(128)
 
     plt.figure(1)
 
