@@ -2,8 +2,9 @@ import vmiutils as vmi
 import vmiutils.ChoNa as chona
 import numpy
 import numpy.polynomial.legendre as legendre
+import math
 
-class NewtonSphere(Object):
+class NewtonSphere(object):
     """Class to describe a single newton sphere definition for a particle
     group. The kinetic energy is assumed to be described by a Gaussian
     distribution centred at r0 and with a width of sigma. The angular
@@ -13,18 +14,30 @@ class NewtonSphere(Object):
         self.r0 = r0
         self.sigma = sigma
         self.beta = numpy.asarray(beta)
-        self.lmax = self.beta.shape
 
-    def _calc_dist(i, j):
-        """Returns probability at position (i, j).
+    def _cart_dist(self, x, y):
+        """Returns probabilities for mesh grid (x, y). Assumes the centre of
+        the image is at the centre of the grid.
         """
-        x = float (i)
-        y = float (j)
-        r = math.sqrt (x * x + y * y)
-        cos_theta = y / r
+        xc = x.shape[0] / 2.0
+        yc = y.shape[0] / 2.0
+        xx = x - xc
+        yy = y - yc
+
+        r = numpy.sqrt (xx**2 + yy**2)
+
+        # Note that the following causes RuntimeWarnings:
+        # cos_theta = numpy.where(r > 0.0, y / r, 0.0)
+        # because the y/r is evaluated before the where.
+        # See:
+        # http://mail.scipy.org/pipermail/numpy-discussion/2013-January/064988.html
+        cos_theta = numpy.zeros_like(yy)
+        numpy.divide (yy, r, where=(r > 0.0), out=cos_theta)
+
         a = (r - self.r0) / self.sigma
-        rad = math.exp (a * a)
-        ang = legendre.legval(cos_theta, beta)
+        rad = numpy.exp (-0.5 * a**2) / (self.sigma * math.sqrt(2.0 * math.pi))
+
+        ang = legendre.legval(cos_theta, self.beta)
 
         return rad * ang
         
@@ -33,15 +46,16 @@ class NewtonSphere(Object):
         section through it). In other words, this is the modelled
         distribution, rather than the corresponding VMI image.
         """
-        d = numpy.from_function(_cart_dist, (bins, bins))
+        d = numpy.fromfunction(self._cart_dist, (bins, bins))
+
         return vmi.CartesianImage(image=d)
 
     def vmi_image(self, bins):
         """Returns a simulated VMI image for this distribution. 
         """
-        d = numpy.from_function(_cart_dist, (bins, bins))
+        d = numpy.fromfunction(self._cart_dist, (bins, bins))
         dist = vmi.CartesianImage(image=d)
-        vmi = vmi.CartesianImage(image='empty', xbins=bins, ybins=bins)
+        vmi_img = vmi.CartesianImage(image='empty', xbins=bins, ybins=bins)
         
         dim = max(dist.get_quadrant(i).shape[0] for i in xrange(4))
 
@@ -50,33 +64,33 @@ class NewtonSphere(Object):
         for i in xrange(4):
             quadrant = dist.get_quadrant(i)
             dim = quadrant.shape[0]
-            vmi.set_quadrant(i, numpy.dot(s, quadrant))
+            vmi_img.set_quadrant(i, numpy.dot(s[0:dim, 0:dim], quadrant))
 
-        return vmi
+        return vmi_img
 
 
 if __name__ == "__main__":
     import matplotlib.cm as cm
-    import matplotlib.plot as plt
+    import matplotlib.pyplot as plt
+    import math
 
-    ions = NewtonSphere(64.0, 10.0, [1.0, 2.0/math.sqrt(5.0)])
+    ions = NewtonSphere(40.0, 2.0, [1.0, 0.0, 2.0/math.sqrt(5.0)])
 
-    dist = ions.cartesian_distribution(128)
-    vmi = ions.vmi_image(128)
-
+    dist = ions.cartesian_distribution(127)
+    vmi_img = ions.vmi_image(127)
 
     plt.figure(1)
 
     plt.subplot(221)
-    plt.imshow(dist.image, cmap=cm.gist_heat, origin='lower')
+    plt.imshow(dist.image.transpose(), cmap=cm.gist_heat, origin='lower')
     
     plt.subplot(222)
-    plt.imshow(dist.image, cmap=cm.spectral, origin='lower')
+    plt.imshow(dist.image.transpose(), cmap=cm.spectral, origin='lower')
 
     plt.subplot(223)
-    plt.imshow(vmi.image, cmap=cm.gist_heat, origin='lower')
+    plt.imshow(vmi_img.image.transpose(), cmap=cm.gist_heat, origin='lower')
 
     plt.subplot(224)
-    plt.imshow(vmi.image, cmap=cm.spectral, origin='lower')
+    plt.imshow(vmi_img.image.transpose(), cmap=cm.spectral, origin='lower')
 
     plt.show()
