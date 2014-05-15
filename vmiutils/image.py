@@ -110,17 +110,27 @@ class CartesianImage():
         self.centre = centre
         
         # Define the centre pixel of the image by rounding to the nearest
-        # pixel 
+        # pixel.
         cx = _round_int((centre[0] - self.x[0]) / self.xbinw)
         cy = _round_int((centre[1] - self.y[0]) / self.ybinw)
         self.centre_pixel = (cx, cy)
 
         # Set up slices to give views of quadrants. The quadrants are numbered
-        # 0-3: Quadrant 0: from centre to (xmax, ymax) [Top right] Quadrant 1:
-        # from centre to (xmax, 0) [Bottom right] Quadrant 2: from centre to
-        # (0, 0) [Bottom Left] Quadrant 3: from centre to (0, ymax] [Top left]
+        # 0-3:
+        # Quadrant 0: from centre to (xmax, ymax) [Top right]
+        # Quadrant 1: from centre to (xmax, 0) [Bottom right]
+        # Quadrant 2: from centre to (0, 0) [Bottom Left]
+        # Quadrant 3: from centre to (0, ymax] [Top left]
+        #
+        # Using the centre pixel values to demark the quadrants
+        # approximates the centre as lying in the bottom left corner
+        # of the pixel containing the image centre. To go beyond this
+        # approximation would require resampling the image so that the
+        # true centre lay in the bottom left of a pixel in the
+        # resampled image.
+
         # self.quadrant = [
-        # self.image[cx::, cy::], 
+        # self.image[cx::, cy::],
         # self.image[cx::, cy - 1::-1],
         # self.image[cx - 1::-1, cy - 1::-1],
         # self.image[cx - 1::-1, cy::]
