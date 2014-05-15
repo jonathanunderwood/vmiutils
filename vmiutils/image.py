@@ -112,7 +112,7 @@ class CartesianImage():
         # Define the centre pixel of the image by rounding to the nearest
         # pixel 
         cx = _round_int((centre[0] - self.x[0]) / self.xbinw)
-        cy = _round_int((centre[0] - self.y[0]) / self.ybinw)
+        cy = _round_int((centre[1] - self.y[0]) / self.ybinw)
         self.centre_pixel = (cx, cy)
 
         # Set up slices to give views of quadrants. The quadrants are numbered
