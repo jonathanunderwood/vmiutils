@@ -128,6 +128,14 @@ class CartesianImage():
         # approximation would require resampling the image so that the
         # true centre lay in the bottom left of a pixel in the
         # resampled image.
+        #
+        # Note also that this is really only (vaguely) correct for
+        # even numbers of pixels. For odd number of pixels we should
+        # probably resample the image onto an image with a even number
+        # of pixels in both dimensions, either twice the original
+        # dimension, or the original dimension plus one.
+        #
+        # All in all, the quadrant stuff is a bit of ugly code right now.
 
         # self.quadrant = [
         # self.image[cx::, cy::],
