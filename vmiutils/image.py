@@ -190,15 +190,25 @@ class CartesianImage():
             # up the new x and y details now. For the moment this
             # doesn't include any offset to put the centre on a pixel
             # boundary - that is taken in to account subsequently
+            old_xmin = self.x[0]
+            old_xmax = self.x[-1] + self.xbinw
+            old_xbinw = self.xbinw
+
             if xbins is not None:
                 self.xbins = xbins
-                self.xbinw = (self.x[-1] - self.x[0]) / xbins
-                self.x = numpy.linspace(self.x[0], self.x[-1], xbins)
+                self.xbinw = (old_xmax - old_xmin) / xbins
+                self.x = numpy.linspace(old_xmin, old_xmax, xbins, 
+                                        endpoint=False)
+
+            old_ymin = self.y[0]
+            old_ymax = self.y[-1] + self.ybinw
+            old_ybinw = self.ybinw
 
             if ybins is not None:
                 self.ybins = ybins
-                self.ybinw = (self.y[-1] - self.y[0]) / ybins
-                self.y = numpy.linspace(self.y[0], self.y[-1], ybins)
+                self.ybinw = (old_ymax - old_ymin) / ybins
+                self.y = numpy.linspace(old_ymin, old_ymax, ybins,
+                                        endpoint=False)
  
             # Find the pixel in the new grid whose lower left corner
             # is closest to the centre
@@ -208,21 +218,46 @@ class CartesianImage():
             # We want to shift the grid such that the image centre lies at
             # the bottom left corner of a pixel, such that when we form
             # the quadrants later, they are exact.
-            xoffset = x0 - cx
-            yoffset = y0 - cy
+            xoffset = x0 - self.x[cx]
+            yoffset = y0 - self.y[cy]
 
             self.x += xoffset
             self.y += yoffset
+
+            # Now we need a function which maps the new image bin
+            # coords to the old image bin coordinates (for
+            # geometric_transform to use to interpolate the new
+            # grid). For eficiency we define a couple of new
+            # variables.
+            xbinw_ratio = self.xbinw / old_xbinw
+            ybinw_ratio = self.ybinw / old_ybinw
+            xoffset_px = xoffset / self.xbinw
+            yoffset_px = yoffset / self.ybinw
+            def _map(coords):
+                # Below, for reference is the algorithm without
+                # optimization. It should be pretty obvious that this
+                # reduces to the simple formulas that follow
+                #
+                # Calculate the x and y values corresponding to this
+                # pxiel in the new grid
+                # x = coords[0] * self.xbinw + self.x[0]
+                # y = coords[1] * self.ybinw + self.y[0]
+                # Calculate the fractional pixel location of this x
+                # and y in the old grid
+                # old_x = (x - old_xmin) / old_xbinw
+                # old_y = (y - old_ymin) / old_ybinw
+                # return (old_x, old_y)
+                #
+                old_x = (coords[0] + xoffset_px) * xbinw_ratio
+                old_y = (coords[1] + yoffset_px) * ybinw_ratio
+                return (old_x, old_y)
 
             # Here we use mode='nearest' because the shift of the grid
             # by at most half a pixel will move one side outside of
             # the original grid by at most half a pixel. This is an
             # acceptable compromise.
             self.image = scipy.ndimage.geometric_transform(
-                self.image, 
-                lambda coords: ((coords[0] + xoffset) * self.xbinw,
-                                (coords[1] + yoffset) * self.ybinw),
-                order=order,
+                self.image, _map, order=order,
                 output_shape=(self.x.shape[0], self.y.shape[0]),
                 mode='nearest',
             )
@@ -576,3 +611,52 @@ class PolarImage():
             logger.debug('rows for odd l added to beta array; new shape {0}'.format(beta.shape)) 
 
         return self.r, beta
+
+if __name__ == "__main__":
+    import matplotlib.cm as cm
+    import matplotlib.pyplot as plt
+
+    a = numpy.zeros(64).reshape((8, 8))
+    a[4][4] = 1.0
+
+    im1 = CartesianImage(image=a, centre=(4, 4))
+
+    im2 = CartesianImage(image=a, centre=(4, 4))
+
+    im2.set_centre((3.49, 3.49), xbins=32, ybins=32,
+                   resample=True)
+
+    print im1.x
+    print im2.x
+
+    plt.figure(1)
+
+    plt.subplot(221)
+    plt.imshow(im1.image.T, cmap=cm.gist_heat, origin='lower',
+               interpolation='none',
+               extent=(im1.x[0], im1.x[-1] + im1.xbinw,
+                       im1.y[0], im1.y[-1] + im1.ybinw),
+    )
+
+    plt.subplot(222)
+    plt.imshow(im1.image.T, cmap=cm.spectral, origin='lower',
+               interpolation='none',
+               extent=(im1.x[0], im1.x[-1] + im1.xbinw,
+                       im1.y[0], im1.y[-1] + im1.ybinw),
+    )
+
+    plt.subplot(223)
+    plt.imshow(im2.image.T, cmap=cm.gist_heat, origin='lower',
+               interpolation='none',
+               extent=(im2.x[0], im2.x[-1] + im2.xbinw,
+                       im2.y[0], im2.y[-1] + im2.ybinw),
+    )
+
+    plt.subplot(224)
+    plt.imshow(im2.image.T, cmap=cm.spectral, origin='lower',
+               interpolation='none',
+               extent=(im2.x[0], im2.x[-1] + im2.xbinw,
+                       im2.y[0], im2.y[-1] + im2.ybinw),
+    )
+
+    plt.show()
