@@ -130,8 +130,13 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
 
         queue = Queue.Queue(0)
 
-        for k in range(kmax + 1):
-            for l in range(lmax + 1):
+        if oddl is True:
+            linc = 1
+        else:
+            linc = 2
+
+        for k in numpy.arange(kmax + 1):
+            for l in numpy.arange(0, lmax + 1, linc):
                 queue.put({'k': k, 'l': l})
 
         shutdown_event = threading.Event()
