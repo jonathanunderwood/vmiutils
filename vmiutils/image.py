@@ -39,18 +39,9 @@ class CartesianImage():
 
     centre specifies the centre of the image. If not specified, the
     centre coordinate of the image array is used.
-
-    resample specifies whether to resample the image when setting the
-    centre so as to ensure the image centre lies on the lower left
-    corner of a pixel, such that the quadrants are exact. This is done
-    if resample is True. If resample is False (the default) the image
-    isn't resampled, and the quadrants are taken about the nearest
-    pixel to the image centre.
-
     """
     def __init__(self, image=None, x=None, y=None, 
-                 xbins=None, ybins=None, centre=None,
-                 resample=False):
+                 xbins=None, ybins=None, centre=None):
         if image is None:
             self.image = None
             self.x = None
@@ -101,21 +92,27 @@ class CartesianImage():
         self.ybinw = self.y[1] - self.y[0]
         
         if centre is None or centre == 'grid_centre':
-            self.set_centre(self.centre_of_grid(),
-                            resample=resample)
+            self.set_centre(self.centre_of_grid())
         elif centre == 'cofg':
-            self.set_centre(self.centre_of_gravity(),
-                            resample=resample)
+            self.set_centre(self.centre_of_gravity())
         else:
-            self.set_centre(centre, resample=resample)
+            self.set_centre(centre)
 
     def copy(self):
         return copy.copy(self)
 
-    def set_centre_OLD_DEPRECATED_DO_NOT_USE(self, centre):
-        """ Specify the coordinates of the centre of the image as a tuple
+    def set_centre(self, centre):
+        """Specify the coordinates of the centre of the image as a tuple
         (xcentre, ycentre). These coordinates are not expected to be integers
         (though they can be).
+
+        This function also sets up the quadrant views for the
+        image. These quadrants are taken about the lower left corner
+        of the bin containing the image centre. As such, they are
+        approximate (i.e. out by some fracton of a bin). If exact
+        quadrants about the centre are required, it is necessary to
+        call the resample method of the class.
+
         """
         self.centre = centre
         
@@ -134,19 +131,7 @@ class CartesianImage():
         #
         # Using the centre pixel values to demark the quadrants
         # approximates the centre as lying in the bottom left corner
-        # of the pixel containing the image centre. To go beyond this
-        # approximation would require resampling the image so that the
-        # true centre lay in the bottom left of a pixel in the
-        # resampled image.
-        #
-        # Note also that this is really only (vaguely) correct for
-        # even numbers of pixels. For odd number of pixels we should
-        # probably resample the image onto an image with a even number
-        # of pixels in both dimensions, either twice the original
-        # dimension, or the original dimension plus one.
-        #
-        # All in all, the quadrant stuff is a bit of ugly code right now.
-
+        # of the pixel containing the image centre.
         # self.quadrant = [
         # self.image[cx::, cy::],
         # self.image[cx::, cy - 1::-1],
@@ -161,60 +146,54 @@ class CartesianImage():
             (slice(cx - 1, None, -1), slice (cy, None, None))
             ]
 
-    def set_centre(self, centre, resample=False,
-                   xbins=None, ybins=None, order=3):
-        """Specify the coordinates of the centre of the image as a tuple
-        (xcentre, ycentre). These coordinates are not expected to be
-        integers (though they can be).
+    def resample(self, xbins=None, ybins=None, align_centre=False, order=3):
+        """Resample the image onto a new grid.
 
-        resample specifies whether to resample the image when setting
-        the centre so as to ensure the image centre lies on the lower
-        left corner of a pixel, such that the quadrants are
-        exact. This is done if resample is True. If resample is False
-        (the default) the image isn't resampled, and the quadrants are
-        taken about the nearest pixel to the image centre.
+        If xbins and/or ybins is not None (the default) they specify
+        the dimensions required. If these are None, the exisiting
+        number of bins in that dimension is used.
 
-        xbins and ybins set the number of bins in the resampled image
-        (if resampling is requested). If resampling is requested, but
-        xbins and/or ybins are None (their default), then the number
-        of bins in the input image is used.
+        If align_centre is True, the new grid will be shifted so that
+        current centre lies on a lower left corner of the nearest
+        bin. This ensures the quadrants are exact. If align_centre is
+        False (the default) the quadrants are taken about the nearest
+        pixel to the image centre.
 
         order specifies the interpolation order used when resampling.
         """
-        self.centre = centre
-        x0 = centre[0]
-        y0 = centre[1]
+        x0 = self.centre[0]
+        y0 = self.centre[1]
 
-        if resample is True:
-            # If we are to resample the image to (xbins x ybins), set
-            # up the new x and y details now. For the moment this
-            # doesn't include any offset to put the centre on a pixel
-            # boundary - that is taken in to account subsequently
-            old_xmin = self.x[0]
-            old_xmax = self.x[-1] + self.xbinw
-            old_xbinw = self.xbinw
+        # If we are to resample the image to (xbins x ybins), set
+        # up the new x and y details now. For the moment this
+        # doesn't include any offset to put the centre on a pixel
+        # boundary - that is taken in to account subsequently
+        old_xmin = self.x[0]
+        old_xmax = self.x[-1] + self.xbinw
+        old_xbinw = self.xbinw
 
-            if xbins is not None:
-                self.xbins = xbins
-                self.xbinw = (old_xmax - old_xmin) / xbins
-                self.x = numpy.linspace(old_xmin, old_xmax, xbins, 
-                                        endpoint=False)
+        if xbins is not None:
+            self.xbins = xbins
+            self.xbinw = (old_xmax - old_xmin) / xbins
+            self.x = numpy.linspace(old_xmin, old_xmax, xbins,
+                                    endpoint=False)
 
-            old_ymin = self.y[0]
-            old_ymax = self.y[-1] + self.ybinw
-            old_ybinw = self.ybinw
+        old_ymin = self.y[0]
+        old_ymax = self.y[-1] + self.ybinw
+        old_ybinw = self.ybinw
 
-            if ybins is not None:
-                self.ybins = ybins
-                self.ybinw = (old_ymax - old_ymin) / ybins
-                self.y = numpy.linspace(old_ymin, old_ymax, ybins,
-                                        endpoint=False)
+        if ybins is not None:
+            self.ybins = ybins
+            self.ybinw = (old_ymax - old_ymin) / ybins
+            self.y = numpy.linspace(old_ymin, old_ymax, ybins,
+                                    endpoint=False)
  
-            # Find the pixel in the new grid whose lower left corner
-            # is closest to the centre
-            cx = _round_int((centre[0] - self.x[0]) / self.xbinw)
-            cy = _round_int((centre[1] - self.y[0]) / self.ybinw)
+        # Find the pixel in the new grid whose lower left corner
+        # is closest to the centre
+        cx = _round_int((x0 - self.x[0]) / self.xbinw)
+        cy = _round_int((y0 - self.y[0]) / self.ybinw)
 
+        if align_centre is True:
             # We want to shift the grid such that the image centre lies at
             # the bottom left corner of a pixel, such that when we form
             # the quadrants later, they are exact.
@@ -223,49 +202,47 @@ class CartesianImage():
 
             self.x += xoffset
             self.y += yoffset
-
-            # Now we need a function which maps the new image bin
-            # coords to the old image bin coordinates (for
-            # geometric_transform to use to interpolate the new
-            # grid). For eficiency we define a couple of new
-            # variables.
-            xbinw_ratio = self.xbinw / old_xbinw
-            ybinw_ratio = self.ybinw / old_ybinw
-            xoffset_px = xoffset / self.xbinw
-            yoffset_px = yoffset / self.ybinw
-            def _map(coords):
-                # Below, for reference is the algorithm without
-                # optimization. It should be pretty obvious that this
-                # reduces to the simple formulas that follow
-                #
-                # Calculate the x and y values corresponding to this
-                # pxiel in the new grid
-                # x = coords[0] * self.xbinw + self.x[0]
-                # y = coords[1] * self.ybinw + self.y[0]
-                # Calculate the fractional pixel location of this x
-                # and y in the old grid
-                # old_x = (x - old_xmin) / old_xbinw
-                # old_y = (y - old_ymin) / old_ybinw
-                # return (old_x, old_y)
-                #
-                old_x = (coords[0] + xoffset_px) * xbinw_ratio
-                old_y = (coords[1] + yoffset_px) * ybinw_ratio
-                return (old_x, old_y)
-
-            # Here we use mode='nearest' because the shift of the grid
-            # by at most half a pixel will move one side outside of
-            # the original grid by at most half a pixel. This is an
-            # acceptable compromise.
-            self.image = scipy.ndimage.geometric_transform(
-                self.image, _map, order=order,
-                output_shape=(self.x.shape[0], self.y.shape[0]),
-                mode='nearest',
-            )
-
         else:
-            # Find the pixel whose lower left corner is closest to the centre
-            cx = _round_int((centre[0] - self.x[0]) / self.xbinw)
-            cy = _round_int((centre[1] - self.y[0]) / self.ybinw)
+            xoffset = 0.0
+            yoffset = 0.0
+
+        # Now we need a function which maps the new image bin
+        # coords to the old image bin coordinates (for
+        # geometric_transform to use to interpolate the new
+        # grid). For eficiency we define a couple of new
+        # variables.
+        xbinw_ratio = self.xbinw / old_xbinw
+        ybinw_ratio = self.ybinw / old_ybinw
+        xoffset_bins = xoffset / self.xbinw
+        yoffset_bins = yoffset / self.ybinw
+        def _map(coords):
+            # Below, for reference is the algorithm without
+            # optimization. It should be pretty obvious that this
+            # reduces to the simple formulas that follow
+            #
+            # Calculate the x and y values corresponding to this
+            # pxiel in the new grid
+            # x = coords[0] * self.xbinw + self.x[0]
+            # y = coords[1] * self.ybinw + self.y[0]
+            # Calculate the fractional pixel location of this x
+            # and y in the old grid
+            # old_x = (x - old_xmin) / old_xbinw
+            # old_y = (y - old_ymin) / old_ybinw
+            # return (old_x, old_y)
+            #
+            old_x = (coords[0] + xoffset_bins) * xbinw_ratio
+            old_y = (coords[1] + yoffset_bins) * ybinw_ratio
+            return (old_x, old_y)
+
+        # Here we use mode='nearest' because the shift of the grid
+        # by at most half a pixel will move one side outside of
+        # the original grid by at most half a pixel. This is an
+        # acceptable compromise.
+        self.image = scipy.ndimage.geometric_transform(
+            self.image, _map, order=order,
+            output_shape=(self.x.shape[0], self.y.shape[0]),
+            mode='nearest',
+        )
 
         self.centre_pixel = (cx, cy)
 
@@ -275,17 +252,6 @@ class CartesianImage():
         # Quadrant 1: from centre to (xmax, 0) [Bottom right]
         # Quadrant 2: from centre to (0, 0) [Bottom Left]
         # Quadrant 3: from centre to (0, ymax] [Top left]
-        #
-        # We use the centre pixel values to demark the quadrants
-        # approximates the centre as lying in the bottom left corner
-        # of the pixel containing the image centre.
-        #
-        # self.quadrant = [
-        # self.image[cx::, cy::],
-        # self.image[cx::, cy - 1::-1],
-        # self.image[cx - 1::-1, cy - 1::-1],
-        # self.image[cx - 1::-1, cy::]
-        # ]
 
         self.quad = [
             (slice(cx, None, None), slice (cy, None, None)),
@@ -623,8 +589,8 @@ if __name__ == "__main__":
 
     im2 = CartesianImage(image=a, centre=(4, 4))
 
-    im2.set_centre((3.49, 3.49), xbins=32, ybins=32,
-                   resample=True)
+    im2.set_centre((3.49, 3.49))
+    im2.resample(xbins=32, ybins=32)
 
     print im1.x
     print im2.x

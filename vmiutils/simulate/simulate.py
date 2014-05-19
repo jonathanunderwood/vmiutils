@@ -73,8 +73,12 @@ class NewtonSphere(object):
             raise ValueError('bins needs to be an even integer')
 
         d = numpy.fromfunction(self._cart_dist, (bins, bins), centre=centre)
+        v = vmi.CartesianImage(image=d, centre=centre)
 
-        return vmi.CartesianImage(image=d, centre=centre, resample=resample)
+        if resample is True:
+            v.resample(align_centre=True)
+
+        return v
 
     def vmi_image(self, bins, centre=None, resample=False):
         """Returns a simulated VMI image for this distribution as a cartesian
@@ -98,13 +102,14 @@ class NewtonSphere(object):
 
         d = numpy.fromfunction(self._cart_dist, (bins, bins),
                                centre=centre)
-        dist = vmi.CartesianImage(image=d, centre=centre,
-                                  resample=resample)
+        dist = vmi.CartesianImage(image=d, centre=centre)
 
         vmi_img = vmi.CartesianImage(image='empty',
                                      xbins=bins, ybins=bins,
-                                     centre=centre,
-                                     resample=resample)
+                                     centre=centre)
+        if resample is True:
+            dist.resample(align_centre=True)
+            vmi_img.resample(align_centre=True)
         
         dim = max(dist.get_quadrant(i).shape[0] for i in xrange(4))
 
