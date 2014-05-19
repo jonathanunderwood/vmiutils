@@ -87,7 +87,7 @@ class PbasexFit():
         if oddl is True and matrix.oddl is False:
             logger.error('odd l requested, but matrix not calculated for odd l')
             raise ValueError
-        elif oddl is True and matrix.oddl is True:
+        elif oddl == matrix.oddl:
             mtx = matrix.matrix
         elif oddl is False and matrix.oddl is True:
             mtx = matrix.matrix[:, ::2, :, :]
