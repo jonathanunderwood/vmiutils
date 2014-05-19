@@ -128,7 +128,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import math
 
-    ions = NewtonSphere(20.0, 2.0, [1.0, 0.0, 2.0/math.sqrt(5.0)])
+    ions = NewtonSphere(20.0, 2.0, [1.0, 0.0, 2.0])
 
     dist = ions.cartesian_distribution(64, centre=(25.5, 25.5), resample=True)
     vmi_img = ions.vmi_image(64, centre=(25.5, 25.5), resample=True)
