@@ -48,18 +48,21 @@ except IOError:
 # Swap axes if requested
 if args.swapxy is True:
     imdat = imdat.transpose()
-# TODO: need to swap x and y if read in
+
+# Set centre - if not specified, use image centre of gravity
+if args.centre = None:
+    centre = 'cofg'
+    logger.info('image centre of gravity used as centre: {0}'.format(cofg))
+else:
+    centre = args.centre
 
 vmicart = vmi.CartesianImage(image=imdat, centre=args.centre)
 
-# If centre wasn't specified default to using the centre of gravity rather
-# than the centre of the grid
-if args.centre is None:
-    cofg = vmicart.centre_of_gravity()
-    logger.info('image centre of gravity used as centre: {0}'.format(cofg))
-    vmicart.set_centre(cofg)
+# Resample the image so that centre lies on lower left corner of a
+# pixel such that the quadrants are exact.
+vmicart.resample(align_centre=True)
 
-# Invert the image
+#  Invert the image
 if args.plreg is False:
     logger.info('inverting image...')
     invimg_cart = cn.invert_CartesianImage(vmicart)
