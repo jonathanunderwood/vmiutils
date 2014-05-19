@@ -46,8 +46,10 @@ class NewtonSphere(object):
         cos_theta = numpy.zeros_like(yy)
         numpy.divide (yy, r, where=(r > 0.0), out=cos_theta)
 
+        # Note here we divide by r^2 for correct normalization
         a = (r - self.r0) / self.sigma
-        rad = numpy.exp (-0.5 * a**2) / (self.sigma * math.sqrt(2.0 * math.pi))
+        rad = numpy.exp (-0.5 * a**2)
+        rad /= (r * r * self.sigma * math.sqrt(2.0 * math.pi))
 
         ang = legendre.legval(cos_theta, self.beta)
 
