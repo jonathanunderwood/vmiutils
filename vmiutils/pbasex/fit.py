@@ -167,7 +167,7 @@ class PbasexFit():
         # number in the fit to actual position in the original
         # image. This can also be used to scale rkstep and sigma
         rscale = image.r[1] - image.r[0]
-        
+
         # We need to store sigma in image dimensions.
         self.sigma = matrix.sigma * rscale
 
