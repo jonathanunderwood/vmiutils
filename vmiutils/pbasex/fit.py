@@ -38,7 +38,7 @@ logger.addHandler(__null_handler)
 # dimensions in the original image. So, once fittd, we store sigma,
 # rkstep etc rescaled to the original image.
 
-class PbasexFit():
+class PbasexFit(object):
     def __init__(self):
         self.coef = None
         self.kmax = None
