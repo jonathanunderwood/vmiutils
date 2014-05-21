@@ -31,12 +31,11 @@ logger.addHandler(__null_handler)
 # onto a (R, Theta) grid of the same dimensions as the matrix. As such
 # there is a scaling factor we need to keep track of which relates the
 # pixel number in the resampled image, and the fit, to the original
-# image dimensions. This is stored as self.rscale. Also, for
-# convenience we store the value of the larges radius sampled in the
-# original image, self.rmax. When we calculate any property from the
-# fitted coefficients it is necessary to ensure we scale to the
-# dimensions in the original image. So, once fittd, we store sigma,
-# rkstep etc rescaled to the original image.
+# image dimensions. For convenience we store the value of the largest
+# radius sampled in the original image, self.rmax. When we calculate
+# any property from the fitted coefficients it is necessary to ensure
+# we scale to the dimensions in the original image. So, once fittd, we
+# store sigma, rkstep etc rescaled to the original image.
 
 class PbasexFit(object):
     def __init__(self):
@@ -164,9 +163,9 @@ class PbasexFit(object):
         self.oddl = oddl
 
         # rscale is the scaling factor to convert from radial bin
-        # number in the fit to actual position in the original
-        # image. This can also be used to scale rkstep and sigma
-        rscale = image.r[1] - image.r[0]
+        # number in the fit to actual position in the original image -
+        # used here to scale rkstep and sigma to image coordinates
+        rscale = float(image.r[1] - image.r[0])
 
         # We need to store sigma in image dimensions.
         self.sigma = matrix.sigma * rscale
