@@ -4,7 +4,6 @@ import argparse
 import logging
 import numpy
 import vmiutils as vmi
-import vmiutils.pbasex as pb
 import vmiutils.pbasex.detfn1 as pbdetfn1
 
 logging.basicConfig(level=logging.DEBUG)
@@ -110,7 +109,7 @@ vmipolar.from_CartesianImage(vmicart_zoom, rbins=mtx.Rbins, thetabins=mtx.Thetab
 logger.debug('image converted to polar coordinates')
 
 logger.debug('fitting polar image...')
-fit = pb.PbasexFit()
+fit = pbdetfn1.PbasexFitDetfn1()
 fit.fit_data(vmipolar, mtx, oddl=oddl, lmax=lmax)
 logger.debug('data fit')
 
