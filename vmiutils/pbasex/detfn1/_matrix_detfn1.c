@@ -44,7 +44,7 @@ typedef struct
   double threshold;
   double df_sigma, df_two_sigma2, df_rkstep, df_rmax;
   double df_alpha, df_cos_beta, df_sin_beta;
-  double *df_coef, *df_legpol;
+  double *df_coef, *df_beta;
   integration_method method;
 } int_params_detfn1;
 
@@ -85,7 +85,7 @@ integrand_detfn1 (double r, void *params)
     phi = asin (sin_phi);
 
   cos_theta_det_frame = p.df_cos_beta * cos_theta + 
-    p.df_sin_beta * sin_theta * cos (phi - p.df_alpha);
+    p.df_sin_beta * sin_theta * cos (p.df_alpha - phi);
 
   /* Usual basis function for pbasex */
   a = r - p.rk;
@@ -97,20 +97,13 @@ integrand_detfn1 (double r, void *params)
   else /* p.method == qags || p.method == cquad */
     val = rad * ang * r / sqrt((r + p.R) * (r - p.R));
 
-  /* if (fabs(val) < p.threshold) */
-  /*   return 0.0; */
-
-  /* Detection function at this r, theta.*/
-  df_lidx = -1;
-  for (l = 0; l <= p.df_lmax; l += p.df_linc)
-    {
-      df_lidx++;
-      p.df_legpol[df_lidx] = gsl_sf_legendre_Pl(l, cos_theta_det_frame);
-    }
-
-  /* When calculating the detector function at r, we only consider
-     basis functions which are a maximum delta away from this value of
-     r. */
+  /* Now calculate the angular detection function. Here the strategy
+     is to calulcate the Beta coefficients from the detection function
+     pbasex coefficients at this value of r and use the angular part
+     of the fit only - i.e. we do not include the radial part of the
+     detection function fit. When calculating the Beta parameters at
+     r, we only consider basis functions which are a maximum delta
+     away from this value of r. */
   delta = __DF_N_SIGMA * p.df_sigma;
   kmin = floor((r - delta) / p.df_rkstep);
   kmax = ceil((r + delta) / p.df_rkstep);
@@ -119,7 +112,14 @@ integrand_detfn1 (double r, void *params)
   if (kmax > p.df_kmax)
     kmax = p.df_kmax;
 
-  df_val = 0.0;
+  df_lidx = -1;
+  for (l = 0; l <= p.df_lmax; l += p.df_linc)
+    {
+      df_lidx ++;
+      p.df_beta[l] = 0.0;
+    }
+
+  /* Calculate beta parameters. */
   for (k = kmin; k <= kmax; k++)
     {	      
       double rk = k * p.df_rkstep;
@@ -130,13 +130,20 @@ integrand_detfn1 (double r, void *params)
 
       for (l = 0; l <= p.df_lmax; l += p.df_linc)
 	{
-	  double c1 = p.df_coef[k * (p.df_lmax + 1) + l];
-	  double c2;
-
-	  df_lidx ++;
-	  c2 = p.df_legpol[df_lidx];
-	  df_val += rad * c1 * c2;
+	  df_lidx++;
+	  p.df_beta[df_lidx] += rad * p.df_coef[k * (p.df_lmax + 1) + l];
 	}
+    }
+
+  /* Calculate angular part of the detection function distribution at
+     this R, taking care to normalize to Beta_0=1. */
+  df_val = 0.0;
+  df_lidx = -1;
+  for (l = 0; l <= p.df_lmax; l += p.df_linc)
+    {
+      df_lidx ++;
+      p.df_beta[df_lidx] /= p.df_beta[0]; /* Normalize to Beta_0 = 1 */
+      df_val += p.df_beta[df_lidx] * gsl_sf_legendre_Pl(l, cos_theta_det_frame); 
     }
 
   val = df_val * val;
@@ -287,8 +294,8 @@ basisfn_detfn1(PyObject *self, PyObject *args)
       params.df_linc = 2;
     }
 
-  params.df_legpol = malloc(df_ldim * sizeof (double));
-  if (params.df_legpol == NULL)
+  params.df_beta = malloc(df_ldim * sizeof (double));
+  if (params.df_beta == NULL)
     {
       Py_BLOCK_THREADS
       Py_DECREF(df_coef);
@@ -298,7 +305,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   matrix = malloc(Rbins * Thetabins * sizeof (double));
   if (matrix == NULL)
     {
-      free (params.df_legpol);
+      free (params.df_beta);
       Py_BLOCK_THREADS
       Py_DECREF(df_coef);
       return PyErr_NoMemory(); 
@@ -318,7 +325,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   if (!wksp)
     {
       free (matrix);
-      free (params.df_legpol);
+      free (params.df_beta);
       Py_BLOCK_THREADS
       return PyErr_NoMemory();
     }
@@ -329,7 +336,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
       if (!table)
 	{
 	  free (matrix);
-	  free (params.df_legpol);
+	  free (params.df_beta);
 	  gsl_integration_workspace_free(wksp);
 	  Py_BLOCK_THREADS
 	  Py_DECREF(df_coef);
@@ -434,7 +441,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 		  break;
 		}
 
-	      free (params.df_legpol);
+	      free (params.df_beta);
 	      free (matrix);
 
 	      switch (status)
@@ -510,7 +517,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
       break;
     }
 
-  free (params.df_legpol);
+  free (params.df_beta);
 
   /* Regain GIL as we'll now access some Python objects. */
   NPY_END_ALLOW_THREADS
