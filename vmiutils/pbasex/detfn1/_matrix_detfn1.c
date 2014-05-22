@@ -26,7 +26,7 @@
    either side of r to consider when calculating the integrand. It
    probably makes most sense to set this the same as
    __UPPER_BOUND_FACTOR above. */
-#define __DF_N_SIGMA 10.0
+#define __DF_N_SIGMA 5.0
 
 
 /* Exceptions for this module. */
