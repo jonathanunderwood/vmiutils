@@ -103,8 +103,10 @@ class CartesianImage():
 
     def set_centre(self, centre):
         """Specify the coordinates of the centre of the image as a tuple
-        (xcentre, ycentre). These coordinates are not expected to be integers
-        (though they can be).
+        (xcentre, ycentre). These coordinates are not expected to be
+        integers (though they can be). These coordinates are in the
+        same units as the image x and y array, not image array bin
+        numbers.
 
         This function also sets up the quadrant views for the
         image. These quadrants are taken about the lower left corner
@@ -464,8 +466,8 @@ class CartesianImage():
     def centre_of_grid(self):
         """Returns a tuple containing the central coordinates of the cartesian
         grid."""
-        xc = 0.5 * (self.x[-1] - self.x[0])
-        yc = 0.5 * (self.y[-1] - self.y[0])
+        xc = self.x[0] + 0.5 * (self.x[-1] - self.x[0])
+        yc = self.y[0] + 0.5 * (self.y[-1] - self.y[0])
         return xc, yc
 
 class PolarImage():
