@@ -75,7 +75,7 @@ integrand_detfn1 (double r, void *params)
   double sin_phi = p.RsinTheta / (r * sin_theta);
   double phi, cos_theta_det_frame;
   double a, rad, ang, val, df_val, delta;
-  int k, l, df_lidx, kmin, kmax;
+  int k, l, df_lidx, kmin, kmax, df_ldim;
 
   if (sin_phi < -1.0)
     phi = -M_PI / 2.0;
@@ -116,22 +116,24 @@ integrand_detfn1 (double r, void *params)
   for (l = 0; l <= p.df_lmax; l += p.df_linc)
     {
       df_lidx ++;
-      p.df_beta[l] = 0.0;
+      p.df_beta[df_lidx] = 0.0;
     }
 
   /* Calculate beta parameters. */
+  df_ldim = p.df_lmax + 1;
   for (k = kmin; k <= kmax; k++)
     {	      
       double rk = k * p.df_rkstep;
       double a = r - rk;
       double rad = exp(-(a * a) / p.df_two_sigma2);
+      double * df_coef_k = &(p.df_coef[k * df_ldim]);
 
       df_lidx = -1;
 
       for (l = 0; l <= p.df_lmax; l += p.df_linc)
 	{
 	  df_lidx++;
-	  p.df_beta[df_lidx] += rad * p.df_coef[k * (p.df_lmax + 1) + l];
+	  p.df_beta[df_lidx] += rad * df_coef_k[l];
 	}
     }
 
