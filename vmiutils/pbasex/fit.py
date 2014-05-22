@@ -162,21 +162,23 @@ class PbasexFit(object):
         self.lmax = lmax
         self.oddl = oddl
 
-        # rscale is the scaling factor to convert from radial bin
+        # rbinw is the scaling factor to convert from radial bin
         # number in the fit to actual position in the original image -
         # used here to scale rkstep and sigma to image coordinates
-        rscale = float(image.r[1] - image.r[0])
+        rbinw = float(image.r[1] - image.r[0])
 
         # We need to store sigma in image dimensions.
-        self.sigma = matrix.sigma * rscale
+        self.sigma = matrix.sigma * rbinw
 
-        # rmax is the largest value of R in the
-        # image we have fit - store this for scaling the fit.
-        self.rmax = image.r[-1]
+        # rmax is the largest value of R in the image we have fit -
+        # store this for scaling the fit. Note that we need to add a
+        # single bin width to image.r[-1], since r[-1] is the lowest r
+        # value in the final bin.
+        self.rmax = image.r[-1] + rbinw
 
         # rkstep holds the spacing between the centres of adjacent
         # Gaussian radial basis functions.
-        self.rkstep = rscale * Rbins / kdim
+        self.rkstep = rbinw * Rbins / kdim
 
     def calc_radial_spectrum(self, rbins=500, rmax=None):
         """Calculate a radial spectrum from the parameters of a fit. Returns a
@@ -202,7 +204,10 @@ class PbasexFit(object):
 
         spec = radial_spectrum(rmax, rbins, self.coef, self.kmax,
                                self.rkstep, self.sigma)
-        r = numpy.linspace(0.0, rmax, rbins)
+
+        # Calculate r values. Set enpoint=False here, since the r
+        # values are the lowest value of r in each bin.
+        r = numpy.linspace(0.0, rmax, rbins, endpoint=False)
 
         return r, spec
 
@@ -231,12 +236,14 @@ class PbasexFit(object):
         dist = cartesian_distribution(rmax, bins, self.coef, self.kmax,
                                       self.rkstep, self.sigma, self.lmax)
 
-        x = numpy.linspace(-rmax, rmax, bins)
-        y = numpy.linspace(-rmax, rmax, bins)
+        # Set enpoint=False here, since the x, y values are the lowest
+        # value of x, y in each bin.
+        x = numpy.linspace(-rmax, rmax, bins, endpoint=False)
+        y = numpy.linspace(-rmax, rmax, bins, endpoint=False)
 
         return vmi.CartesianImage(x=x, y=y, image=dist)
 
-    def cartesian_distribution_threaded(self, bins=500, rmax=None, 
+    def cartesian_distribution_threaded(self, bins=250, rmax=None,
                                         nthreads=None):
         """Calculates a cartesian image of the fitted distribution using
         multiple threads for speed.
@@ -262,8 +269,10 @@ class PbasexFit(object):
             logger.error('rmax exceeds that of original data')
             raise ValueError
         
-        xvals = numpy.linspace(-rmax, rmax, bins)
-        yvals = numpy.linspace(-rmax, rmax, bins)
+        # Set enpoint=False here, since the x, y values are the lowest
+        # value of x, y in each bin.
+        xvals = numpy.linspace(-rmax, rmax, bins, endpoint=False)
+        yvals = numpy.linspace(-rmax, rmax, bins, endpoint=False)
 
         dist = numpy.zeros((bins, bins))
         queue = Queue.Queue(0)
@@ -334,7 +343,9 @@ class PbasexFit(object):
         beta = beta_coeffs(rmax, rbins, self.coef, self.kmax,
                            self.rkstep, self.sigma, self.lmax)
 
-        r = numpy.linspace(0.0, rmax, rbins)
+        # Calculate r values. Set enpoint=False here, since the r
+        # values are the lowest value of r in each bin.
+        r = numpy.linspace(0.0, rmax, rbins, endpoint=False)
         
         return r, beta
 
