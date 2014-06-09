@@ -217,3 +217,42 @@ class PbasexMatrix(object):
         for object in self._metadata:
             print('{0}: {1}'.format(object, getattr(self, object)))
                 
+
+
+if __name__ == "__main__":
+    import vmiutils as vmi
+    import pylab
+    import matplotlib
+    import matplotlib.pyplot as plot
+
+    Rbins = 256
+    Thetabins = 256
+    kmax = 128
+    rkspacing = Rbins / (kmax + 1.0)
+    sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
+    k = 32
+    rk = k * rkspacing
+    l = 2
+    epsabs = 0.0
+    epsrel = 1.0e-7
+    wkspsize = 100000
+
+    bf = basisfn (k, l, Rbins, Thetabins, sigma, rk,
+                  epsabs, epsrel, wkspsize)
+
+    r = numpy.arange(Rbins)
+    theta = numpy.linspace(-numpy.pi, numpy.pi, Thetabins)
+
+    polarimg = vmi.PolarImage()
+    polarimg.from_numpy_array(bf, r, theta)
+
+    cartimg = vmi.CartesianImage()
+    cartimg.from_PolarImage(polarimg)
+
+    pylab.figure()
+    im = pylab.imshow(cartimg.image.transpose(), origin='lower',
+                      extent=(cartimg.x[0], cartimg.x[-1],
+                              cartimg.y[0], cartimg.y[-1]),
+                      cmap=plot.cm.gist_heat)
+    plot.colorbar(im, use_gridspec=True)
+    pylab.show()
