@@ -4,12 +4,15 @@ import logging
 
 logger = logging.getLogger('vmiutils.polcart')
 
+
 class __NullHandler(logging.Handler):
+
     def emit(self, record):
         pass
 
 __null_handler = __NullHandler()
 logger.addHandler(__null_handler)
+
 
 def __pol2cart(out_coord, xbw, ybw, rmax, rbw, thetabw):
     ix, iy = out_coord
@@ -21,6 +24,7 @@ def __pol2cart(out_coord, xbw, ybw, rmax, rbw, thetabw):
     it = (t + numpy.pi) / thetabw
     return ir, it
 
+
 def __cart2pol(out_coord, rbw, thetabw, xbw, ybw, xc, yc, x0, y0):
     ir, it = out_coord
     r = ir * rbw
@@ -31,7 +35,8 @@ def __cart2pol(out_coord, rbw, thetabw, xbw, ybw, xc, yc, x0, y0):
     iy = (y + yc - y0) / ybw
     return ix, iy
 
-def cart2pol(image, x=None, y=None, centre=None, 
+
+def cart2pol(image, x=None, y=None, centre=None,
              radial_bins=256, angular_bins=256, rmax=None, order=3):
     """ Convert an image on a regularly spaced cartesian grid into a regular
     spaced grid in polar coordinates using interpolation.
@@ -59,7 +64,7 @@ def cart2pol(image, x=None, y=None, centre=None,
 
     order specifies the interpolation order.
     """
-    
+
     if x is None:
         x = numpy.arange(float(image.shape[0]))
 
@@ -96,12 +101,13 @@ def cart2pol(image, x=None, y=None, centre=None,
         image, __cart2pol, order=order,
         extra_arguments=(rbw, thetabw, xbw, ybw, xc, yc, x[0], y[0]),
         output_shape=(radial_bins, angular_bins)
-        )
+    )
 
     r = numpy.linspace(0.0, rmax, radial_bins)
     t = numpy.linspace(-numpy.pi, numpy.pi, angular_bins)
 
     return r, t, pimage
+
 
 def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
     """ Convert an image on a regularly spaced polar grid into a regular
@@ -126,13 +132,13 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
     if r is None:
         r = numpy.arange(float(image.shape[0]))
 
-    rbw = r[1] - r[0] # Assume equally spaced
+    rbw = r[1] - r[0]  # Assume equally spaced
 
     if theta is None:
         theta = numpy.linspace(-numpy.pi, numpy.pi, tpts)
 
     tpts = image.shape[1]
-    thetabw = theta[1] - theta[0] # Assume equally spaced
+    thetabw = theta[1] - theta[0]  # Assume equally spaced
 
     # If the number of bins in the cartesian image is not specified, set it to
     # be the same as the number of radial bins in the polar image
@@ -147,10 +153,10 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
     ybw = 2.0 * rmax / (ybins - 1)
 
     cimage = scipy.ndimage.geometric_transform(
-        image, __pol2cart, order=order, 
+        image, __pol2cart, order=order,
         extra_arguments=(xbw, ybw, rmax, rbw, thetabw),
         output_shape=(xbins, ybins)
-        )
+    )
 
     x = numpy.linspace(-rmax, rmax, xbins)
     y = numpy.linspace(-rmax, rmax, ybins)
@@ -170,15 +176,15 @@ if __name__ == '__main__':
     a[1, 1] = 1.0
     r, theta, b = pc.cart2pol(x=x, y=y, image=a)
 
-    x2, y2, c = pc.pol2cart (r=r, theta=theta, image=b)
+    x2, y2, c = pc.pol2cart(r=r, theta=theta, image=b)
 
     fig = plot.figure()
-    grid = matplotlib.gridspec.GridSpec(2,1)
+    grid = matplotlib.gridspec.GridSpec(2, 1)
     ax1 = plot.subplot(grid[0, 0])
     im1 = ax1.imshow(a.transpose(), origin='lower',
                      extent=(x[0], x[-1], y[0], y[-1]))
     fig.colorbar(im1)
-    
+
     ax2 = plot.subplot(grid[1, 0])
     im2 = ax2.imshow(c.transpose(), origin='lower',
                      extent=(x2[0], x2[-1], y2[0], y2[-1]))
