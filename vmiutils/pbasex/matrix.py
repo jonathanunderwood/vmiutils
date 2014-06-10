@@ -42,63 +42,6 @@ class PbasexMatrix(object):
     def __init__(self):
         pass
 
-    def calc_matrix(self, Rbins, Thetabins, kmax, lmax, sigma=None, oddl=True,
-                    epsabs=0.0, epsrel=1.0e-7, wkspsize=100000):
-        """Calculates an inversion matrix.
-
-        kmax determines the number of radial basis functions (from k=0..kmax).
-
-        lmax determines the maximum value of l for the legendre polynomials
-        (l=0..lmax). 
-
-        Rbins specifies the number of radial bins in the image to be inverted.
-
-        Thetabins specifies the number of angular bins in the image to be
-        inverted.
-
-        sigma specifes the width of the Gaussian radial basis functions. This is
-        defined according to the normal convention for Gaussian functions
-        i.e. FWHM=2*sigma*sqrt(2*ln2), and NOT as defined in the Garcia, Lahon,
-        Powis paper. If sigma is not specified it is set automatically such that
-        the half-maximum of the Gaussian occurs midway between each radial
-        function.
-
-        epsabs and epsrel specify the desired integration tolerance when
-        calculating the basis functions. The defaults should suffice.
-
-        tolerance specifies the acceptable relative error returned from the
-        numerical integration. The default value should suffice.
-
-        wkspsize specifies the maximum number of subintervals used for the
-        numerical integration of the basis functions.
-        """
-
-        if sigma is None:
-            # If sigma is not specified, we calculate the spacing between the
-            # centers of the Gaussian radial functions and set the FWHM of the
-            # Gaussians equal to the Gaussian separation
-            spacing = float(Rbins) / (kmax + 1) 
-            sigma = spacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
-
-        while True:
-            try:
-                mtx = matrix(kmax, lmax, Rbins, Thetabins, sigma, oddl, 
-                             epsabs, epsrel, wkspsize)
-                break
-            except IntegrationError as errstring:
-                logger.info(errstring)
-                raise
-
-        self.matrix = mtx
-        self.kmax = kmax
-        self.sigma = sigma
-        self.lmax = lmax
-        self.oddl = oddl
-        self.Rbins = Rbins
-        self.Thetabins = Thetabins
-        self.epsabs = epsabs
-        self.epsrel = epsrel
-
     def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax, sigma=None, oddl=True,
                              epsabs=0.0, epsrel=1.0e-7, wkspsize=100000,
                              nthreads=None):
@@ -226,13 +169,13 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plot
 
     Rbins = 256
-    Thetabins = 256
+    Thetabins = 257
     kmax = 128
     rkspacing = Rbins / (kmax + 1.0)
     sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
     k = 32
     rk = k * rkspacing
-    l = 2
+    l = 1
     epsabs = 0.0
     epsrel = 1.0e-7
     wkspsize = 100000
@@ -253,6 +196,7 @@ if __name__ == "__main__":
     im = pylab.imshow(cartimg.image.transpose(), origin='lower',
                       extent=(cartimg.x[0], cartimg.x[-1],
                               cartimg.y[0], cartimg.y[-1]),
-                      cmap=plot.cm.gist_heat)
+                      cmap=plot.cm.gist_heat,
+                      interpolation='none')
     plot.colorbar(im, use_gridspec=True)
     pylab.show()
