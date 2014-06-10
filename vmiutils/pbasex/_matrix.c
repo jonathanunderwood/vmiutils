@@ -6,6 +6,7 @@
 /* Note that Python.h must be included before any other header files. */
 #include <Python.h>
 #include <stdio.h>
+#include <limits.h>
 
 /* For numpy we need to specify the API version we're targetting so
    that deprecated API warnings are issued when appropriate. */
@@ -61,7 +62,7 @@ basisfn(PyObject *self, PyObject *args)
 {
   int Rbins, Thetabins, k, l, R;
   int wkspsize; /* Suggest: wkspsize = 100000. */
-  int midTheta;
+  int midTheta, jmax;
   double sigma, epsabs, epsrel; /* Suggest epsabs = 0.0, epsrel = 1.0e-7 */   
   double dTheta, rk, upper_bound;
   unsigned short int ThetabinsOdd;
@@ -124,22 +125,24 @@ basisfn(PyObject *self, PyObject *args)
      Legendre polynomials P_L(cos(theta))=P_L(cos(-theta)) to calculate the
      points in the range 0..Pi from those in the range -Pi..0. 
 
-     If Thetabins is an odd number, there will be a point at theta = 0, for
-     which we don't need to use the symmetry condition. If Thetabins is an even
-     number, then there won't be a point at Theta = 0. midTheta defines the last
-     point for which we need to do the calculation in either case.
+     If Thetabins is an odd number, there will be a point at theta =
+     0, and points are distributed such that we can also make use of
+     the symmetry P_L(cos(theta))=(-1)^LP_L(cos(-theta), and as such
+     we can halve the number of integrations needed.
   */
 
   dTheta = 2.0 * M_PI / (Thetabins - 1);
-  midTheta = Thetabins / 2; /* Intentionally round down. */
-  
+
   if (GSL_IS_EVEN(Thetabins))
     {
-      midTheta--;
+      jmax = (Thetabins / 2) - 1; /* Intentionally round down. */
+      midTheta = INT_MIN; /* Unused, but initialize to silence compiler. */
       ThetabinsOdd = 0;
     }
   else
     {
+      jmax = Thetabins / 4; /* Intentionally round down. */
+      midTheta = Thetabins / 2; /* Intentionally round down. */
       ThetabinsOdd = 1;
     }
 
@@ -148,9 +151,11 @@ basisfn(PyObject *self, PyObject *args)
   for (R = 0; R < Rbins; R++)
     {
       int j;
+      int dim1 = R * Thetabins;
       params.R = (double) R;
 
-      for (j = 0; j <= midTheta; j++)
+
+      for (j = 0; j <= jmax; j++)
 	{
 	  int status;
 	  double result, abserr;
@@ -173,15 +178,32 @@ basisfn(PyObject *self, PyObject *args)
 	  
 	  if (status == GSL_SUCCESS)
 	    {
-	      matrix[R * Thetabins + j] = result;
+	      matrix[dim1 + j] = result;
 
 	      /* Symmetry of Legendre polynomials is such that
-		 P_L(cos(Theta))=P_L(cos(-Theta)), so we can exploit
-		 that here unless Theta = 0 (which only occurs if
-		 Thetabins is odd), in which case it's not needed.
-	      */
-	      if (!(ThetabinsOdd && j == midTheta))
-		matrix[R * Thetabins + Thetabins - j - 1] = result;
+		 P_L(cos(Theta))=P_L(cos(-Theta)). */
+	      matrix[dim1 + Thetabins - j - 1] = result;
+
+	      if (ThetabinsOdd)
+		{
+		  double valneg;
+
+		  if (j == jmax)
+		    continue;
+
+		  if (l % 2) /* l is odd */
+		    valneg = -result;
+		  else /* l is even */
+		    valneg = result;
+
+		  if (j == 0)
+		    matrix[dim1 + midTheta] = valneg;
+		  else
+		    {
+		      matrix[dim1 + midTheta + j] = valneg;
+		      matrix[dim1 + midTheta - j] = valneg;
+		    }
+		}
 	    }
 	  else
 	    {
