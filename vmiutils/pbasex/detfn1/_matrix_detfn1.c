@@ -422,7 +422,11 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 	      /* Symmetry of Legendre polynomials is such that
 		 P_L(cos(Theta))=P_L(cos(-Theta)), so we can exploit
 		 that here unless Theta = 0 (which only occurs if
-		 Thetabins is odd), in which case it's not needed.
+		 Thetabins is odd), in which case it's not needed. We
+		 can still exploit this symmetry here depsite
+		 including a detection function, because for the form
+		 of the detection function we're considering, it is by
+		 definition symmetric w.r.t Theta->-Theta.
 	      */
 	      if (!(ThetabinsOdd && j == midTheta))
 		matrix[R * Thetabins + Thetabins - j - 1] = result;
