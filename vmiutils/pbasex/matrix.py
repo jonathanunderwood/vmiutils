@@ -12,15 +12,19 @@ from _matrix import *
 # provide a log handler
 logger = logging.getLogger('vmiutils.pbasex.matrix')
 
+
 class __NullHandler(logging.Handler):
+
     def emit(self, record):
         pass
 
 __null_handler = __NullHandler()
 logger.addHandler(__null_handler)
 
+
 def _odd(x):
     return x & 1
+
 
 class PbasexMatrix(object):
     matrix = None
@@ -42,7 +46,8 @@ class PbasexMatrix(object):
     def __init__(self):
         pass
 
-    def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax, sigma=None, oddl=True,
+    def calc_matrix_threaded(
+        self, Rbins, Thetabins, kmax, lmax, sigma=None, oddl=True,
                              epsabs=0.0, epsrel=1.0e-7, wkspsize=100000,
                              nthreads=None):
         """Calculates an inversion matrix using multiple threads.
@@ -50,7 +55,7 @@ class PbasexMatrix(object):
         kmax determines the number of radial basis functions (from k=0..kmax).
 
         lmax determines the maximum value of l for the legendre polynomials
-        (l=0..lmax). 
+        (l=0..lmax).
 
         Rbins specifies the number of radial bins in the image to be inverted.
 
@@ -85,7 +90,7 @@ class PbasexMatrix(object):
             # If sigma is not specified, we calculate the spacing between the
             # centers of the Gaussian radial functions and set the FWHM of the
             # Gaussians equal to the Gaussian separation
-            sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
+            sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)))
 
         mtx = numpy.empty([kmax + 1, lmax + 1, Rbins, Thetabins])
         queue = Queue.Queue(0)
@@ -102,21 +107,22 @@ class PbasexMatrix(object):
 
                 rk = rkspacing * k
 
-                logger.info('Calculating basis function for k={0}, l={1}'.format(k, l))
+                logger.info(
+                    'Calculating basis function for k={0}, l={1}'.format(k, l))
 
                 try:
-                    bf = basisfn (k, l, Rbins, Thetabins, sigma, rk,
-                                  epsabs, epsrel, wkspsize)
+                    bf = basisfn(k, l, Rbins, Thetabins, sigma, rk,
+                                 epsabs, epsrel, wkspsize)
                 except IntegrationError as errstring:
                     logger.info(errstring)
                     # Should do something about killing all threads here.
                     raise
 
                 mtx[k, l] = bf
-                logger.info('Finished calculating basis function for k={0}, l={1}'.format(k, l))
+                logger.info(
+                    'Finished calculating basis function for k={0}, l={1}'.format(k, l))
                 queue.task_done()
-            
-        
+
         if nthreads is None:
             nthreads = multiprocessing.cpu_count()
 
@@ -148,7 +154,7 @@ class PbasexMatrix(object):
 
     def load(self, file):
         fd = open(file, 'r')
-        
+
         try:
             for object in self._metadata:
                 setattr(self, object, pickle.load(fd))
@@ -159,7 +165,6 @@ class PbasexMatrix(object):
     def print_params(self):
         for object in self._metadata:
             print('{0}: {1}'.format(object, getattr(self, object)))
-                
 
 
 if __name__ == "__main__":
@@ -172,7 +177,7 @@ if __name__ == "__main__":
     Thetabins = 257
     kmax = 128
     rkspacing = Rbins / (kmax + 1.0)
-    sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
+    sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)))
     k = 32
     rk = k * rkspacing
     l = 1
@@ -180,8 +185,8 @@ if __name__ == "__main__":
     epsrel = 1.0e-7
     wkspsize = 100000
 
-    bf = basisfn (k, l, Rbins, Thetabins, sigma, rk,
-                  epsabs, epsrel, wkspsize)
+    bf = basisfn(k, l, Rbins, Thetabins, sigma, rk,
+                 epsabs, epsrel, wkspsize)
 
     r = numpy.arange(Rbins)
     theta = numpy.linspace(-numpy.pi, numpy.pi, Thetabins)
