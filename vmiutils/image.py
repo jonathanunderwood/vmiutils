@@ -8,17 +8,22 @@ import copy
 
 logger = logging.getLogger('vmiutils.image')
 
+
 class __NullHandler(logging.Handler):
+
     def emit(self, record):
         pass
 
 __null_handler = __NullHandler()
 logger.addHandler(__null_handler)
 
+
 def _round_int(x):
     return int(round(x))
 
+
 class CartesianImage():
+
     """Class used to represent a VMI image stored as a cartesian array.
 
     image specifies the image data. If image is a 2D numpy ndarray,
@@ -40,7 +45,8 @@ class CartesianImage():
     centre specifies the centre of the image. If not specified, the
     centre coordinate of the image array is used.
     """
-    def __init__(self, image=None, x=None, y=None, 
+
+    def __init__(self, image=None, x=None, y=None,
                  xbins=None, ybins=None, centre=None):
         if image is None:
             self.image = None
@@ -67,9 +73,9 @@ class CartesianImage():
                     'x and y dimensions of CartesianImage not specified')
 
             if image in ('empty', 'Empty'):
-                self.image=numpy.empty((xbins, ybins))
+                self.image = numpy.empty((xbins, ybins))
             else:
-                self.image=numpy.zeros((xbins, ybins))
+                self.image = numpy.zeros((xbins, ybins))
 
         elif isinstance(image, numpy.ndarray):
             self.image = image.copy()
@@ -83,14 +89,14 @@ class CartesianImage():
                 self.y = numpy.arange(float(self.image.shape[1]))
             else:
                 self.y = y.copy()
-                    
+
         self.shape = self.image.shape
 
         # Set bin widths in each dimension assuming bins are equally
         # spaced
         self.xbinw = self.x[1] - self.x[0]
         self.ybinw = self.y[1] - self.y[0]
-        
+
         if centre is None or centre == 'grid_centre':
             self.set_centre(self.centre_of_grid())
         elif centre == 'cofg':
@@ -117,7 +123,7 @@ class CartesianImage():
 
         """
         self.centre = centre
-        
+
         # Define the centre pixel of the image by rounding to the nearest
         # pixel.
         cx = _round_int((centre[0] - self.x[0]) / self.xbinw)
@@ -142,11 +148,11 @@ class CartesianImage():
         # ]
 
         self.quad = [
-            (slice(cx, None, None), slice (cy, None, None)),
-            (slice(cx, None, None), slice (cy - 1, None, -1)),
-            (slice(cx - 1, None, -1), slice (cy - 1, None, -1)),
-            (slice(cx - 1, None, -1), slice (cy, None, None))
-            ]
+            (slice(cx, None, None), slice(cy, None, None)),
+            (slice(cx, None, None), slice(cy - 1, None, -1)),
+            (slice(cx - 1, None, -1), slice(cy - 1, None, -1)),
+            (slice(cx - 1, None, -1), slice(cy, None, None))
+        ]
 
     def resample(self, xbins=None, ybins=None, align_centre=False, order=3):
         """Resample the image onto a new grid.
@@ -189,7 +195,7 @@ class CartesianImage():
             self.ybinw = (old_ymax - old_ymin) / ybins
             self.y = numpy.linspace(old_ymin, old_ymax, ybins,
                                     endpoint=False)
- 
+
         # Find the pixel in the new grid whose lower left corner
         # is closest to the centre
         cx = _round_int((x0 - self.x[0]) / self.xbinw)
@@ -217,6 +223,7 @@ class CartesianImage():
         ybinw_ratio = self.ybinw / old_ybinw
         xoffset_bins = xoffset / self.xbinw
         yoffset_bins = yoffset / self.ybinw
+
         def _map(coords):
             # Below, for reference is the algorithm without
             # optimization. It should be pretty obvious that this
@@ -256,11 +263,11 @@ class CartesianImage():
         # Quadrant 3: from centre to (0, ymax] [Top left]
 
         self.quad = [
-            (slice(cx, None, None), slice (cy, None, None)),
-            (slice(cx, None, None), slice (cy - 1, None, -1)),
-            (slice(cx - 1, None, -1), slice (cy - 1, None, -1)),
-            (slice(cx - 1, None, -1), slice (cy, None, None))
-            ]
+            (slice(cx, None, None), slice(cy, None, None)),
+            (slice(cx, None, None), slice(cy - 1, None, -1)),
+            (slice(cx - 1, None, -1), slice(cy - 1, None, -1)),
+            (slice(cx - 1, None, -1), slice(cy, None, None))
+        ]
 
     def __quad_idx(self, quad):
         if quad in ('upper right', 'top right', 'ur', 0):
@@ -281,7 +288,7 @@ class CartesianImage():
         |x| and |y| as indices increase.
         """
         return self.image[self.quad[self.__quad_idx(quad)]]
-        
+
     def set_quadrant(self, quad, data):
         """ Return a numpy array instance containing the requested image
         quadrant indexed such that [0, 0] is the image centre, and increasing
@@ -301,10 +308,11 @@ class CartesianImage():
         image specified by rmax in image coordinates (not bins).
         """
         if self.centre is None:
-            logger.error('image centre has not been defined prior to asking for zoom_circle')
+            logger.error(
+                'image centre has not been defined prior to asking for zoom_circle')
             raise RuntimeError('image centre undefined')
 
-        xminb = _round_int((self.centre[0] - rmax - self.x[0]) / self.xbinw) 
+        xminb = _round_int((self.centre[0] - rmax - self.x[0]) / self.xbinw)
         if xminb < 0 and pad is False:
             logger.error('xminb less than zero in zoom_circle')
             raise RuntimeError('xminb less than zero')
@@ -323,7 +331,7 @@ class CartesianImage():
         if ymaxb > self.image.shape[0] and pad is False:
             logger.error('ymaxb greater than image size in zoom_circle')
             raise RuntimeError('ymaxb greater than image size')
-        
+
         return self.zoom_rect_pix([xminb, xmaxb, yminb, ymaxb], pad=pad)
 
     def zoom_rect_coord(self, rect):
@@ -338,9 +346,9 @@ class CartesianImage():
 
         yminb = _round_int((rect[2] - self.y[0]) / self.ybinw)
         ymaxb = _round_int((rect[3] - self.y[0]) / self.ybinw)
-    
+
         return self.zoom_rect_pix([xminb, xmaxb, yminb, ymaxb])
-        
+
     def zoom_rect_pix(self, rect, pad=False):
         """Return a new CartesianImage instance containing the zoomed image
         specified by rect. 
@@ -403,8 +411,10 @@ class CartesianImage():
         newimg[xstart:xstart + (x2 - x1),
                ystart:ystart + (y2 - y1)] = self.image[x1:x2, y1:y2]
 
-        newx = numpy.linspace(xmin * self.xbinw, xmax * self.xbinw, newimg.shape[0])
-        newy = numpy.linspace(ymin * self.ybinw, ymax * self.ybinw, newimg.shape[1])
+        newx = numpy.linspace(
+            xmin * self.xbinw, xmax * self.xbinw, newimg.shape[0])
+        newy = numpy.linspace(
+            ymin * self.ybinw, ymax * self.ybinw, newimg.shape[1])
 
         return CartesianImage(image=newimg, x=newx, y=newy, centre=self.centre)
 
@@ -439,28 +449,28 @@ class CartesianImage():
         """
         if self.image is None:
             logger.error('no image data')
-            raise ValueError ## FIXME
+            raise ValueError  # FIXME
 
         if self.centre is None:
             logger.error('image centre not defined')
-            raise ValueError ## FIXME
+            raise ValueError  # FIXME
 
         if rbins is None:
-            rbins = min(self.image.shape[0], self.image.shape[1]) 
+            rbins = min(self.image.shape[0], self.image.shape[1])
 
         if thetabins is None:
-            thetabins = min(self.image.shape[0], self.image.shape[1]) 
+            thetabins = min(self.image.shape[0], self.image.shape[1])
 
-        return polcart.cart2pol(self.image, x=self.x, y=self.y, 
-                                centre=self.centre, radial_bins=rbins, 
+        return polcart.cart2pol(self.image, x=self.x, y=self.y,
+                                centre=self.centre, radial_bins=rbins,
                                 angular_bins=thetabins, rmax=rmax,
                                 order=order)
 
     def centre_of_gravity(self):
         """Returns a tuple representing the coordinates corresponding to the
         centre of gravity of the image."""
-        xval = self.x * self.image 
-        yval = self.y[:,numpy.newaxis] * self.image
+        xval = self.x * self.image
+        yval = self.y[:, numpy.newaxis] * self.image
         return xval.sum() / self.image.sum(), yval.sum() / self.image.sum()
 
     def centre_of_grid(self):
@@ -470,7 +480,9 @@ class CartesianImage():
         yc = self.y[0] + 0.5 * (self.y[-1] - self.y[0])
         return xc, yc
 
+
 class PolarImage():
+
     """ Class used to represent a VMI image stored in polar coordinates
     i.e. in regularly spaced bins in (r, theta)."""
 
@@ -493,11 +505,12 @@ class PolarImage():
             self.r = r.copy()
 
         if theta is None:
-            self.theta = numpy.linspace(-numpy.pi, numpy.pi, self.image.shape[1])
+            self.theta = numpy.linspace(
+                -numpy.pi, numpy.pi, self.image.shape[1])
         else:
             self.theta = theta.copy()
 
-    def from_CartesianImage(self, cimage, rbins=None, 
+    def from_CartesianImage(self, cimage, rbins=None,
                             thetabins=None, rmax=None, order=3):
         """Calculate a polar represenation of a CartesianImage instance.
 
@@ -529,7 +542,7 @@ class PolarImage():
         if ybins is None:
             ybins = self.image.shape[0]
 
-        return polcart.pol2cart(self.image, self.r, self.theta, 
+        return polcart.pol2cart(self.image, self.r, self.theta,
                                 xbins, ybins, order)
 
     def radial_spectrum(self):
@@ -544,7 +557,7 @@ class PolarImage():
         expansion in Legendre polynomials up to order lmax. oddl specifies
         whether odd l coefficients are fit or not.
         """
-        
+
         costheta = numpy.cos(self.theta)
         A = numpy.c_[[legpol(lmax, ct)[0] for ct in costheta]]
         logger.debug(
@@ -566,7 +579,6 @@ class PolarImage():
             raise
         logger.debug('beta coefficents fit successfully')
 
-
         # Normalize to beta_0 = 1 at each r
         beta0 = beta[0, :]
         beta = beta / beta0
@@ -574,9 +586,11 @@ class PolarImage():
 
         if oddl is False:
             logger.debug('adding rows to beta matrix for odd l coeffs')
-            logger.debug('beta shape before adding new rows {0}'.format(beta.shape)) 
+            logger.debug(
+                'beta shape before adding new rows {0}'.format(beta.shape))
             beta = numpy.insert(beta, numpy.arange(1, lmax), 0, axis=0)
-            logger.debug('rows for odd l added to beta array; new shape {0}'.format(beta.shape)) 
+            logger.debug(
+                'rows for odd l added to beta array; new shape {0}'.format(beta.shape))
 
         return self.r, beta
 
@@ -604,27 +618,27 @@ if __name__ == "__main__":
                interpolation='none',
                extent=(im1.x[0], im1.x[-1] + im1.xbinw,
                        im1.y[0], im1.y[-1] + im1.ybinw),
-    )
+               )
 
     plt.subplot(222)
     plt.imshow(im1.image.T, cmap=cm.spectral, origin='lower',
                interpolation='none',
                extent=(im1.x[0], im1.x[-1] + im1.xbinw,
                        im1.y[0], im1.y[-1] + im1.ybinw),
-    )
+               )
 
     plt.subplot(223)
     plt.imshow(im2.image.T, cmap=cm.gist_heat, origin='lower',
                interpolation='none',
                extent=(im2.x[0], im2.x[-1] + im2.xbinw,
                        im2.y[0], im2.y[-1] + im2.ybinw),
-    )
+               )
 
     plt.subplot(224)
     plt.imshow(im2.image.T, cmap=cm.spectral, origin='lower',
                interpolation='none',
                extent=(im2.x[0], im2.x[-1] + im2.xbinw,
                        im2.y[0], im2.y[-1] + im2.ybinw),
-    )
+               )
 
     plt.show()
