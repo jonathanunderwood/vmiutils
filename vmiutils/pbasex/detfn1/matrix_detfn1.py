@@ -14,7 +14,9 @@ from _matrix_detfn1 import *
 # provide a log handler
 logger = logging.getLogger('vmiutils.pbasex.matrix_detfn1')
 
+
 class __NullHandler(logging.Handler):
+
     def emit(self, record):
         pass
 
@@ -23,18 +25,19 @@ logger.addHandler(__null_handler)
 
 
 class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
+
     def __init__(self):
         super(PbasexMatrixDetFn1, self).__init__()
         self.rmax = None
         self.description = 'pbasex_detfn1_matrix'
-        self._metadata += ['method', 
+        self._metadata += ['method',
                            'threshold',
                            'rmax']
-    
+
     def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax,
                              detectionfn, alpha=0.0, beta=0.0,
                              sigma=None, oddl=True, method='cquad',
-                             epsabs=0.0, epsrel=1.0e-7, threshold=1.0e-18, 
+                             epsabs=0.0, epsrel=1.0e-7, threshold=1.0e-18,
                              wkspsize=100000, nthreads=None):
         """Calculates an inversion matrix using multiple threads.
 
@@ -105,7 +108,7 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
             # If sigma is not specified, we calculate the spacing between the
             # centers of the Gaussian radial functions and set the FWHM of the
             # Gaussians equal to the Gaussian separation
-            sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
+            sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)))
 
         # We need to rescale the detection function parameters to
         # express them in terms of bins for the actual matrix
@@ -119,7 +122,7 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         # to rescale the detection function parameters accordingly.
         df_rscale = detectionfn.rmax / Rbins
         df_rkstep = detectionfn.rkstep / df_rscale
-        df_sigma = detectionfn.sigma  / df_rscale
+        df_sigma = detectionfn.sigma / df_rscale
 
         # Normalize detection function coefficients to max of 1
         detectionfn.coef /= detectionfn.coef.max()
@@ -153,10 +156,11 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
 
                     rk = rkspacing * k
 
-                    logger.info('Calculating basis function for k={0}, l={1}'.format(k, l))
+                    logger.info(
+                        'Calculating basis function for k={0}, l={1}'.format(k, l))
 
                     try:
-                        bf = basisfn_detfn1 (
+                        bf = basisfn_detfn1(
                             k, l, Rbins, Thetabins, sigma, rk,
                             epsabs, epsrel, wkspsize, threshold,
                             detectionfn.coef, detectionfn.kmax, df_sigma,
@@ -164,12 +168,13 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
                             alpha, beta, method)
                     except (IntegrationError, MemoryError) as errstring:
                         logger.error(errstring)
-                        shutdown_event.set() # shutdown all threads
+                        shutdown_event.set()  # shutdown all threads
                         raise
 
                     mtx[k, l] = bf
                     logger.info(
-                        'Finished calculating basis function for k={0}, l={1}'.format(k, l)
+                        'Finished calculating basis function for k={0}, l={1}'.format(
+                            k, l)
                     )
                     queue.task_done()
                 else:
@@ -221,7 +226,7 @@ if __name__ == "__main__":
     Thetabins = 256
     kmax = 128
     rkspacing = Rbins / (kmax + 1.0)
-    sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)));
+    sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)))
     k = 32
     rk = k * rkspacing
     l = 2
@@ -241,7 +246,7 @@ if __name__ == "__main__":
     else:
         df_oddl = 0
 
-    bf = basisfn_detfn1 (
+    bf = basisfn_detfn1(
         k, l, Rbins, Thetabins, sigma, rk,
         epsabs, epsrel, wkspsize, threshold,
         detectionfn.coef, detectionfn.kmax, detectionfn.sigma,
