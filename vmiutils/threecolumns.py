@@ -3,12 +3,15 @@ import logging
 
 logger = logging.getLogger('vmiutils.threecolumns')
 
+
 class __NullHandler(logging.Handler):
+
     def emit(self, record):
         pass
 
 __null_handler = __NullHandler()
 logger.addHandler(__null_handler)
+
 
 def threecolumns_read(filename, delimiter=','):
     """ Read an image from a file containing three columns of values (x, y, z)
