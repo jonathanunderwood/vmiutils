@@ -12,7 +12,9 @@ from _fit import *
 
 logger = logging.getLogger('vmiutils.pbasex.fit')
 
+
 class __NullHandler(logging.Handler):
+
     def emit(self, record):
         pass
 
@@ -22,9 +24,9 @@ logger.addHandler(__null_handler)
 # Implementation note
 # --------------------
 # The way the matrix is calculated and stored is
-# such that the indices are in the order 
+# such that the indices are in the order
 #
-# matrix[k, l, Rbin, Thetabin]. 
+# matrix[k, l, Rbin, Thetabin].
 #
 # The matrix is calculated in unitless dimensions i.e. pixel
 # number. When fitting an image, the image is necessarily resampled
@@ -37,7 +39,9 @@ logger.addHandler(__null_handler)
 # we scale to the dimensions in the original image. So, once fittd, we
 # store sigma, rkstep etc rescaled to the original image.
 
+
 class PbasexFit(object):
+
     def __init__(self):
         self.coef = None
         self.kmax = None
@@ -82,9 +86,10 @@ class PbasexFit(object):
         elif (image.rbins is not matrix.Rbins) or (image.thetabins is not matrix.Thetabins):
             logger.error("image and matrix do not have compatible dimensions")
             raise TypeError
-        
+
         if oddl is True and matrix.oddl is False:
-            logger.error('odd l requested, but matrix not calculated for odd l')
+            logger.error(
+                'odd l requested, but matrix not calculated for odd l')
             raise ValueError
         elif oddl == matrix.oddl:
             mtx = matrix.matrix
@@ -96,7 +101,8 @@ class PbasexFit(object):
 
         if lmax is not None:
             if lmax > matrix.lmax:
-                logger.error('requested lmax greater than that of supplied matrix')
+                logger.error(
+                    'requested lmax greater than that of supplied matrix')
                 raise ValueError
             else:
                 if oddl is True:
@@ -117,7 +123,7 @@ class PbasexFit(object):
 
         if section == 'whole':
             # Fit the whole image
-            mtx = mtx.reshape((kdim * ldim, Rbins * Thetabins)) 
+            mtx = mtx.reshape((kdim * ldim, Rbins * Thetabins))
             img = image.image.reshape(Rbins * Thetabins)
         elif section == 'negative':
             # Fit only the part of the image in the region Theta = -Pi..0
@@ -132,16 +138,17 @@ class PbasexFit(object):
             img = img.reshape(Rbins * halfThetabins)
         elif section == 'positive':
             # Fit only the part of the image in the region Theta = 0..Pi
-            startTheta = Thetabins / 2 # Correct for both even and odd Thetabins
+            # Correct for both even and odd Thetabins
+            startTheta = Thetabins / 2
             endtheta = Thetabins - 1
-            halfThetabins = Thetabins - startTheta 
+            halfThetabins = Thetabins - startTheta
             mtx = mtx[:, :, :, startTheta:endTheta]
             mtx = mtx.reshape((kdim * ldim, Rbins * halfThetabins))
             img = image.image[:, startTheta:endTheta]
             img = img.reshape(Rbins * halfThetabins)
         else:
             raise NotImplementedError
-        
+
         coef, resid, rank, s = numpy.linalg.lstsq(mtx.transpose(), img)
         # TODO: do something with resid
 
@@ -195,7 +202,7 @@ class PbasexFit(object):
         if self.coef is None:
             logger.error('no fit done')
             raise AttributeError
-        
+
         if rmax is None:
             rmax = self.rmax
         elif rmax > self.rmax:
@@ -224,13 +231,13 @@ class PbasexFit(object):
         if self.coef is None:
             logger.error('no fit done')
             raise AttributeError
-        
+
         if rmax is None:
             rmax = self.rmax
         elif rmax > self.rmax:
             logger.error('rmax exceeds that of original data')
             raise ValueError
-        
+
         # Note that the calculation here is done in scaled (pixel)
         # coordinates, not absolute scaled coordinates.
         dist = cartesian_distribution(rmax, bins, self.coef, self.kmax,
@@ -262,13 +269,13 @@ class PbasexFit(object):
         if self.coef is None:
             logger.error('no fit done')
             raise AttributeError
-        
+
         if rmax is None:
             rmax = self.rmax
         elif rmax > self.rmax:
             logger.error('rmax exceeds that of original data')
             raise ValueError
-        
+
         # Set enpoint=False here, since the x, y values are the lowest
         # value of x, y in each bin.
         xvals = numpy.linspace(-rmax, rmax, bins, endpoint=False)
@@ -278,14 +285,15 @@ class PbasexFit(object):
         queue = Queue.Queue(0)
 
         # Here we exploit the mirror symmetry in the y axis
-        for xbin in numpy.arange(bins/2, bins):
+        for xbin in numpy.arange(bins / 2, bins):
             xval = xvals[xbin]
             xval2 = xval * xval
             for ybin in numpy.arange(bins):
                 yval = yvals[ybin]
                 yval2 = yval * yval
                 if math.sqrt(xval2 + yval2) <= self.rmax:
-                    queue.put({'xbin': xbin, 'ybin': ybin, 'xval': xval, 'yval': yval})
+                    queue.put(
+                        {'xbin': xbin, 'ybin': ybin, 'xval': xval, 'yval': yval})
 
         if self.oddl:
             oddl = 1
@@ -299,9 +307,9 @@ class PbasexFit(object):
                 ybin = job['ybin']
                 xval = job['xval']
                 yval = job['yval']
-                
+
                 #logger.debug('Calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
-                dist[xbin, ybin] = cartesian_distribution_point (
+                dist[xbin, ybin] = cartesian_distribution_point(
                     xval, yval, self.coef, self.kmax, self.rkstep, self.sigma, self.lmax, oddl)
                 #logger.debug('Finished calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
                 queue.task_done()
@@ -317,10 +325,10 @@ class PbasexFit(object):
         queue.join()
 
         # Mirror symmetry
-        if bins % 2 != 0: # bins is odd
-            dist[bins/2 - 1::-1] = dist[bins/2 + 1:bins]
-        else: # bins is even
-            dist[bins/2 - 1::-1] = dist[bins/2:bins]
+        if bins % 2 != 0:  # bins is odd
+            dist[bins / 2 - 1::-1] = dist[bins / 2 + 1:bins]
+        else:  # bins is even
+            dist[bins / 2 - 1::-1] = dist[bins / 2:bins]
 
         return vmi.CartesianImage(x=xvals, y=yvals, image=dist)
 
@@ -346,7 +354,7 @@ class PbasexFit(object):
         # Calculate r values. Set enpoint=False here, since the r
         # values are the lowest value of r in each bin.
         r = numpy.linspace(0.0, rmax, rbins, endpoint=False)
-        
+
         return r, beta
 
     def dump(self, file):
@@ -360,11 +368,10 @@ class PbasexFit(object):
 
     def load(self, file):
         fd = open(file, 'r')
-        
+
         try:
             for object in self.__metadata:
                 setattr(self, object, pickle.load(fd))
             self.coef = numpy.load(fd)
         finally:
             fd.close()
-
