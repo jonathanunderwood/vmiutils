@@ -327,9 +327,6 @@ cartesian_distribution_point(PyObject *self, PyObject *args)
   double x, y, costheta, r, rkstep, sigma, s, val, truncate;
   double * coef;
 
-  /* TODO: we should pass oddl as an argument to this function, and
-     skip over odd l values if appropriate. */
-
   if (!PyArg_ParseTuple(args, "ddOiddiid",
 			&x, &y, &coefarg, &kmax, &rkstep, &sigma, &lmax,
 			&oddl, &truncate))
