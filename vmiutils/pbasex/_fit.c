@@ -323,15 +323,16 @@ static PyObject *
 cartesian_distribution_point(PyObject *self, PyObject *args)
 {
   PyObject *coefarg = NULL, *pycoef = NULL;
-  int k, kmax, lmax, oddl, linc;
-  double x, y, costheta, r, rkstep, sigma, s, val;
+  int k, kmax, lmax, oddl, linc, kstart, kstop;
+  double x, y, costheta, r, rkstep, sigma, s, val, truncate;
   double * coef;
 
   /* TODO: we should pass oddl as an argument to this function, and
      skip over odd l values if appropriate. */
 
-  if (!PyArg_ParseTuple(args, "ddOiddii",
-			&x, &y, &coefarg, &kmax, &rkstep, &sigma, &lmax, &oddl))
+  if (!PyArg_ParseTuple(args, "ddOiddiid",
+			&x, &y, &coefarg, &kmax, &rkstep, &sigma, &lmax,
+			&oddl, &truncate))
     {
       PyErr_SetString (PyExc_TypeError, 
 		       "Bad argument to cartesian_distribution");
@@ -362,9 +363,15 @@ cartesian_distribution_point(PyObject *self, PyObject *args)
   r = sqrt (x * x + y * y);
   costheta = cos(atan2(x, y));
 
+  kstart = floor((r - truncate * sigma) / rkstep);
+  kstop = ceil((r + truncate * sigma) / rkstep);
+  if (kstart < 0)
+    kstart = 0;
+  if (kstop > kmax)
+    kstop = kmax;
 
   val = 0.0;
-  for (k = 0; k <= kmax; k++)
+  for (k = kstart; k <= kstop; k++)
     {
       double rk = k * rkstep;
       double a = r - rk;

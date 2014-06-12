@@ -251,7 +251,7 @@ class PbasexFit(object):
         return vmi.CartesianImage(x=x, y=y, image=dist)
 
     def cartesian_distribution_threaded(self, bins=250, rmax=None,
-                                        nthreads=None):
+                                        truncate=5.0, nthreads=None):
         """Calculates a cartesian image of the fitted distribution using
         multiple threads for speed.
         
@@ -262,8 +262,14 @@ class PbasexFit(object):
         image. This is specified in coordinates of the original image
         that was fitted to.
         
+        truncate specifies the number of basis function sigmas we
+        consider either side of each point when calculating the
+        intensity at each point. For example if truncate is 5.0, at
+        each point we'll consider all basis functions whose centre
+        lies within 5.0 * sigma of that point. 5.0 is the default.
+
         nthreads specifies the number of threads to use. If None, then
-        we'll use all available cores
+        we'll use all available cores.
 
         """
         if self.coef is None:
@@ -310,7 +316,8 @@ class PbasexFit(object):
 
                 #logger.debug('Calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
                 dist[xbin, ybin] = cartesian_distribution_point(
-                    xval, yval, self.coef, self.kmax, self.rkstep, self.sigma, self.lmax, oddl)
+                    xval, yval, self.coef, self.kmax, self.rkstep,
+                    self.sigma, self.lmax, oddl, truncate)
                 #logger.debug('Finished calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
                 queue.task_done()
 
