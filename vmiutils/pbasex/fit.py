@@ -190,7 +190,7 @@ class PbasexFit(object):
     def calc_radial_spectrum(self, rbins=500, rmax=None):
         """Calculate a radial spectrum from the parameters of a fit. Returns a
         tuple (r, intensity) containing the r values and the corresponding
-        intensities. 
+        intensities.
 
         rbins determines the number of points in the returned spectrum.
 
@@ -220,7 +220,7 @@ class PbasexFit(object):
 
     def cartesian_distribution(self, bins=500, rmax=None):
         """Calculates a cartesian image of the fitted distribution.
-        
+
         bins specifes the number of bins in the x and y dimension to
         calculate.
 
@@ -254,14 +254,14 @@ class PbasexFit(object):
                                         truncate=5.0, nthreads=None):
         """Calculates a cartesian image of the fitted distribution using
         multiple threads for speed.
-        
+
         bins specifes the number of bins in the x and y dimension to
         calculate.
 
         rmax specifies the maximum radius to consider in the
         image. This is specified in coordinates of the original image
         that was fitted to.
-        
+
         truncate specifies the number of basis function sigmas we
         consider either side of each point when calculating the
         intensity at each point. For example if truncate is 5.0, at
@@ -339,10 +339,91 @@ class PbasexFit(object):
 
         return vmi.CartesianImage(x=xvals, y=yvals, image=dist)
 
+    def cosn_expval(self, nmax=None, rbins=500, rmax=None,
+                    truncate=5.0, nthreads=None,
+                    epsabs=1.0e-7, epsrel=1.0e-7):
+        '''Calculates the expectation values of cos^n(theta) for the fit as a
+        function r up to rmax and for n from 0 to nmax.
+
+        rbins specifies the number of data points to calculate.
+
+        rmax specifies the maximum radius to consider and is specified
+        in dimensions of the original image that was fitted.
+
+        nthreads specifies the number of threads to be used. If None,
+        then the number of CPU cores is used as the number of threads.
+
+        truncate specifies the number of basis function sigmas we
+        consider either side of each point when calculating the
+        intensity at each point. For example if truncate is 5.0, at
+        each point we'll consider all basis functions whose centre
+        lies within 5.0 * sigma of that point. 5.0 is the default.
+
+        epsabs and epsrel specify the absolute and relative error
+        desired when performing the numerical integration over theta
+        when calculating the expectatino values. The default values
+        should suffice.
+
+        '''
+        if self.coef is None:
+            logger.error('no fit done')
+            raise AttributeError
+
+        if rmax is None:
+            rmax = self.rmax
+        elif rmax > self.rmax:
+            logger.error('rmax exceeds that of original data')
+            raise ValueError
+
+        if nmax is None:
+            nmax = self.lmax
+        elif nmax > self.lmax:
+            logger.error('nmax exceeds lmax of the fit')
+            raise ValueError
+
+        if self.oddl:
+            oddl = 1
+        else:
+            oddl = 0
+
+        # Calculate r values. Set enpoint=False here, since the r
+        # values are the lowest value of r in each bin.
+        r = numpy.linspace(0.0, rmax, rbins, endpoint=False)
+
+        expval = numpy.zeros((nmax + 1, rbins))
+        queue = Queue.Queue(0)
+
+        for rbin in xrange(rbins):
+            queue.put({'rbin': rbin})
+
+        def __worker():
+            while not queue.empty():
+                job = queue.get()
+                rbin = job['rbin']
+                rr = r[rbin]
+
+                expval[:, rbin] = cosn_expval_point(
+                    rr, nmax, self.coef, self.kmax, self.rkstep,
+                    self.sigma, self.lmax, oddl, truncate,
+                    epsabs, epsrel)
+                queue.task_done()
+
+        if nthreads is None:
+            nthreads = multiprocessing.cpu_count()
+
+        for i in xrange(nthreads):
+            t = threading.Thread(target=__worker)
+            t.daemon = True
+            t.start()
+
+        queue.join()
+
+        return r, expval
+
     def beta_coefficients(self, rbins=500, rmax=None):
-        '''Calculates the beta coefficients for the fit as a function 
+        '''Calculates the beta coefficients for the fit as a function
         of r up to rmax.
-        
+
         rbins specifies the number of data points calculated
 
         rmax specifies the maximum radius to consider and is specified
