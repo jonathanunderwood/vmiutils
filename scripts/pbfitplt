@@ -89,7 +89,10 @@ logger.debug('radial spectrum calculated')
 r2, beta = fit.beta_coefficients()
 logger.debug('beta coefficients calculated')
 
-invimg_cart = fit.cartesian_distribution_threaded(bins=500)
+r3, cosn = fit.cosn_expval()
+logger.debug('cos^n(theta) expectation values calculated')
+
+invimg_cart = fit.cartesian_distribution_threaded(bins=250)
 logger.debug('cartesian distribution calculated')
 
 vmicart_zoom = vmicart.zoom_circle(fit.rmax, pad=True)
@@ -103,6 +106,12 @@ pdf_pages = PdfPages(args.vmi_file + '.pdf')
 # First page contains plots of the image data and the reconstructed
 # distribution. Plot with two different coloour maps.
 fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
+
+cx = invimg_cart.centre_pixel[0]
+cy = invimg_cart.centre_pixel[1]
+print invimg_cart.centre_pixel, invimg_cart.shape
+invimg_cart.image[cx-10:cx+10,cy-10:cy+10]=0.0
+
 
 ax = plot.subplot2grid((2, 2), (0, 0))
 im = plot.imshow(vmicart_zoom.image.transpose(), origin='lower',
@@ -174,6 +183,36 @@ plot.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
             ncol=8, mode="expand", borderaxespad=0.)
 
 pdf_pages.savefig(fig)
+
+# <cos^n(theta)> expectation values 
+# beta parameters
+ax1 = plot.subplot2grid((3, 1), (1, 0), colspan=2, rowspan=2)
+
+ax1.plot(r1, spec, ':')
+ax2 = ax1.twinx()
+ax2.set_autoscaley_on(False)
+ax2.set_ybound(0.0, 1.0)
+
+if fit.oddl == True:
+    inc = 1
+    bstart = 1
+else:
+    inc = 2
+    bstart = 2
+
+for b in numpy.arange(bstart, cosn.shape[0], inc):
+    ax2.plot(r3, cosn[b, :], label=r"$\langle\cos^{%d}\theta\rangle$"%b)
+
+box = ax1.get_position()
+ax1.set_position([box.x0,box.y0,box.width,0.5*box.height])
+ax2.set_position([box.x0,box.y0,box.width,0.5*box.height])
+
+
+plot.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+            ncol=8, mode="expand", borderaxespad=0.)
+
+pdf_pages.savefig(fig)
+
 
 # Close PDF file
 pdf_pages.close()
