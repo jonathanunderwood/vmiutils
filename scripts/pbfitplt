@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import math
 import argparse
 import logging
 import numpy
@@ -100,7 +101,7 @@ logger.debug('zoom of original image calculated')
 
 # Generate plots in a multi page PDF file
 from matplotlib.backends.backend_pdf import PdfPages
- 
+
 pdf_pages = PdfPages(args.vmi_file + '.pdf')
 
 # First page contains plots of the image data and the reconstructed
@@ -109,7 +110,6 @@ fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
 
 cx = invimg_cart.centre_pixel[0]
 cy = invimg_cart.centre_pixel[1]
-print invimg_cart.centre_pixel, invimg_cart.shape
 invimg_cart.image[cx-10:cx+10,cy-10:cy+10]=0.0
 
 
@@ -122,7 +122,7 @@ ax.set_title('Experimental data')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
 ax = plot.subplot2grid((2, 2), (0, 1))
-im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower', 
+im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
                 extent=(invimg_cart.x[0], invimg_cart.x[-1],
                         invimg_cart.y[0], invimg_cart.y[-1]),
                 cmap=plot.cm.gist_heat)
@@ -138,7 +138,7 @@ ax.set_title('Experimental data')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
 ax = plot.subplot2grid((2, 2), (1, 1))
-im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower', 
+im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
                 extent=(invimg_cart.x[0], invimg_cart.x[-1],
                         invimg_cart.y[0], invimg_cart.y[-1]),
                  cmap=plot.cm.spectral)
@@ -147,73 +147,76 @@ fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
 pdf_pages.savefig(fig)
 
-# Second page containing the radial spectrum and beta parameters. We
-# potentially need a big area for the beta value plot legend, so we
-# let this plot be twice as large as the radial spectrum.
-fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
-
-# radial spectrum
-ax1 = plot.subplot2grid((3, 1), (0, 0), colspan=2, rowspan=1)
-ax1.plot(r1, spec)
-
-# beta parameters
-ax1 = plot.subplot2grid((3, 1), (1, 0), colspan=2, rowspan=2)
-
-ax1.plot(r1, spec, ':')
-ax2 = ax1.twinx()
-ax2.set_autoscaley_on(False)
-ax2.set_ybound(-5, 5)
-
-if fit.oddl == True:
-    inc = 1
-    bstart = 1
-else:
-    inc = 2
-    bstart = 2
-
-for b in numpy.arange(bstart, beta.shape[0], inc):
-    ax2.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
-
-box = ax1.get_position()
-ax1.set_position([box.x0,box.y0,box.width,0.5*box.height])
-ax2.set_position([box.x0,box.y0,box.width,0.5*box.height])
-
-
-plot.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-            ncol=8, mode="expand", borderaxespad=0.)
-
+# Second page containing the radial spectrum.
+fig = plot.figure(figsize=(8.27, 11.69/2), dpi=100)
+plot.plot(r1, spec)
+plot.xlabel('r')
+plot.ylabel('I(r)')
+plot.title('Radial spectrum')
 pdf_pages.savefig(fig)
 
-# <cos^n(theta)> expectation values 
-# beta parameters
-ax1 = plot.subplot2grid((3, 1), (1, 0), colspan=2, rowspan=2)
-
-ax1.plot(r1, spec, ':')
-ax2 = ax1.twinx()
-ax2.set_autoscaley_on(False)
-ax2.set_ybound(0.0, 1.0)
-
+# Plot beta parameters over a dashed radial spectrum - one plot per
+# beta parameter.
 if fit.oddl == True:
     inc = 1
-    bstart = 1
+    nplots = fit.lmax
 else:
     inc = 2
-    bstart = 2
+    nplots = fit.lmax / 2
 
-for b in numpy.arange(bstart, cosn.shape[0], inc):
-    ax2.plot(r3, cosn[b, :], label=r"$\langle\cos^{%d}\theta\rangle$"%b)
+plots_per_page = 4
+pages_reqd = int(math.ceil(float(nplots) / plots_per_page))
 
-box = ax1.get_position()
-ax1.set_position([box.x0,box.y0,box.width,0.5*box.height])
-ax2.set_position([box.x0,box.y0,box.width,0.5*box.height])
+this_beta=0
+for page in xrange(pages_reqd):
+    fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
+
+    for this_plot in xrange(plots_per_page):
+        this_beta = this_beta + inc
+
+        if this_beta > beta.shape[0]:
+            break
+
+        ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
+        ax1.plot(r1, spec, ':')
+        ax1.set_xlabel('r')
+        ax1.set_ylabel('I(r)')
+        ax2 = ax1.twinx()
+        ax2.set_autoscaley_on(False)
+        ax2.set_ybound(-5.0, 5.0)
+        ax2.plot(r2, beta[this_beta, :], label=r"$\beta_{%d}$"%this_beta)
+        ax2.set_ylabel(r"$\beta_{%d}$"%this_beta)
+        plot.legend()
+
+    pdf_pages.savefig(fig)
 
 
-plot.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-            ncol=8, mode="expand", borderaxespad=0.)
+# <cos^n(theta)> expectation values
+this_n=0
+for page in xrange(pages_reqd):
+    fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
 
-pdf_pages.savefig(fig)
+    for this_plot in xrange(plots_per_page):
+        this_n = this_n + inc
 
+        if this_n > cosn.shape[0]:
+            break
+
+        ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
+        ax1.plot(r1, spec, ':')
+        ax1.set_xlabel('r')
+        ax1.set_ylabel('I(r)')
+        ax2 = ax1.twinx()
+        ax2.set_autoscaley_on(False)
+        if this_n % 2: # odd n
+            ax2.set_ybound(-1.0, 1.0)
+        else: # even n
+            ax2.set_ybound(0.0, 1.0)
+        ax2.plot(r2, cosn[this_n, :], label=r"$\langle\cos^{%d}\theta\rangle$"%this_n)
+        ax2.set_ylabel(r"$\langle\cos^{%d}\theta\rangle$"%this_n)
+        plot.legend()
+
+    pdf_pages.savefig(fig)
 
 # Close PDF file
 pdf_pages.close()
-
