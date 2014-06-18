@@ -240,6 +240,116 @@ beta_coeffs(PyObject *self, PyObject *args)
 }
 
 static PyObject *
+beta_coeffs_point(PyObject *self, PyObject *args)
+{
+  PyObject *coefarg = NULL, *pycoef = NULL;
+  int k, kmax, l, lmax, oddl, linc, kstart, kstop;
+  double r, rkstep, sigma, s, truncate, norm;
+  double *coef, *beta;
+  PyObject *beta_npy;
+  npy_intp dims;
+
+  if (!PyArg_ParseTuple(args, "dOiddiid",
+			&r, &coefarg, &kmax, &rkstep, &sigma, &lmax,
+			&oddl, &truncate))
+    {
+      PyErr_SetString (PyExc_TypeError,
+		       "Bad argument to beta_coefs_point");
+      return NULL;
+    }
+
+  if (oddl == 1)
+    linc = 1;
+  else if (oddl == 0)
+    linc = 2;
+  else
+    return NULL;
+
+  pycoef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE,
+			    NPY_ARRAY_IN_ARRAY);
+  if (!pycoef)
+    {
+      Py_XDECREF(pycoef);
+      return NULL;
+    }
+
+  coef = (double *) PyArray_DATA((PyArrayObject *) pycoef);
+
+  /* Release GIL here as no longer accessing python objects. */
+  Py_BEGIN_ALLOW_THREADS
+
+  /* Note we don't use calloc here, which only formally initializes
+     int/char types to 0, and doesn't guarantee contiguous memory. */
+  beta = malloc((lmax + 1) * sizeof(double));
+  if (beta == NULL)
+    {
+      Py_BLOCK_THREADS
+      Py_DECREF(pycoef);
+      return PyErr_NoMemory();
+    }
+
+  for (l = 0; l <= lmax; l += linc)
+    beta[l] = 0.0;
+
+  /* Now we calculate the beta parameter values at this r value. */
+  s = 2.0 * sigma * sigma;
+
+  kstart = floor((r - truncate * sigma) / rkstep);
+  kstop = ceil((r + truncate * sigma) / rkstep);
+  if (kstart < 0)
+    kstart = 0;
+  if (kstop > kmax)
+    kstop = kmax;
+
+  for (k = kstart; k <= kstop; k++)
+    {
+      double rk = k * rkstep;
+      double a = r - rk;
+      double rad = exp(-(a * a) / s);
+      int l;
+
+      for (l = 0; l <= lmax; l += linc)
+	{
+	  double c = coef [k * (lmax + 1) + l];
+	  beta[l] += c * rad;
+	}
+    }
+
+  norm = beta[0];
+  for (l = 0; l <= lmax; l += linc)
+      beta[l] /= norm;
+
+  /* Regain GIL */
+  Py_END_ALLOW_THREADS
+
+  Py_DECREF (pycoef);
+
+  dims = lmax + 1;
+  beta_npy = PyArray_SimpleNewFromData(1, &dims, NPY_DOUBLE, (void *) beta);
+  if (beta_npy == NULL)
+    {
+      free (beta);
+      Py_XDECREF (beta_npy); /* Belt and braces */
+      return NULL;
+    }
+
+  /* Ensure the correct memory deallocator is called when Python
+     destroys cosn_npy. In principle, it should be sufficient to
+     just set the OWNDATA flag on cosn_npy, but this makes the
+     assumption that numpy uses malloc and free for memory management,
+     which it may not in the future. Note also that we are only able
+     to use malloc and free because these are guaranteed to give
+     aligned memory for standard types (which double is). For more
+     complicated objects we'd need to ensure we have aligned alloc and
+     free. See:
+     http://blog.enthought.com/python/numpy/simplified-creation-of-numpy-arrays-from-pre-allocated-memory/
+ */
+  PyArray_SetBaseObject((PyArrayObject *) beta_npy, PyCObject_FromVoidPtr(beta, free));
+
+  return beta_npy;
+}
+
+static PyObject *
 cartesian_distribution_point(PyObject *self, PyObject *args)
 {
   PyObject *coefarg = NULL, *pycoef = NULL;
@@ -658,6 +768,8 @@ static PyMethodDef FitMethods[] = {
      "Returns a simulated distribution polar image from fit coefficients."},
     {"beta_coeffs",  beta_coeffs, METH_VARARGS,
      "Returns beta coefficents as a function of r from fit coefficients."},
+    {"beta_coeffs_point", beta_coeffs_point, METH_VARARGS,
+     "Returns beta coefficients at a single value of r."},
     {"cosn_expval_point", cosn_expval_point, METH_VARARGS,
      "Returns expectation values <cos^n theta> at a single value of r."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
