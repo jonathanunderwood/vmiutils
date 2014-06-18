@@ -239,12 +239,53 @@ beta_coeffs(PyObject *self, PyObject *args)
   return NULL;
 }
 
+static int
+beta_calc(const double r, const double rkstep, const double sigma, 
+	  const double truncate, const int kmax, const int lmax, 
+	  const int linc, const double * coef, double * beta)
+/* Calculate the beta parameter values at this r value. */
+{
+
+  double s = 2.0 * sigma * sigma;
+  double norm;
+  int kstart = floor((r - truncate * sigma) / rkstep);
+  int kstop = ceil((r + truncate * sigma) / rkstep);
+  int k, l;
+
+  for (l = 0; l <= lmax; l++)
+    beta[l] = 0.0;
+
+  if (kstart < 0)
+    kstart = 0;
+  if (kstop > kmax)
+    kstop = kmax;
+
+  for (k = kstart; k <= kstop; k++)
+    {
+      double rk = k * rkstep;
+      double a = r - rk;
+      double rad = exp(-(a * a) / s);
+
+      for (l = 0; l <= lmax; l += linc)
+	{
+	  double c = coef [k * (lmax + 1) + l];
+	  beta[l] += c * rad;
+	}
+    }
+
+  norm = beta[0];
+  for (l = 0; l <= lmax; l += linc)
+      beta[l] /= norm;
+
+  return 0;
+}
+
 static PyObject *
 beta_coeffs_point(PyObject *self, PyObject *args)
 {
   PyObject *coefarg = NULL, *pycoef = NULL;
-  int k, kmax, l, lmax, oddl, linc, kstart, kstop;
-  double r, rkstep, sigma, s, truncate, norm;
+  int kmax, lmax, oddl, linc;
+  double r, rkstep, sigma, truncate;
   double *coef, *beta;
   PyObject *beta_npy;
   npy_intp dims;
@@ -288,36 +329,7 @@ beta_coeffs_point(PyObject *self, PyObject *args)
       return PyErr_NoMemory();
     }
 
-  for (l = 0; l <= lmax; l += linc)
-    beta[l] = 0.0;
-
-  /* Now we calculate the beta parameter values at this r value. */
-  s = 2.0 * sigma * sigma;
-
-  kstart = floor((r - truncate * sigma) / rkstep);
-  kstop = ceil((r + truncate * sigma) / rkstep);
-  if (kstart < 0)
-    kstart = 0;
-  if (kstop > kmax)
-    kstop = kmax;
-
-  for (k = kstart; k <= kstop; k++)
-    {
-      double rk = k * rkstep;
-      double a = r - rk;
-      double rad = exp(-(a * a) / s);
-      int l;
-
-      for (l = 0; l <= lmax; l += linc)
-	{
-	  double c = coef [k * (lmax + 1) + l];
-	  beta[l] += c * rad;
-	}
-    }
-
-  norm = beta[0];
-  for (l = 0; l <= lmax; l += linc)
-      beta[l] /= norm;
+  beta_calc(r, rkstep, sigma, truncate, kmax, lmax, linc, coef, beta);
 
   /* Regain GIL */
   Py_END_ALLOW_THREADS
@@ -456,8 +468,8 @@ static PyObject *
 cosn_expval_point(PyObject *self, PyObject *args)
 {
   PyObject *coefarg = NULL, *pycoef = NULL;
-  int k, kmax, l, lmax, oddl, linc, kstart, kstop, n, nmax;
-  double r, rkstep, sigma, s, truncate, norm, epsabs, epsrel;
+  int kmax, lmax, oddl, linc, n, nmax;
+  double r, rkstep, sigma, truncate, norm, epsabs, epsrel;
   double *coef, *beta, *cosn;
   gsl_integration_workspace * wksp;
   size_t wkspsize=10000;
@@ -505,36 +517,7 @@ cosn_expval_point(PyObject *self, PyObject *args)
       return PyErr_NoMemory();
     }
 
-  for (l = 0; l <= lmax; l += linc)
-    beta[l] = 0.0;
-
-  /* Now we calculate the beta parameter values at this r value. */
-  s = 2.0 * sigma * sigma;
-
-  kstart = floor((r - truncate * sigma) / rkstep);
-  kstop = ceil((r + truncate * sigma) / rkstep);
-  if (kstart < 0)
-    kstart = 0;
-  if (kstop > kmax)
-    kstop = kmax;
-
-  for (k = kstart; k <= kstop; k++)
-    {
-      double rk = k * rkstep;
-      double a = r - rk;
-      double rad = exp(-(a * a) / s);
-      int l;
-
-      for (l = 0; l <= lmax; l += linc)
-	{
-	  double c = coef [k * (lmax + 1) + l];
-	  beta[l] += c * rad;
-	}
-    }
-
-  norm = beta[0];
-  for (l = 0; l <= lmax; l += linc)
-      beta[l] /= norm;
+  beta_calc(r, rkstep, sigma, truncate, kmax, lmax, linc, coef, beta);
 
   /* Note we don't use calloc here, which only formally initializes
      int/char types to 0, and doesn't guarantee contiguous memory. */
