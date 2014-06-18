@@ -239,91 +239,6 @@ beta_coeffs(PyObject *self, PyObject *args)
   return NULL;
 }
 
-// TODO: speed up calculation by making use of mirror symmetry in y
-static PyObject *
-cartesian_distribution(PyObject *self, PyObject *args)
-{
-  PyArrayObject *coef = NULL;
-  PyObject *coefarg = NULL;
-  int npoints, i, kmax, lmax;
-  double rmax, step, rkstep, sigma, s;
-  PyArrayObject *dist;
-  npy_intp dims[2];
-
-  if (!PyArg_ParseTuple(args, "diOiddi",
-			&rmax, &npoints, &coefarg, &kmax, &rkstep, &sigma, &lmax))
-    {
-      PyErr_SetString (PyExc_TypeError, "Bad argument to cartesian_distribution");
-      return NULL;
-    }
-
-  coef = (PyArrayObject *) PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-  if (!coef)
-    return NULL;
-
-  dims[0] = (npy_intp) npoints;
-  dims[1] = (npy_intp) npoints;
-
-  dist = (PyArrayObject *) PyArray_SimpleNew (2, dims, NPY_DOUBLE);
-  if (!dist)
-    {
-      Py_DECREF(coef);
-      return PyErr_NoMemory();
-    }
-
-  step = 2.0 * rmax / (npoints - 1);
-  s = 2.0 * sigma * sigma;
-
-  for (i = 0; i < npoints; i++)
-    {
-      double x = -rmax + i * step;
-      int j;
-
-      for (j = 0; j < npoints; j++)
-	{
-	  double y = -rmax + j * step;
-	  double r = sqrt (x * x + y * y);
-	  double val = 0.0;
-
-	  if (r < rmax)
-	    {
-	      double costheta = cos(atan2(x, y));
-	      int k;
-
-	      for (k = 0; k <= kmax; k++)
-		{
-		  double rk = k * rkstep;
-		  double a = r - rk;
-		  double rad = exp(-(a * a) / s);
-		  int l;
-
-		  for (l = 0; l <= lmax; l++)
-		    {
-		      double ang = gsl_sf_legendre_Pl(l, costheta);
-		      double c;
-
-		      if (arr2D_get(coef, k, l, &c))
-			goto fail;
-
-		      val += c * rad * ang;
-		    }
-		}
-	    }
-	  if (arr2D_set(dist, i, j, val))
-	    goto fail;
-	}
-    }
-
-  Py_DECREF(coef);
-
-  return (PyObject *) dist;
-
- fail:
-  Py_DECREF(coef);
-  Py_DECREF(dist);
-  return NULL;
-}
-
 static PyObject *
 cartesian_distribution_point(PyObject *self, PyObject *args)
 {
@@ -737,8 +652,6 @@ radial_spectrum(PyObject *self, PyObject *args)
 static PyMethodDef FitMethods[] = {
     {"radial_spectrum",  radial_spectrum, METH_VARARGS,
      "Returns a simulated angular integrated radial spectrum from fit coefficients."},
-    {"cartesian_distribution",  cartesian_distribution, METH_VARARGS,
-     "Returns a simulated distribution cartesian image from fit coefficients."},
     {"cartesian_distribution_point",  cartesian_distribution_point, METH_VARARGS,
      "Returns a (x, y) point in the simulated distribution cartesian image from fit coefficients."},
     {"polar_distribution",  polar_distribution, METH_VARARGS,
