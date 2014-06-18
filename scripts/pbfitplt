@@ -10,7 +10,7 @@ import matplotlib
 matplotlib.use('PDF')
 import matplotlib.pyplot as plot
 
-logging.basicConfig(format="%(threadName)s:%(message)s",level=logging.DEBUG)
+logging.basicConfig(format="%(threadName)s:%(message)s", level=logging.DEBUG)
 logger = logging.getLogger('pbfit')
 
 parser = argparse.ArgumentParser(
@@ -18,7 +18,8 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('fit_file', help='Name of file containing PBASEX fit')
 
-parser.add_argument('vmi_file', help='Name of file containing original VMI data')
+parser.add_argument(
+    'vmi_file', help='Name of file containing original VMI data')
 
 parser.add_argument('--swapxy', action='store_true',
                     help='If specified, the VMI image data will have the axes swapped before plotting')
@@ -36,7 +37,7 @@ if args.filetype == 'matrix':
     logger.debug('loading VMI matrix file: {0}'.format(args.vmi_file))
     try:
         if args.delimiter is not None:
-            img = numpy.loadtxt(args.vmi_file, delimiter = args.delimiter)
+            img = numpy.loadtxt(args.vmi_file, delimiter=args.delimiter)
         else:
             img = numpy.loadtxt(args.vmi_file)
         x = None
@@ -110,37 +111,41 @@ fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
 
 cx = invimg_cart.centre_pixel[0]
 cy = invimg_cart.centre_pixel[1]
-invimg_cart.image[cx-10:cx+10,cy-10:cy+10]=0.0
+# invimg_cart.image[cx-10:cx+10,cy-10:cy+10]=0.0
 
 
 ax = plot.subplot2grid((2, 2), (0, 0))
 im = plot.imshow(vmicart_zoom.image.transpose(), origin='lower',
-                extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
-                        vmicart_zoom.y[0], vmicart_zoom.y[-1]),
-                cmap=plot.cm.gist_heat)
+                 extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
+                         vmicart_zoom.y[0], vmicart_zoom.y[-1]),
+                 interpolation='none',
+                 cmap=plot.cm.gist_heat)
 ax.set_title('Experimental data')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
 ax = plot.subplot2grid((2, 2), (0, 1))
 im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
-                extent=(invimg_cart.x[0], invimg_cart.x[-1],
-                        invimg_cart.y[0], invimg_cart.y[-1]),
-                cmap=plot.cm.gist_heat)
+                 extent=(invimg_cart.x[0], invimg_cart.x[-1],
+                         invimg_cart.y[0], invimg_cart.y[-1]),
+                 interpolation='none',
+                 cmap=plot.cm.gist_heat)
 ax.set_title('pBasex reconstruction')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
 ax = plot.subplot2grid((2, 2), (1, 0))
 im = plot.imshow(vmicart_zoom.image.transpose(), origin='lower',
-                extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
-                        vmicart_zoom.y[0], vmicart_zoom.y[-1]),
+                 extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
+                         vmicart_zoom.y[0], vmicart_zoom.y[-1]),
+                 interpolation='none',
                  cmap=plot.cm.spectral)
 ax.set_title('Experimental data')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
 ax = plot.subplot2grid((2, 2), (1, 1))
 im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
-                extent=(invimg_cart.x[0], invimg_cart.x[-1],
-                        invimg_cart.y[0], invimg_cart.y[-1]),
+                 extent=(invimg_cart.x[0], invimg_cart.x[-1],
+                         invimg_cart.y[0], invimg_cart.y[-1]),
+                 interpolation='none',
                  cmap=plot.cm.spectral)
 ax.set_title('pBasex reconstruction')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
@@ -148,7 +153,7 @@ fig.colorbar(im, use_gridspec=True, shrink=0.6)
 pdf_pages.savefig(fig)
 
 # Second page containing the radial spectrum.
-fig = plot.figure(figsize=(8.27, 11.69/2), dpi=100)
+fig = plot.figure(figsize=(8.27, 11.69 / 2), dpi=100)
 plot.plot(r1, spec)
 plot.xlabel('r')
 plot.ylabel('I(r)')
@@ -164,12 +169,13 @@ else:
     inc = 2
     nplots = fit.lmax / 2
 
-plots_per_page = 4
+plots_per_page = 3
 pages_reqd = int(math.ceil(float(nplots) / plots_per_page))
 
-this_beta=0
+this_beta = 0
 for page in xrange(pages_reqd):
     fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
+    fig.set_tight_layout(True)
 
     for this_plot in xrange(plots_per_page):
         this_beta = this_beta + inc
@@ -184,17 +190,19 @@ for page in xrange(pages_reqd):
         ax2 = ax1.twinx()
         ax2.set_autoscaley_on(False)
         ax2.set_ybound(-5.0, 5.0)
-        ax2.plot(r2, beta[this_beta, :], label=r"$\beta_{%d}$"%this_beta)
-        ax2.set_ylabel(r"$\beta_{%d}$"%this_beta)
-        plot.legend()
+        ax2.plot(r2, beta[this_beta, :], label=r'$\beta_{%d}$' % this_beta)
+        ax2.set_ylabel(r'$\beta_{%d}$' % this_beta)
+        ax2.set_title(r'Radial dependence of $\beta_{%d}$' % this_beta)
+        # plot.legend()
 
     pdf_pages.savefig(fig)
 
 
 # <cos^n(theta)> expectation values
-this_n=0
+this_n = 0
 for page in xrange(pages_reqd):
     fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
+    fig.set_tight_layout(True)
 
     for this_plot in xrange(plots_per_page):
         this_n = this_n + inc
@@ -208,13 +216,16 @@ for page in xrange(pages_reqd):
         ax1.set_ylabel('I(r)')
         ax2 = ax1.twinx()
         ax2.set_autoscaley_on(False)
-        if this_n % 2: # odd n
+        if this_n % 2:  # odd n
             ax2.set_ybound(-1.0, 1.0)
-        else: # even n
+        else:  # even n
             ax2.set_ybound(0.0, 1.0)
-        ax2.plot(r2, cosn[this_n, :], label=r"$\langle\cos^{%d}\theta\rangle$"%this_n)
-        ax2.set_ylabel(r"$\langle\cos^{%d}\theta\rangle$"%this_n)
-        plot.legend()
+        ax2.plot(
+            r2, cosn[this_n, :], label=r'$\langle\cos^{%d}\theta\rangle$' % this_n)
+        ax2.set_ylabel(r'$\langle\cos^{%d}\theta\rangle$' % this_n)
+        ax2.set_title(
+            r'Radial dependence of $\langle\cos^{%d}\theta\rangle$' % this_n)
+        # plot.legend()
 
     pdf_pages.savefig(fig)
 
