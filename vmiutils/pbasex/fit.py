@@ -218,38 +218,6 @@ class PbasexFit(object):
 
         return r, spec
 
-    def cartesian_distribution(self, bins=500, rmax=None):
-        """Calculates a cartesian image of the fitted distribution.
-
-        bins specifes the number of bins in the x and y dimension to
-        calculate.
-
-        rmax specifies the maximum radius to consider in the
-        image. This is specified in coordinates of the original image
-        that was fitted to.
-        """
-        if self.coef is None:
-            logger.error('no fit done')
-            raise AttributeError
-
-        if rmax is None:
-            rmax = self.rmax
-        elif rmax > self.rmax:
-            logger.error('rmax exceeds that of original data')
-            raise ValueError
-
-        # Note that the calculation here is done in scaled (pixel)
-        # coordinates, not absolute scaled coordinates.
-        dist = cartesian_distribution(rmax, bins, self.coef, self.kmax,
-                                      self.rkstep, self.sigma, self.lmax)
-
-        # Set enpoint=False here, since the x, y values are the lowest
-        # value of x, y in each bin.
-        x = numpy.linspace(-rmax, rmax, bins, endpoint=False)
-        y = numpy.linspace(-rmax, rmax, bins, endpoint=False)
-
-        return vmi.CartesianImage(x=x, y=y, image=dist)
-
     def cartesian_distribution_threaded(self, bins=250, rmax=None,
                                         truncate=5.0, nthreads=None):
         """Calculates a cartesian image of the fitted distribution using
