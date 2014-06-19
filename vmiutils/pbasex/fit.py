@@ -219,7 +219,8 @@ class PbasexFit(object):
         return r, spec
 
     def cartesian_distribution_threaded(self, bins=250, rmax=None,
-                                        truncate=5.0, nthreads=None):
+                                        truncate=5.0, nthreads=None,
+                                        weighting='normal'):
         """Calculates a cartesian image of the fitted distribution using
         multiple threads for speed.
 
@@ -238,6 +239,16 @@ class PbasexFit(object):
 
         nthreads specifies the number of threads to use. If None, then
         we'll use all available cores.
+
+        weighting specifies the weighting given to each pixel. If
+        'normal', then no additional weighting is applied. If
+        weighting='rsquared' then each pixel's value is weighted by
+        the value of r squared for that pixel. If weighting='compund',
+        then the negative x half of the image is weighted with r
+        squared, and the +x half of the image is weighted
+        normally. For 'normal' and 'rsquared' the image is normalized
+        to a maximum value of 1.0. For 'compound' each half of the
+        image is normalized to a maximum value of 1.0.
 
         """
         if self.coef is None:
@@ -304,6 +315,25 @@ class PbasexFit(object):
             dist[bins / 2 - 1::-1] = dist[bins / 2 + 1:bins]
         else:  # bins is even
             dist[bins / 2 - 1::-1] = dist[bins / 2:bins]
+
+        # Normalize image to max value of 1
+        dist /= dist.max()
+
+        # Now we weight with r squared if requested.
+        if (weighting == 'rsquared') or (weighting == 'compound'):
+            # r^2 weighting - we need the value of r at each pixel
+            xm, ym = numpy.meshgrid(xvals, yvals)
+            rsq = xm * xm + ym * ym
+            if weighting == 'compound':
+                if bins % 2 != 0:  # bins is odd
+                    dist[bins / 2 - 1::-1] *= rsq[bins / 2 - 1::-1]
+                    dist[bins / 2 - 1::-1] /= dist[bins / 2 - 1::-1].max()
+                else:  # bins is even
+                    dist[bins / 2 - 1::-1] *= rsq[bins / 2 - 1::-1]
+                    dist[bins / 2 - 1::-1] /= dist[bins / 2 - 1::-1].max()
+            else:
+                dist *= rsq
+                dist /= dist.max()
 
         return vmi.CartesianImage(x=xvals, y=yvals, image=dist)
 
