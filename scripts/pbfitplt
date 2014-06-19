@@ -89,7 +89,7 @@ logger.debug('fit data loaded')
 r1, spec = fit.calc_radial_spectrum()
 logger.debug('radial spectrum calculated')
 
-r2, beta = fit.beta_coefficients()
+r2, beta = fit.beta_coefficients_threaded()
 logger.debug('beta coefficients calculated')
 
 r3, cosn = fit.cosn_expval()
