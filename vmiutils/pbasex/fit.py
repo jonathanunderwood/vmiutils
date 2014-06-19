@@ -388,6 +388,74 @@ class PbasexFit(object):
 
         return r, expval
 
+    def beta_coefficients_threaded(self, rbins=500, rmax=None,
+                                   truncate=5.0, nthreads=None):
+        '''Calculates the beta coefficients for the fit as a function of
+        r up to rmax and for n from 0 to nmax.
+
+        rbins specifies the number of data points to calculate.
+
+        rmax specifies the maximum radius to consider and is specified
+        in dimensions of the original image that was fitted.
+
+        nthreads specifies the number of threads to be used. If None,
+        then the number of CPU cores is used as the number of threads.
+
+        truncate specifies the number of basis function sigmas we
+        consider either side of each point when calculating the
+        intensity at each point. For example if truncate is 5.0, at
+        each point we'll consider all basis functions whose centre
+        lies within 5.0 * sigma of that point. 5.0 is the default.
+
+        '''
+        if self.coef is None:
+            logger.error('no fit done')
+            raise AttributeError
+
+        if rmax is None:
+            rmax = self.rmax
+        elif rmax > self.rmax:
+            logger.error('rmax exceeds that of original data')
+            raise ValueError
+
+        if self.oddl:
+            oddl = 1
+        else:
+            oddl = 0
+
+        # Calculate r values. Set enpoint=False here, since the r
+        # values are the lowest value of r in each bin.
+        r = numpy.linspace(0.0, rmax, rbins, endpoint=False)
+
+        beta = numpy.zeros((self.lmax + 1, rbins))
+        queue = Queue.Queue(0)
+
+        for rbin in xrange(rbins):
+            queue.put({'rbin': rbin})
+
+        def __worker():
+            while not queue.empty():
+                job = queue.get()
+                rbin = job['rbin']
+                rr = r[rbin]
+
+                beta[:, rbin] = beta_coeffs_point(
+                    rr, self.coef, self.kmax, self.rkstep,
+                    self.sigma, self.lmax, oddl, truncate)
+                queue.task_done()
+
+        if nthreads is None:
+            nthreads = multiprocessing.cpu_count()
+
+        for i in xrange(nthreads):
+            t = threading.Thread(target=__worker)
+            t.daemon = True
+            t.start()
+
+        queue.join()
+
+        return r, beta
+
     def beta_coefficients(self, rbins=500, rmax=None):
         '''Calculates the beta coefficients for the fit as a function
         of r up to rmax.
