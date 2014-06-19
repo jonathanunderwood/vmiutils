@@ -95,7 +95,7 @@ logger.debug('beta coefficients calculated')
 r3, cosn = fit.cosn_expval()
 logger.debug('cos^n(theta) expectation values calculated')
 
-invimg_cart = fit.cartesian_distribution_threaded(bins=250)
+invimg_cart = fit.cartesian_distribution_threaded(bins=250, weighting='compound')
 logger.debug('cartesian distribution calculated')
 
 vmicart_zoom = vmicart.zoom_circle(fit.rmax, pad=True)
