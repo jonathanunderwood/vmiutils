@@ -132,6 +132,8 @@ im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
                  interpolation='none',
                  cmap=plot.cm.gist_heat)
 ax.set_title('pBasex reconstruction')
+#ax.get_xaxis().set_tick_params(direction='out')
+#ax.get_yaxis().set_tick_params(direction='out')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
 ax = plot.subplot2grid((2, 2), (1, 0))
