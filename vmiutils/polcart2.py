@@ -16,23 +16,23 @@ logger.addHandler(__null_handler)
 
 def __pol2cart(out_coord, xbw, ybw, rmax, rbw, thetabw):
     ix, iy = out_coord
-    x = ix * xbw - rmax
-    y = iy * ybw - rmax
+    x = (ix + 0.5) * xbw - rmax
+    y = (iy + 0.5) * ybw - rmax
     r = numpy.sqrt(x * x + y * y)
     t = numpy.arctan2(x, y)
-    ir = r / rbw
-    it = (t + numpy.pi) / thetabw
+    ir = r / rbw - 0.5
+    it = (t + numpy.pi) / thetabw - 0.5
     return ir, it
 
 
 def __cart2pol(out_coord, rbw, thetabw, xbw, ybw, xc, yc, x0, y0):
     ir, it = out_coord
-    r = ir * rbw
-    t = it * thetabw - numpy.pi
+    r = (ir + 0.5) * rbw
+    t = (it + 0.5) * thetabw - numpy.pi
     x = r * numpy.sin(t)
     y = r * numpy.cos(t)
-    ix = (x + xc - x0) / xbw
-    iy = (y + yc - y0) / ybw
+    ix = ((x + xc - x0) / xbw) - 0.5
+    iy = ((y + yc - y0) / ybw) - 0.5
     return ix, iy
 
 
@@ -71,17 +71,21 @@ def cart2pol(image, x=None, y=None, centre=None,
     if y is None:
         y = numpy.arange(float(image.shape[1]))
 
+    # Cartesian image bin widths - assume regularly spaced
+    xbw = x[1] - x[0]
+    ybw = y[1] - y[0]
+
     if centre is None:
-        xc = 0.5 * (x[0] + x[-1])
-        yc = 0.5 * (y[0] + y[-1])
+        xc = 0.5 * (x[0] + x[-1] + xbw)
+        yc = 0.5 * (y[0] + y[-1] + ybw)
     else:
         xc = centre[0]
         yc = centre[1]
 
     # Calculate minimum distance from centre to edge of image - this
     # determines the maximum radius in the polar image.
-    xsize = min(abs(x[0] - xc), x[-1] - xc)
-    ysize = min(abs(y[0] - yc), y[-1] - yc)
+    xsize = min(abs(x[0] - xc), x[-1] - xc + xbw)
+    ysize = min(abs(y[0] - yc), y[-1] - yc + ybw)
     max_rad = min(xsize, ysize)
 
     if rmax is None:
@@ -90,20 +94,17 @@ def cart2pol(image, x=None, y=None, centre=None,
         raise ValueError
 
     # Polar image bin widths
-    rbw = rmax / (radial_bins - 1)
+    rbw = rmax / radial_bins
     thetabw = 2.0 * numpy.pi / (angular_bins - 1)
-
-    # Cartesian image bin widths - assume regularly spaced
-    xbw = x[1] - x[0]
-    ybw = y[1] - y[0]
 
     pimage = scipy.ndimage.geometric_transform(
         image, __cart2pol, order=order,
         extra_arguments=(rbw, thetabw, xbw, ybw, xc, yc, x[0], y[0]),
-        output_shape=(radial_bins, angular_bins)
+        output_shape=(radial_bins, angular_bins),
+        mode='nearest',
     )
 
-    r = numpy.linspace(0.0, rmax, radial_bins)
+    r = numpy.linspace(0.0, rmax, radial_bins, endpoint=False)
     t = numpy.linspace(-numpy.pi, numpy.pi, angular_bins)
 
     return r, t, pimage
@@ -134,10 +135,11 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
 
     rbw = r[1] - r[0]  # Assume equally spaced
 
+    tpts = image.shape[1]
+
     if theta is None:
         theta = numpy.linspace(-numpy.pi, numpy.pi, tpts)
 
-    tpts = image.shape[1]
     thetabw = theta[1] - theta[0]  # Assume equally spaced
 
     # If the number of bins in the cartesian image is not specified, set it to
@@ -148,47 +150,111 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
     if ybins is None:
         ybins = image.shape[0]
 
-    rmax = r[-1]
-    xbw = 2.0 * rmax / (xbins - 1)
-    ybw = 2.0 * rmax / (ybins - 1)
+    rmax = r[-1] + rbw
+
+    xbw = 2.0 * rmax / xbins
+    ybw = 2.0 * rmax / ybins
 
     cimage = scipy.ndimage.geometric_transform(
         image, __pol2cart, order=order,
         extra_arguments=(xbw, ybw, rmax, rbw, thetabw),
-        output_shape=(xbins, ybins)
+        output_shape=(xbins, ybins),
+        mode='nearest',
     )
 
-    x = numpy.linspace(-rmax, rmax, xbins)
-    y = numpy.linspace(-rmax, rmax, ybins)
+    x = numpy.linspace(-rmax, rmax, xbins, endpoint=False)
+    y = numpy.linspace(-rmax, rmax, ybins, endpoint=False)
 
     return x, y, cimage
 
 if __name__ == '__main__':
-    import polcart as pc
-    import numpy as np
-    import matplotlib
     import matplotlib.pyplot as plot
+    import polcart
+    # Set up a very simple cartesian image - strategy will be to
+    # round-trip the image to polar coordinates and back again and
+    # examine it
+    x = numpy.arange(10)
+    y = numpy.arange(10)
+    a = numpy.zeros((10, 10))
+    a[5, 5] = 1.0
+    a[4, 4] = 1.0
+    a[4, 5] = 1.0
 
-    x = np.arange(5)
-    y = np.arange(5)
-    a = np.zeros((5, 5))
-    a[2, 2] = 1.0
-    a[1, 1] = 1.0
-    r, theta, b = pc.cart2pol(x=x, y=y, image=a)
+    # Convert to polar coordinates
+    #r, theta, b = cart2pol(x=x, y=y, image=a, order=5)
+    r, theta, b = cart2pol(
+        x=x, y=y, image=a, order=5, radial_bins=100, angular_bins=100)
 
-    x2, y2, c = pc.pol2cart(r=r, theta=theta, image=b, xbins=5, ybins=5)
+    # Convert back to cartesian coordinates
+    #x2, y2, c = pol2cart(r=r, theta=theta, image=b.clip(0.0))
+    x2, y2, c = pol2cart(
+        r=r, theta=theta, image=b.clip(0.0), xbins=10, ybins=10, order=5)
 
+    # Now plot and check
     fig = plot.figure()
-    grid = matplotlib.gridspec.GridSpec(2, 1)
-    ax1 = plot.subplot(grid[0, 0])
-    im1 = ax1.imshow(a.transpose(), origin='lower',
-                     extent=(x[0], x[-1], y[0], y[-1]),
-                     interpolation='none')
-    fig.colorbar(im1)
+    fig.set_tight_layout(True)
 
-    ax2 = plot.subplot(grid[1, 0])
-    im2 = ax2.imshow(c.transpose(), origin='lower',
-                     extent=(x2[0], x2[-1], y2[0], y2[-1]),
-                     interpolation='none')
-    fig.colorbar(im2)
+    # Plot the initial cartesian data with both imshow and pcolormesh
+    xmin = x[0]
+    xmax = x[-1] + x[1] - x[0]
+    ymin = y[0]
+    ymax = y[-1] + y[1] - y[0]
+
+    ax = plot.subplot2grid((2, 3), (0, 0), aspect=1.0)
+    im = ax.imshow(a.transpose(), origin='lower',
+                   extent=(xmin, xmax, ymin, ymax),
+                   interpolation='none')
+    ax.set_title('Original data\n(imshow)')
+    fig.colorbar(im)
+
+    x_aug = numpy.append(x, x[-1] + x[1] - x[0])
+    y_aug = numpy.append(y, y[-1] + y[1] - y[0])
+
+    ax = plot.subplot2grid((2, 3), (1, 0), aspect=1.0)
+    im = ax.pcolormesh(x_aug, y_aug, a.T)
+    ax.set_title('Original data\n(pcolormesh)')
+    fig.colorbar(im)
+
+    # Plot the polar data directly using pcolormesh in two ways -
+    # first by using a polar projection, and secondly manually
+    # transforming the data grid -pcolormesh doesn't require regularly
+    # spaced data (unlike imshow)
+    r_aug = numpy.append(r, r[-1] + r[1] - r[0])
+    theta_aug = numpy.append(theta, theta[-1] + theta[1] - theta[0])
+
+    ax = plot.subplot2grid((2, 3), (0, 1), projection="polar", aspect=1.)
+    im = ax.pcolormesh(0.5 * numpy.pi - theta_aug, r_aug, b)
+    ax.set_title('Polar data\n(pcolormesh/polar\nprojection)')
+
+    ax = plot.subplot2grid((2, 3), (1, 1),  aspect=1.)
+    rg, tg = numpy.meshgrid(r_aug, theta_aug)
+    xx = rg * numpy.sin(tg)
+    yy = rg * numpy.cos(tg)
+    im = ax.pcolormesh(xx, yy, b.transpose())
+    rmax = r_aug.max()
+    ax.axis([-rmax, rmax, -rmax, rmax])
+    ax.set_title('Polar data\n(pcolormesh/manual\npolar conversion)')
+
+    # Now plot the final cartesian image after roundtrip
+    x2min = x2[0]
+    x2max = x2[-1] + x2[1] - x2[0]
+    y2min = y2[0]
+    y2max = y2[-1] + y2[1] - y2[0]
+
+    ax = plot.subplot2grid((2, 3), (0, 2), aspect=1.0)
+    im = ax.imshow(c.transpose(), origin='lower',
+                   extent=(x2min, x2max, y2min, y2max),
+                   interpolation='none')
+    ax.set_title('Final data\n(imshow)')
+    fig.colorbar(im)
+
+    x2_aug = numpy.append(x2, x2[-1] + x2[1] - x2[0])
+    y2_aug = numpy.append(y2, y2[-1] + y2[1] - y2[0])
+
+    ax = plot.subplot2grid((2, 3), (1, 2), aspect=1.0)
+    im = ax.pcolormesh(x2_aug, y2_aug, c.T)
+    ax.set_title('Final data\n(pcolormesh)')
+    ax.axis([x2min, x2max, y2min, y2max])
+    fig.colorbar(im)
+
     plot.show()

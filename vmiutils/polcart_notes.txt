@@ -1,0 +1,53 @@
+
+Notes on conversion between cartesian and polar images.
+
+1. We use scipy.ndimage.geometric_transform for this, although we
+   could alternatively use map_coordinates. Alternatively we could
+   also have chosen to hand roll things using scipy.interpolate
+   bivariate interpolation routines.
+
+2. geomtric_transform - this works by passing tuples to the mapping
+   function. These tuples correspond to the indices of the output
+   array. The mapping function needs to return the corresponding
+   (fractional) indices in the input array. geometric_transform then
+   finds the value at those returned indices in the input array by
+   interpolation.
+
+3. When geometric_transform does this last interpolation step, it
+   assumes that the pixel values in the input array correspond to the
+   data values at the pixel indices (rather than the centre of the
+   pixel). Or, equivalently, geometric_transform assumes the pixel
+   indices correspond to the centre of the pixels rather than the
+   lower left corner.
+
+4. We take two different approaches:
+
+   a) in polcart.py we treat the data as gridded data points
+
+   b) in polcart2.py we treat the data as binned data and so take into
+      account that we need to calculate the output values at the
+      output pixel centre, and find the input data value at the
+      corresponding pixel centre. This is the correct approach for
+      most cases of VMI images. I am sort of surprised that
+      geometric_transform (and the rest of the ndimage functions)
+      don't treat data as binned.
+
+5. Relatedly, we have to give consideration to how we plot the
+   data. Matplotlib has two functions for 3D plots of image data,
+   imshow and pcolormesh (or the less efficient pcolor). These
+   interpret the data slightly differently.
+
+   a) imshow: takes the indices as the bin centres, unless 'extent' is
+      specified. So, this is consistent with the notion of pixels, but
+      inconsistent with our interpretation of the pixel indices
+      corresponding to the lowest values in the pixel. So, it's
+      important to specify 'extent' appropriately, taking care to add
+      one pixel width to the value of the last pixel
+      coordinates. Actually, imshow and ndimage share the same
+      definition of the pixels.
+
+   b) pcolormesh: takes indices as lower left corners of pixels. As
+      such, the 'x' and 'y' vectors need to be one bin longer than the
+      data dimensions if the full data is to be plotted. This is
+      closer to our interpretation (polcart2) of the data.
+
