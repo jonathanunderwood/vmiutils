@@ -169,7 +169,7 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plot
-    import polcart
+
     # Set up a very simple cartesian image - strategy will be to
     # round-trip the image to polar coordinates and back again and
     # examine it
