@@ -38,13 +38,13 @@ def __cart2pol(out_coord, rbw, thetabw, xbw, ybw, xc, yc, x0, y0):
 
 def cart2pol(image, x=None, y=None, centre=None,
              radial_bins=256, angular_bins=256, rmax=None, order=3):
-    """ Convert an image on a regularly spaced cartesian grid into a regular
-    spaced grid in polar coordinates using interpolation.
+    """Convert an image withregularly spaced cartesian pixels into a
+    regularly spaced image in polar coordinates using interpolation.
     
-    x and y contain the x and y coordinates corresponding to each bin. If
+    x and y contain the x and y coordinates corresponding to each pixel. If
     either of these are none, unit bin widths are assumed.
 
-    radial_bins and angular_bins define the number of bins in the polar
+    radial_bins and angular_bins define the number of pixels in the polar
     representation of the image.
 
     centre is a tuple containing the x and y coordinates of the image centre
@@ -53,7 +53,7 @@ def cart2pol(image, x=None, y=None, centre=None,
 
     rmax defines the maximum radius from the image centre to consider. If rmax
     is None, rmax is set to be the smallest of the distances from the image
-    centre to the edge of the cartesian grid.
+    centre to the edge of the cartesian image.
 
     We employ the convention that the angle (theta) is that between the second
     axis (y-axis) and the position vector and that it lies in the range
@@ -63,6 +63,7 @@ def cart2pol(image, x=None, y=None, centre=None,
     coordinates of each bin in the polar image pimage.
 
     order specifies the interpolation order.
+
     """
 
     if x is None:
@@ -111,23 +112,26 @@ def cart2pol(image, x=None, y=None, centre=None,
 
 
 def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
-    """ Convert an image on a regularly spaced polar grid into a regular
-    spaced grid in cartesian coordinates using interpolation.
+    """Convert a regularly spaced polar image into a regular spaced image
+    in cartesian coordinates using interpolation.
     
-    r and theta contain the coordinates corresponding to each bin in image. If
-    either of these are none, unit bin widths are assumed.
+    image is the original image
 
-    xbins and ybins define the number of bins in the returned cartesian
-    representation of the image.
+    r and theta contain the coordinates corresponding to each pixel in
+    image. If either of these are none, unit bin widths are assumed.
+
+    xbins and ybins define the number of pixels in the returned
+    cartesian representation of the image.
 
     We employ the convention that the angle (theta) is that between the second
     axis (y-axis) and the position vector and that it lies in the range
     [-pi,pi].
 
-    A tuple (x, y, cimage) is returned, with x and y containing the
-    coordinates of each bin in the cartesian image cimage.
-
     order specifies the interpolation order.
+
+    A tuple (x, y, cimage) is returned, with x and y containing the
+    coordinates of each pixel in the cartesian image cimage.
+
     """
 
     if r is None:
