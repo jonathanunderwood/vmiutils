@@ -165,6 +165,8 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plot
+#    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    import mpl_toolkits.axes_grid1 as axes_grid1
 
     # Set up a very simple cartesian image - strategy will be to
     # round-trip the image to polar coordinates and back again and
@@ -188,40 +190,43 @@ if __name__ == '__main__':
     fig = plot.figure()
     fig.set_tight_layout(True)
 
-    # Plot the initial cartesian data with both imshow and pcolormesh
+    # Plot the initial cartesian data with pcolormesh
     xbw = x[1] - x[0]
     ybw = y[1] - y[0]
-    x_aug = numpy.append(x, x[-1] + xbw) - 0.5 * xbw
-    y_aug = numpy.append(y, y[-1] + ybw) - 0.5 * ybw
+    x_aug = numpy.append(x, x[-1] + xbw)
+    y_aug = numpy.append(y, y[-1] + ybw)
 
-    ax = plot.subplot2grid((2, 3), (0, 0), aspect=1.0)
-    im = ax.imshow(a.transpose(), origin='lower',
-                   extent=(x_aug[0], x_aug[-1],
-                           y_aug[0], y_aug[-1]),
-                   interpolation='none')
-    ax.set_title('Original data\n(imshow)')
-    fig.colorbar(im)
-
-    ax = plot.subplot2grid((2, 3), (1, 0), aspect=1.0)
+    ax = plot.subplot2grid((1, 4), (0, 0), aspect=1.0)
     im = ax.pcolormesh(x_aug, y_aug, a.T)
     ax.set_xlim((x_aug[0], x_aug[-1]))
     ax.set_ylim((y_aug[0], y_aug[-1]))
     ax.set_title('Original data\n(pcolormesh)')
-    fig.colorbar(im)
+    ax.grid()
+    divider = axes_grid1.make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig.colorbar(im, cax=cax)
 
     # Plot the polar data directly using pcolormesh in two ways -
     # first by using a polar projection, and secondly manually
     # transforming the data grid -pcolormesh doesn't require regularly
     # spaced data (unlike imshow)
     r_aug = numpy.append(r, r[-1] + r[1] - r[0])
-    print r[0], r[-1]
     theta_aug = numpy.append(theta, theta[-1] + theta[1] - theta[0])
 
-    ax = plot.subplot2grid((2, 3), (0, 1), projection="polar", aspect=1.)
-    im = ax.pcolormesh(0.5 * numpy.pi - theta_aug, r_aug, b)
+    # Plot using polar projection
+    ax = plot.subplot2grid((1, 4), (0, 1), projection="polar", aspect=1.)
+    im = ax.pcolormesh(theta, r, b)
+    ax.grid()
+    ax.set_theta_zero_location("N")
+    ax.set_theta_direction("clockwise")
     ax.set_title('Polar data\n(pcolormesh/polar\nprojection)')
+    # Unfortunately the colorbar seems broken in matplotlib 1.3.1 - bug?
+    divider = axes_grid1.make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig.colorbar(im, cax=cax)
 
-    ax = plot.subplot2grid((2, 3), (1, 1),  aspect=1.)
+    # Plot using manual conversion
+    ax = plot.subplot2grid((1, 4), (0, 2),  aspect=1.)
     rg, tg = numpy.meshgrid(r_aug, theta_aug)
     xx = rg * numpy.sin(tg)
     yy = rg * numpy.cos(tg)
@@ -229,24 +234,23 @@ if __name__ == '__main__':
     rmax = r_aug.max()
     ax.axis([-rmax, rmax, -rmax, rmax])
     ax.set_title('Polar data\n(pcolormesh/manual\npolar conversion)')
+    ax.grid()
+    divider = axes_grid1.make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig.colorbar(im, cax=cax)
 
+    # Now plot the final data after the roundtrip
     x2bw = x2[1] - x2[0]
     y2bw = y2[1] - y2[0]
-    x2_aug = numpy.append(x2, x2[-1] + x2bw) - 0.5 * x2bw
-    y2_aug = numpy.append(y2, y2[-1] + y2bw) - 0.5 * y2bw
+    x2_aug = numpy.append(x2, x2[-1] + x2bw)
+    y2_aug = numpy.append(y2, y2[-1] + y2bw)
 
-    ax = plot.subplot2grid((2, 3), (0, 2), aspect=1.0)
-    im = ax.imshow(c.transpose(), origin='lower',
-                   extent=(x2_aug[0], x2_aug[-1],
-                           y2_aug[0], y2_aug[-1]),
-                   interpolation='none')
-    ax.set_title('Final data\n(imshow)')
-    fig.colorbar(im)
-
-    ax = plot.subplot2grid((2, 3), (1, 2), aspect=1.0)
+    ax = plot.subplot2grid((1, 4), (0, 3), aspect=1.0)
     im = ax.pcolormesh(x2_aug, y2_aug, c.T)
     ax.set_title('Final data\n(pcolormesh)')
     ax.axis([x2_aug[0], x2_aug[-1], y2_aug[0], y2_aug[-1]])
-    fig.colorbar(im)
+    divider = axes_grid1.make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig.colorbar(im, cax=cax)
 
     plot.show()
