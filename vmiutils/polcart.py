@@ -164,39 +164,89 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
     return x, y, cimage
 
 if __name__ == '__main__':
-    import polcart as pc
-    import numpy as np
-    import matplotlib
     import matplotlib.pyplot as plot
 
-    x = np.arange(5)
-    y = np.arange(5)
-    a = np.zeros((5, 5))
-    a[2, 2] = 1.0
-    a[1, 1] = 1.0
-    a[1, 2] = 1.0
-    r, theta, b = pc.cart2pol(x=x, y=y, image=a)
+    # Set up a very simple cartesian image - strategy will be to
+    # round-trip the image to polar coordinates and back again and
+    # examine it
+    x = numpy.arange(10)
+    y = numpy.arange(10)
+    a = numpy.zeros((10, 10))
+    a[5, 5] = 1.0
+    a[4, 4] = 1.0
+    a[4, 5] = 1.0
 
-    x2, y2, c = pc.pol2cart(r=r, theta=theta, image=b, xbins=5, ybins=5)
+    # Convert to polar coordinates
+    r, theta, b = cart2pol(
+        x=x, y=y, image=a, order=5, radial_bins=100, angular_bins=100)
 
+    # Convert back to cartesian coordinates
+    x2, y2, c = pol2cart(
+        r=r, theta=theta, image=b.clip(0.0), xbins=10, ybins=10, order=5)
+
+    # Now plot and check
     fig = plot.figure()
-    grid = matplotlib.gridspec.GridSpec(2, 1)
+    fig.set_tight_layout(True)
 
-    ax1 = plot.subplot(grid[0, 0])
+    # Plot the initial cartesian data with both imshow and pcolormesh
     xbw = x[1] - x[0]
     ybw = y[1] - y[0]
-    im1 = ax1.imshow(a.transpose(), origin='lower',
-                     extent=(x[0] - 0.5 * xbw, x[-1] + 0.5 * xbw,
-                             y[0] - 0.5 * ybw, y[-1] + 0.5 * ybw),
-                     interpolation='none')
-    fig.colorbar(im1)
+    x_aug = numpy.append(x, x[-1] + xbw) - 0.5 * xbw
+    y_aug = numpy.append(y, y[-1] + ybw) - 0.5 * ybw
 
-    ax2 = plot.subplot(grid[1, 0])
+    ax = plot.subplot2grid((2, 3), (0, 0), aspect=1.0)
+    im = ax.imshow(a.transpose(), origin='lower',
+                   extent=(x_aug[0], x_aug[-1],
+                           y_aug[0], y_aug[-1]),
+                   interpolation='none')
+    ax.set_title('Original data\n(imshow)')
+    fig.colorbar(im)
+
+    ax = plot.subplot2grid((2, 3), (1, 0), aspect=1.0)
+    im = ax.pcolormesh(x_aug, y_aug, a.T)
+    ax.set_xlim((x_aug[0], x_aug[-1]))
+    ax.set_ylim((y_aug[0], y_aug[-1]))
+    ax.set_title('Original data\n(pcolormesh)')
+    fig.colorbar(im)
+
+    # Plot the polar data directly using pcolormesh in two ways -
+    # first by using a polar projection, and secondly manually
+    # transforming the data grid -pcolormesh doesn't require regularly
+    # spaced data (unlike imshow)
+    r_aug = numpy.append(r, r[-1] + r[1] - r[0])
+    print r[0], r[-1]
+    theta_aug = numpy.append(theta, theta[-1] + theta[1] - theta[0])
+
+    ax = plot.subplot2grid((2, 3), (0, 1), projection="polar", aspect=1.)
+    im = ax.pcolormesh(0.5 * numpy.pi - theta_aug, r_aug, b)
+    ax.set_title('Polar data\n(pcolormesh/polar\nprojection)')
+
+    ax = plot.subplot2grid((2, 3), (1, 1),  aspect=1.)
+    rg, tg = numpy.meshgrid(r_aug, theta_aug)
+    xx = rg * numpy.sin(tg)
+    yy = rg * numpy.cos(tg)
+    im = ax.pcolormesh(xx, yy, b.transpose())
+    rmax = r_aug.max()
+    ax.axis([-rmax, rmax, -rmax, rmax])
+    ax.set_title('Polar data\n(pcolormesh/manual\npolar conversion)')
+
     x2bw = x2[1] - x2[0]
     y2bw = y2[1] - y2[0]
-    im2 = ax2.imshow(c.transpose(), origin='lower',
-                     extent=(x2[0] - 0.5 * x2bw, x2[-1] + 0.5 * x2bw,
-                             y2[0] - 0.5 * y2bw, y2[-1] + 0.5 * y2bw),
-                     interpolation='none')
-    fig.colorbar(im2)
+    x2_aug = numpy.append(x2, x2[-1] + x2bw) - 0.5 * x2bw
+    y2_aug = numpy.append(y2, y2[-1] + y2bw) - 0.5 * y2bw
+
+    ax = plot.subplot2grid((2, 3), (0, 2), aspect=1.0)
+    im = ax.imshow(c.transpose(), origin='lower',
+                   extent=(x2_aug[0], x2_aug[-1],
+                           y2_aug[0], y2_aug[-1]),
+                   interpolation='none')
+    ax.set_title('Final data\n(imshow)')
+    fig.colorbar(im)
+
+    ax = plot.subplot2grid((2, 3), (1, 2), aspect=1.0)
+    im = ax.pcolormesh(x2_aug, y2_aug, c.T)
+    ax.set_title('Final data\n(pcolormesh)')
+    ax.axis([x2_aug[0], x2_aug[-1], y2_aug[0], y2_aug[-1]])
+    fig.colorbar(im)
+
     plot.show()
