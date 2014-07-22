@@ -78,6 +78,10 @@ def cart2pol(image, x=None, y=None, centre=None,
         xc = centre[0]
         yc = centre[1]
 
+    # Cartesian image bin widths - assume regularly spaced
+    xbw = x[1] - x[0]
+    ybw = y[1] - y[0]
+
     # Calculate minimum distance from centre to edge of image - this
     # determines the maximum radius in the polar image.
     xsize = min(abs(x[0] - xc), x[-1] - xc)
@@ -92,10 +96,6 @@ def cart2pol(image, x=None, y=None, centre=None,
     # Polar image bin widths
     rbw = rmax / (radial_bins - 1)
     thetabw = 2.0 * numpy.pi / (angular_bins - 1)
-
-    # Cartesian image bin widths - assume regularly spaced
-    xbw = x[1] - x[0]
-    ybw = y[1] - y[0]
 
     pimage = scipy.ndimage.geometric_transform(
         image, __cart2pol, order=order,
