@@ -16,38 +16,31 @@ Notes on conversion between cartesian and polar images.
 3. When geometric_transform does this last interpolation step, it
    assumes that the pixel values in the input array correspond to the
    data values at the pixel indices (rather than the centre of the
-   pixel). Or, equivalently, geometric_transform assumes the pixel
-   indices correspond to the centre of the pixels rather than the
-   lower left corner.
+   pixel).
 
-4. We take two different approaches:
+4. Relatedly, matplotlib has two different functions for plotting
+   image data, imshow and pcolor(mesh), which work slightly
+   differently. imshow assumes the image indices correspond to the
+   pixel centres. pcolor on the other hand assumes the image indices
+   specify the lower left coordinates of the pixel. This is why (when
+   not using a polar projection) pcolormesh requires the x and y
+   arrays to have one extra value than the corresponding image data
+   dimension (see pcolor documentation).
+
+5. There are two different approaches to the conversion between
+   cartesian and polar images, depending on whether we regard the
+   indices as corresponding to the pixel centre, or lower left
+   corner. The way geometric_transform interpolates (see point 3
+   above) is consistent with pcolor i.e. assumes pixel indices
+   correspond to the lower left corner. If we instead wnat to regard
+   pixel indices as specifying pixel centres then we need to take that
+   into account in the mapping functions we pass to
+   geometric_transform by adding half a pixel width as appropriate.
 
    a) in polcart.py we treat the data as gridded data points
+      corresponding to the lower left corners of pixels when plotting.
 
    b) in polcart2.py we treat the data as binned data and so take into
       account that we need to calculate the output values at the
       output pixel centre, and find the input data value at the
-      corresponding pixel centre. This is the correct approach for
-      most cases of VMI images. I am sort of surprised that
-      geometric_transform (and the rest of the ndimage functions)
-      don't treat data as binned.
-
-5. Relatedly, we have to give consideration to how we plot the
-   data. Matplotlib has two functions for 3D plots of image data,
-   imshow and pcolormesh (or the less efficient pcolor). These
-   interpret the data slightly differently.
-
-   a) imshow: takes the indices as the bin centres, unless 'extent' is
-      specified. So, this is consistent with the notion of pixels, but
-      inconsistent with our interpretation of the pixel indices
-      corresponding to the lowest values in the pixel. So, it's
-      important to specify 'extent' appropriately, taking care to add
-      one pixel width to the value of the last pixel
-      coordinates. Actually, imshow and ndimage share the same
-      definition of the pixels.
-
-   b) pcolormesh: takes indices as lower left corners of pixels. As
-      such, the 'x' and 'y' vectors need to be one bin longer than the
-      data dimensions if the full data is to be plotted. This is
-      closer to our interpretation (polcart2) of the data.
-
+      corresponding pixel centre.
