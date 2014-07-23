@@ -196,7 +196,7 @@ if __name__ == '__main__':
     x_aug = numpy.append(x, x[-1] + xbw)
     y_aug = numpy.append(y, y[-1] + ybw)
 
-    ax = plot.subplot2grid((1, 4), (0, 0), aspect=1.0)
+    ax = plot.subplot2grid((2, 2), (0, 0), aspect=1.0)
     im = ax.pcolormesh(x_aug, y_aug, a.T)
     ax.set_xlim((x_aug[0], x_aug[-1]))
     ax.set_ylim((y_aug[0], y_aug[-1]))
@@ -214,7 +214,7 @@ if __name__ == '__main__':
     theta_aug = numpy.append(theta, theta[-1] + theta[1] - theta[0])
 
     # Plot using polar projection
-    ax = plot.subplot2grid((1, 4), (0, 1), projection="polar", aspect=1.)
+    ax = plot.subplot2grid((2, 2), (0, 1), projection="polar", aspect=1.)
     im = ax.pcolormesh(theta, r, b)
     ax.grid()
     ax.set_theta_zero_location("N")
@@ -226,7 +226,7 @@ if __name__ == '__main__':
     fig.colorbar(im, cax=cax)
 
     # Plot using manual conversion
-    ax = plot.subplot2grid((1, 4), (0, 2),  aspect=1.)
+    ax = plot.subplot2grid((2, 2), (1, 0),  aspect=1.)
     rg, tg = numpy.meshgrid(r_aug, theta_aug)
     xx = rg * numpy.sin(tg)
     yy = rg * numpy.cos(tg)
@@ -245,7 +245,7 @@ if __name__ == '__main__':
     x2_aug = numpy.append(x2, x2[-1] + x2bw)
     y2_aug = numpy.append(y2, y2[-1] + y2bw)
 
-    ax = plot.subplot2grid((1, 4), (0, 3), aspect=1.0)
+    ax = plot.subplot2grid((2, 2), (1, 1), aspect=1.0)
     im = ax.pcolormesh(x2_aug, y2_aug, c.T)
     ax.set_title('Final data\n(pcolormesh)')
     ax.axis([x2_aug[0], x2_aug[-1], y2_aug[0], y2_aug[-1]])
