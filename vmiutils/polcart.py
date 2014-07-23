@@ -104,7 +104,7 @@ def cart2pol(image, x=None, y=None, centre=None,
     )
 
     r = numpy.linspace(0.0, rmax, radial_bins, endpoint=False)
-    t = numpy.linspace(-numpy.pi, numpy.pi, angular_bins)
+    t = numpy.linspace(-numpy.pi, numpy.pi, angular_bins, endpoint=False)
 
     return r, t, pimage
 
@@ -215,7 +215,7 @@ if __name__ == '__main__':
 
     # Plot using polar projection
     ax = plot.subplot2grid((2, 2), (0, 1), projection="polar", aspect=1.)
-    im = ax.pcolormesh(theta, r, b)
+    im = ax.pcolormesh(theta_aug, r_aug, b)
     ax.grid()
     ax.set_theta_zero_location("N")
     ax.set_theta_direction("clockwise")
