@@ -84,8 +84,8 @@ def cart2pol(image, x=None, y=None, centre=None,
 
     # Calculate minimum distance from centre to edge of image - this
     # determines the maximum radius in the polar image.
-    xsize = min(abs(x[0] - xc), x[-1] - xc)
-    ysize = min(abs(y[0] - yc), y[-1] - yc)
+    xsize = min(abs(x[0] - xc), x[-1] + xbw - xc)
+    ysize = min(abs(y[0] - yc), y[-1] + ybw - yc)
     max_rad = min(xsize, ysize)
 
     if rmax is None:
@@ -103,7 +103,7 @@ def cart2pol(image, x=None, y=None, centre=None,
         output_shape=(radial_bins, angular_bins)
     )
 
-    r = numpy.linspace(0.0, rmax, radial_bins)
+    r = numpy.linspace(0.0, rmax, radial_bins, endpoint=False)
     t = numpy.linspace(-numpy.pi, numpy.pi, angular_bins)
 
     return r, t, pimage
