@@ -148,7 +148,7 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
     if ybins is None:
         ybins = image.shape[0]
 
-    rmax = r[-1]
+    rmax = r[-1] + rbw
     xbw = 2.0 * rmax / (xbins - 1)
     ybw = 2.0 * rmax / (ybins - 1)
 
@@ -158,8 +158,8 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
         output_shape=(xbins, ybins)
     )
 
-    x = numpy.linspace(-rmax, rmax, xbins)
-    y = numpy.linspace(-rmax, rmax, ybins)
+    x = numpy.linspace(-rmax, rmax, xbins, endpoint=False)
+    y = numpy.linspace(-rmax, rmax, ybins, endpoint=False)
 
     return x, y, cimage
 
