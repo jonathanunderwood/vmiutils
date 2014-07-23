@@ -249,6 +249,7 @@ if __name__ == '__main__':
     im = ax.pcolormesh(x2_aug, y2_aug, c.T)
     ax.set_title('Final data\n(pcolormesh)')
     ax.axis([x2_aug[0], x2_aug[-1], y2_aug[0], y2_aug[-1]])
+    ax.grid()
     divider = axes_grid1.make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     fig.colorbar(im, cax=cax)
