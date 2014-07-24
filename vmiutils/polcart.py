@@ -16,23 +16,23 @@ logger.addHandler(__null_handler)
 
 def __pol2cart(out_coord, xbw, ybw, rmax, rbw, thetabw):
     ix, iy = out_coord
-    x = ix * xbw - rmax
-    y = iy * ybw - rmax
+    x = (ix + 0.5) * xbw - rmax
+    y = (iy + 0.5) * ybw - rmax
     r = numpy.sqrt(x * x + y * y)
     t = numpy.arctan2(x, y)
-    ir = r / rbw
-    it = (t + numpy.pi) / thetabw
+    ir = r / rbw - 0.5
+    it = (t + numpy.pi) / thetabw - 0.5
     return ir, it
 
 
 def __cart2pol(out_coord, rbw, thetabw, xbw, ybw, xc, yc, x0, y0):
     ir, it = out_coord
-    r = ir * rbw
-    t = it * thetabw - numpy.pi
+    r = (ir + 0.5) * rbw
+    t = (it + 0.5) * thetabw - numpy.pi
     x = r * numpy.sin(t)
     y = r * numpy.cos(t)
-    ix = (x + xc - x0) / xbw
-    iy = (y + yc - y0) / ybw
+    ix = ((x + xc - x0) / xbw) - 0.5
+    iy = ((y + yc - y0) / ybw) - 0.5
     return ix, iy
 
 
@@ -46,7 +46,7 @@ def cart2pol(image, x=None, y=None, centre=None,
 
     radial_bins and angular_bins define the number of bins in the polar
     representation of the image.
-
+    
     centre is a tuple containing the x and y coordinates of the image centre
     (does not need to be an integer). If this is set to None the midpoint x
     and y coordinates are used.
@@ -71,19 +71,25 @@ def cart2pol(image, x=None, y=None, centre=None,
     if y is None:
         y = numpy.arange(float(image.shape[1]))
 
-    if centre is None:
-        xc = 0.5 * (x[0] + x[-1])
-        yc = 0.5 * (y[0] + y[-1])
-    else:
-        xc = centre[0]
-        yc = centre[1]
-
     # Cartesian image bin widths - assume regularly spaced
     xbw = x[1] - x[0]
     ybw = y[1] - y[0]
 
+    if centre is None:
+        xc = 0.5 * (x[0] + x[-1] + xbw)
+        yc = 0.5 * (y[0] + y[-1] + ybw)
+    else:
+        xc = centre[0]
+        yc = centre[1]
+
     # Calculate minimum distance from centre to edge of image - this
-    # determines the maximum radius in the polar image.
+    # determines the maximum radius in the polar image. Note that by
+    # specifying the max radius all the way up to x[-1] + xbw - xc
+    # (and equivalently for y) , i.e. the extrema of the last pixel in
+    # each direction, we'll need to specify mode='nearest' for
+    # map_coordinates below. We could alternatively specify rmax up to
+    # x[1-] - xc only, and then mode='nearest' would not be needed,
+    # but we'd lose more of the image.
     xsize = min(abs(x[0] - xc), x[-1] + xbw - xc)
     ysize = min(abs(y[0] - yc), y[-1] + ybw - yc)
     max_rad = min(xsize, ysize)
@@ -94,19 +100,38 @@ def cart2pol(image, x=None, y=None, centre=None,
         raise ValueError
 
     # Polar image bin widths
-    rbw = rmax / (radial_bins - 1)
-    thetabw = 2.0 * numpy.pi / (angular_bins - 1)
+    rbw = rmax / (radial_bins)
+    thetabw = 2.0 * numpy.pi / (angular_bins)
 
-    pimage = scipy.ndimage.geometric_transform(
-        image, __cart2pol, order=order,
-        extra_arguments=(rbw, thetabw, xbw, ybw, xc, yc, x[0], y[0]),
-        output_shape=(radial_bins, angular_bins)
-    )
+    # pimage = scipy.ndimage.geometric_transform(
+    #     image, __cart2pol, order=order,
+    #     extra_arguments=(rbw, thetabw, xbw, ybw, xc, yc, x[0], y[0]),
+    #     output_shape=(radial_bins, angular_bins),
+    #     mode='nearest',
+    # )
 
     r = numpy.linspace(0.0, rmax, radial_bins, endpoint=False)
-    t = numpy.linspace(-numpy.pi, numpy.pi, angular_bins, endpoint=False)
+    theta = numpy.linspace(-numpy.pi, numpy.pi, angular_bins, endpoint=False)
 
-    return r, t, pimage
+    # Take into account we want the value at the centre of the pixel
+    # when interpolating by adding 0.5 * bin_width here.
+    rg, tg = numpy.meshgrid(
+        r + 0.5 * rbw, theta + 0.5 * thetabw, indexing='ij')
+    xg = rg * numpy.sin(tg)
+    yg = rg * numpy.cos(tg)
+    
+    # Since map_coordinates assumes the pixel value is that at the
+    # pixel index, we need to subtract half a pixel width here so
+    # we're interpolating on the centre of pixels.
+    ix = (xg + xc - x[0]) / xbw - 0.5
+    iy = (yg + yc - y[0]) / ybw - 0.5
+
+    pimage = scipy.ndimage.map_coordinates(image, numpy.array([ix, iy]),
+                                           order=order,
+                                           mode='nearest',
+                                           )
+
+    return r, theta, pimage
 
 
 def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
@@ -148,24 +173,35 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
     if ybins is None:
         ybins = image.shape[0]
 
+    # Choose maximum radius to be the outmerost value of r in r[-1]
     rmax = r[-1] + rbw
     xbw = 2.0 * rmax / (xbins - 1)
     ybw = 2.0 * rmax / (ybins - 1)
 
-    cimage = scipy.ndimage.geometric_transform(
-        image, __pol2cart, order=order,
-        extra_arguments=(xbw, ybw, rmax, rbw, thetabw),
-        output_shape=(xbins, ybins)
-    )
+    # cimage = scipy.ndimage.geometric_transform(
+    #     image, __pol2cart, order=order,
+    #     extra_arguments=(xbw, ybw, rmax, rbw, thetabw),
+    #     output_shape=(xbins, ybins),
+    #     mode='nearest',
+    # )
 
     x = numpy.linspace(-rmax, rmax, xbins, endpoint=False)
     y = numpy.linspace(-rmax, rmax, ybins, endpoint=False)
+
+    xg, yg = numpy.meshgrid(x + 0.5 * xbw, y + 0.5 * ybw, indexing='ij')
+    rg = numpy.sqrt(xg * xg + yg * yg)
+    tg = numpy.arctan2(xg, yg)
+    ir = rg / rbw - 0.5
+    it = (tg + numpy.pi) / thetabw - 0.5
+    cimage = scipy.ndimage.map_coordinates(image, numpy.array([ir, it]),
+                                           order=order,
+                                           # mode='nearest'
+                                           )
 
     return x, y, cimage
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plot
-#    from mpl_toolkits.axes_grid1 import make_axes_locatable
     import mpl_toolkits.axes_grid1 as axes_grid1
 
     # Set up a very simple cartesian image - strategy will be to
@@ -176,15 +212,20 @@ if __name__ == '__main__':
     a = numpy.zeros((10, 10))
     a[5, 5] = 1.0
     a[4, 4] = 1.0
-    a[4, 5] = 1.0
+    a[3, 6] = 1.0
+    a[9, 5] = 1.0
+    a[0, 5] = 1.0
+    a[5, 9] = 1.0
+    a[9, 9] = 1.0
+    a[8, 8] = 1.0
 
     # Convert to polar coordinates
     r, theta, b = cart2pol(
-        x=x, y=y, image=a, order=5, radial_bins=100, angular_bins=100)
+        x=x, y=y, image=a, order=5, radial_bins=250, angular_bins=250)
 
     # Convert back to cartesian coordinates
     x2, y2, c = pol2cart(
-        r=r, theta=theta, image=b.clip(0.0), xbins=10, ybins=10, order=5)
+        r=r, theta=theta, image=b.clip(0.0), xbins=250, ybins=250, order=5)
 
     # Now plot and check
     fig = plot.figure()
