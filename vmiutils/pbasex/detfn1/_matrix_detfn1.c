@@ -181,7 +181,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
    a two dimensional Numpy array Python object. This includes a
    detection function specified as a previous PBASEX fit. */
 {
-  int Rbins, Thetabins, k, l, R;
+  int Rbins, Thetabins, k, l, i;
   int wkspsize; /* Suggest: wkspsize = 100000. */
   int midTheta, df_oddl;
   unsigned short int ThetabinsOdd;
@@ -372,10 +372,13 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 
   upper_bound = params.rk + __UPPER_BOUND_FACTOR * sigma;
   
-  for (R = 0; R < Rbins; R++)
+  for (i = 0; i < Rbins; i++)
     {
       int j;
-      params.R = (double) R;
+      int dim1 = i * Thetabins;
+      double R = i + 0.5;
+
+      params.R = R;
 
       for (j = 0; j <= midTheta; j++)
 	{
@@ -417,7 +420,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 
 	  if (status == GSL_SUCCESS)
 	    {
-	      matrix[R * Thetabins + j] = result;
+	      matrix[dim1 + j] = result;
 
 	      /* Symmetry of Legendre polynomials is such that
 		 P_L(cos(Theta))=P_L(cos(-Theta)), so we can exploit
@@ -429,7 +432,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 		 definition symmetric w.r.t Theta->-Theta.
 	      */
 	      if (!(ThetabinsOdd && j == midTheta))
-		matrix[R * Thetabins + Thetabins - j - 1] = result;
+		matrix[dim1 + Thetabins - j - 1] = result;
 	    }
 	  else
 	    {
