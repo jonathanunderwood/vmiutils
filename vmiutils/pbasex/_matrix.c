@@ -60,7 +60,7 @@ basisfn(PyObject *self, PyObject *args)
 /* Calculates a single (k, l) PBASEX basis function and returns it as
    a two dimensional Numpy array Python object. */
 {
-  int Rbins, Thetabins, k, l, R;
+  int Rbins, Thetabins, k, l, i;
   int wkspsize; /* Suggest: wkspsize = 100000. */
   int midTheta, jmax;
   double sigma, epsabs, epsrel; /* Suggest epsabs = 0.0, epsrel = 1.0e-7 */   
@@ -148,11 +148,12 @@ basisfn(PyObject *self, PyObject *args)
 
   upper_bound = rk + __UPPER_BOUND_FACTOR * sigma;
   
-  for (R = 0; R < Rbins; R++)
+  for (i = 0; i < Rbins; i++)
     {
       int j;
-      int dim1 = R * Thetabins;
-      params.R = (double) R;
+      int dim1 = i * Thetabins;
+      double R = i + 0.5;
+      params.R = R;
 
 
       for (j = 0; j <= jmax; j++)
