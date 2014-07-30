@@ -14,28 +14,6 @@ __null_handler = __NullHandler()
 logger.addHandler(__null_handler)
 
 
-def __pol2cart(out_coord, xbw, ybw, rmax, rbw, thetabw):
-    ix, iy = out_coord
-    x = (ix + 0.5) * xbw - rmax
-    y = (iy + 0.5) * ybw - rmax
-    r = numpy.sqrt(x * x + y * y)
-    t = numpy.arctan2(x, y)
-    ir = r / rbw - 0.5
-    it = (t + numpy.pi) / thetabw - 0.5
-    return ir, it
-
-
-def __cart2pol(out_coord, rbw, thetabw, xbw, ybw, xc, yc, x0, y0):
-    ir, it = out_coord
-    r = (ir + 0.5) * rbw
-    t = (it + 0.5) * thetabw - numpy.pi
-    x = r * numpy.sin(t)
-    y = r * numpy.cos(t)
-    ix = ((x + xc - x0) / xbw) - 0.5
-    iy = ((y + yc - y0) / ybw) - 0.5
-    return ix, iy
-
-
 def cart2pol(image, x=None, y=None, centre=None,
              radial_bins=256, angular_bins=256, rmax=None, order=3):
     """ Convert an image on a regularly spaced cartesian grid into a regular
@@ -98,17 +76,6 @@ def cart2pol(image, x=None, y=None, centre=None,
         rmax = max_rad
     elif rmax > max_rad:
         raise ValueError
-
-    # Polar image bin widths
-    # rbw = rmax / (radial_bins)
-    # thetabw = 2.0 * numpy.pi / (angular_bins)
-
-    # pimage = scipy.ndimage.geometric_transform(
-    #     image, __cart2pol, order=order,
-    #     extra_arguments=(rbw, thetabw, xbw, ybw, xc, yc, x[0], y[0]),
-    #     output_shape=(radial_bins, angular_bins),
-    #     mode='nearest',
-    # )
 
     r = numpy.linspace(0.0, rmax, radial_bins, endpoint=False)
     theta = numpy.linspace(-numpy.pi, numpy.pi, angular_bins, endpoint=False)
@@ -179,15 +146,6 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
 
     # Choose maximum radius to be the outmerost value of r in r[-1]
     rmax = r[-1] + rbw
-    # xbw = 2.0 * rmax / (xbins - 1)
-    # ybw = 2.0 * rmax / (ybins - 1)
-
-    # cimage = scipy.ndimage.geometric_transform(
-    #     image, __pol2cart, order=order,
-    #     extra_arguments=(xbw, ybw, rmax, rbw, thetabw),
-    #     output_shape=(xbins, ybins),
-    #     mode='nearest',
-    # )
 
     x = numpy.linspace(-rmax, rmax, xbins, endpoint=False)
     y = numpy.linspace(-rmax, rmax, ybins, endpoint=False)
