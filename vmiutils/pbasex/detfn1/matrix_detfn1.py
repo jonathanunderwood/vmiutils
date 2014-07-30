@@ -101,8 +101,11 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         if not isinstance(detectionfn, pbasex.PbasexFit):
             raise TypeError('detectionfn is not an instance of PbasexFit')
 
-        # Spacing of radial basis function centres
-        rkspacing = Rbins / (kmax + 1.0)
+        # Spacing of radial basis function centres. The most obvious
+        # choice here is rkspacing = Rbins / (kmax + 1.0), but we'd
+        # actually like to have the last basis function centered on
+        # the largest value of R, so instead we choose:
+        rkspacing = Rbins / float(kmax)
 
         if sigma is None:
             # If sigma is not specified, we calculate the spacing between the
