@@ -100,8 +100,8 @@ def cart2pol(image, x=None, y=None, centre=None,
         raise ValueError
 
     # Polar image bin widths
-    rbw = rmax / (radial_bins)
-    thetabw = 2.0 * numpy.pi / (angular_bins)
+    # rbw = rmax / (radial_bins)
+    # thetabw = 2.0 * numpy.pi / (angular_bins)
 
     # pimage = scipy.ndimage.geometric_transform(
     #     image, __cart2pol, order=order,
@@ -112,6 +112,10 @@ def cart2pol(image, x=None, y=None, centre=None,
 
     r = numpy.linspace(0.0, rmax, radial_bins, endpoint=False)
     theta = numpy.linspace(-numpy.pi, numpy.pi, angular_bins, endpoint=False)
+
+    # Bin widths
+    rbw = r[1] - r[0]
+    thetabw = theta[1] - theta[0]
 
     # Take into account we want the value at the centre of the pixel
     # when interpolating by adding 0.5 * bin_width here.
@@ -175,8 +179,8 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
 
     # Choose maximum radius to be the outmerost value of r in r[-1]
     rmax = r[-1] + rbw
-    xbw = 2.0 * rmax / (xbins - 1)
-    ybw = 2.0 * rmax / (ybins - 1)
+    # xbw = 2.0 * rmax / (xbins - 1)
+    # ybw = 2.0 * rmax / (ybins - 1)
 
     # cimage = scipy.ndimage.geometric_transform(
     #     image, __pol2cart, order=order,
@@ -187,6 +191,10 @@ def pol2cart(image, r=None, theta=None, xbins=None, ybins=None, order=3):
 
     x = numpy.linspace(-rmax, rmax, xbins, endpoint=False)
     y = numpy.linspace(-rmax, rmax, ybins, endpoint=False)
+
+    # Bin widths
+    xbw = x[1] - x[0]
+    ybw = y[1] - y[0]
 
     xg, yg = numpy.meshgrid(x + 0.5 * xbw, y + 0.5 * ybw, indexing='ij')
     rg = numpy.sqrt(xg * xg + yg * yg)
