@@ -183,7 +183,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 {
   int Rbins, Thetabins, k, l, i;
   int wkspsize; /* Suggest: wkspsize = 100000. */
-  int midTheta, df_oddl;
+  int jmax, df_oddl;
   unsigned short int ThetabinsOdd;
   int df_kmax, df_lmax;
   double df_sigma, df_rkstep, df_alpha, df_beta;
@@ -357,18 +357,13 @@ basisfn_detfn1(PyObject *self, PyObject *args)
      point for which we need to do the calculation in either case.
   */
 
-  dTheta = 2.0 * M_PI / (Thetabins - 1);
-  midTheta = Thetabins / 2; /* Intentionally round down. */
+  dTheta = 2.0 * M_PI / Thetabins;
+  jmax = (Thetabins - 1) / 2; /* Intentionally round down. */
   
   if (GSL_IS_EVEN(Thetabins))
-    {
-      midTheta--;
-      ThetabinsOdd = 0;
-    }
+    ThetabinsOdd = 0;
   else
-    {
-      ThetabinsOdd = 1;
-    }
+    ThetabinsOdd = 1;
 
   upper_bound = params.rk + __UPPER_BOUND_FACTOR * sigma;
   
@@ -380,11 +375,11 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 
       params.R = R;
 
-      for (j = 0; j <= midTheta; j++)
+      for (j = 0; j <= jmax; j++)
 	{
 	  int status;
 	  double result, abserr;
-	  double Theta = -M_PI + j * dTheta;
+	  double Theta = -M_PI + (j + 0.5) * dTheta;
 	  
 	  params.RcosTheta = R * cos (Theta);
 	  params.RsinTheta = R * sin (Theta);
@@ -431,7 +426,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 		 of the detection function we're considering, it is by
 		 definition symmetric w.r.t Theta->-Theta.
 	      */
-	      if (!(ThetabinsOdd && j == midTheta))
+	      if (!(ThetabinsOdd && j == jmax))
 		matrix[dim1 + Thetabins - j - 1] = result;
 	    }
 	  else
@@ -457,7 +452,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 		{
 		case GSL_EMAXITER:
 		  if (asprintf(&errstring,
-			       "Failed to integrate: max number of subdivisions exceeded.\nk: %d l: %d R: %d Theta: %f\n", 
+			       "Failed to integrate: max number of subdivisions exceeded.\nk: %d l: %d R: %f Theta: %f\n",
 			       k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
@@ -465,7 +460,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 		  
 		case GSL_EROUND:
 		  if (asprintf(&errstring,
-			       "Failed to integrate: round-off error.\nk: %d l: %d R: %d Theta: %f\n", 
+			       "Failed to integrate: round-off error.\nk: %d l: %d R: %f Theta: %f\n",
 			       k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
@@ -473,7 +468,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 		  
 		case GSL_ESING:
 		  if (asprintf(&errstring,
-			       "Failed to integrate: singularity.\nk: %d l: %d R: %d Theta: %f\n", 
+			       "Failed to integrate: singularity.\nk: %d l: %d R: %f Theta: %f\n",
 			       k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
@@ -481,7 +476,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 		  
 		case GSL_EDIVERGE:
 		  if (asprintf(&errstring,
-			       "Failed to integrate: divergent.\nk: %d l: %d R: %d Theta: %f\n", 
+			       "Failed to integrate: divergent.\nk: %d l: %d R: %f Theta: %f\n",
 			       k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
@@ -489,7 +484,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
 		  
 		default:
 		  if (asprintf(&errstring,
-			       "Failed to integrate: unknown error. status: %d.\nk: %d l: %d R: %d Theta: %f\n", 
+			       "Failed to integrate: unknown error. status: %d.\nk: %d l: %d R: %f Theta: %f\n",
 			       status, k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  

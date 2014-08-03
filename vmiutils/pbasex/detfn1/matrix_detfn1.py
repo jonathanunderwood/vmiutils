@@ -228,7 +228,7 @@ if __name__ == "__main__":
     Rbins = 256
     Thetabins = 256
     kmax = 128
-    rkspacing = Rbins / (kmax + 1.0)
+    rkspacing = Rbins / kmax
     sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)))
     k = 32
     rk = k * rkspacing
@@ -256,19 +256,22 @@ if __name__ == "__main__":
         detectionfn.rkstep, detectionfn.lmax, df_oddl,
         alpha, beta, method)
 
-    r = numpy.arange(Rbins) * detectionfn.rscale
-    theta = numpy.linspace(-numpy.pi, numpy.pi, Thetabins)
+    r = numpy.linspace(0, Rbins + 1, Rbins, endpoint=False)
+    theta = numpy.linspace(-numpy.pi, numpy.pi, Thetabins, endpoint=False)
 
-    polarimg = vmi.PolarImage()
-    polarimg.from_numpy_array(bf, r, theta)
+    r_aug = numpy.append(r, r[-1] + r[1] - r[0])
+    theta_aug = numpy.append(theta, theta[-1] + theta[1] - theta[0])
+    # Plot using polar projection
+    gs = gridspec.GridSpec(1, 2,
+                           width_ratios=[10,1],
+                       )
 
-    cartimg = vmi.CartesianImage()
-    cartimg.from_PolarImage(polarimg)
-
-    pylab.figure()
-    im = pylab.imshow(cartimg.image.transpose(), origin='lower',
-                      extent=(cartimg.x[0], cartimg.x[-1],
-                              cartimg.y[0], cartimg.y[-1]),
-                      cmap=plot.cm.gist_heat)
-    plot.colorbar(im, use_gridspec=True)
-    pylab.show()
+    ax = plot.subplot(gs[0], projection="polar", aspect=1.)
+    cb = plot.subplot(gs[1])
+    im = ax.pcolormesh(theta_aug, r_aug, bf)
+    ax.grid()
+    ax.set_theta_zero_location("N")
+    ax.set_theta_direction("clockwise")
+    ax.set_title('Polar data\n(pcolormesh/polar\nprojection)')
+    plot.colorbar(im, cax=cb)
+    plot.show()
