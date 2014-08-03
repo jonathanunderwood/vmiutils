@@ -62,10 +62,10 @@ basisfn(PyObject *self, PyObject *args)
 {
   int Rbins, Thetabins, k, l, i;
   int wkspsize; /* Suggest: wkspsize = 100000. */
-  int midTheta, jmax;
+  int midThetahigh, midThetalow, jmax;
   double sigma, epsabs, epsrel; /* Suggest epsabs = 0.0, epsrel = 1.0e-7 */   
   double dTheta, rk, upper_bound;
-  unsigned short int ThetabinsOdd;
+  unsigned short int ThetabinsEven;
   npy_intp dims[2];
   double *matrix = NULL;
   gsl_integration_workspace *wksp;
@@ -120,30 +120,77 @@ basisfn(PyObject *self, PyObject *args)
   params.rk = rk;
   params.l = l;
 
-  /* We create a matrix for Theta = -Pi..Pi inclusive of both endpoints, despite
-     the redundancy of the last (or first) endpoint. We use the symmetry of the
-     Legendre polynomials P_L(cos(theta))=P_L(cos(-theta)) to calculate the
-     points in the range 0..Pi from those in the range -Pi..0. 
+  /* We create a matrix for Theta = -Pi..Pi inclusive of both
+     endpoints, despite the redundancy of the last (or first)
+     endpoint.
 
-     If Thetabins is an odd number, there will be a point at theta =
-     0, and points are distributed such that we can also make use of
-     the symmetry P_L(cos(theta))=(-1)^LP_L(cos(-theta), and as such
-     we can halve the number of integrations needed.
+     In what follows we create a matrix for Theta which lies in the
+     range -Pi..Pi. The first bin starts with Theta=-Pi, and the last
+     bin ends at Pi. In other words, we don't create an extra
+     redundant bin at the end beginning at Pi. We also calulate the
+     value for the bin by taking the value of Theta in the centre of
+     the bin.
+
+     We use the symmetry of the Legendre polynomials
+     P_L(cos(theta))=P_L(cos(-theta)) to calculate the points in the
+     range 0..Pi from those in the range -Pi..0.
+
+     If Thetabins is an even number points are distributed such that
+     we can also make use of the symmetry
+     P_L(cos(theta))=(-1)^LP_L(cos(theta+pi), and as such we can halve
+     the number of integrations needed.
+
+     The following tables help with visualizing what's going on below.
+
+     thetabins = 4
+     thetabw = pi/2
+     | bin val | -pi    | -pi/2 |    0 | pi/2  |
+     | centres | -3pi/4 | -pi/4 | pi/4 | 3pi/4 |
+     | idx     | 0      | 1     |    2 | 3     |
+
+     thetabins = 6
+     thetabw = pi/3
+     | binval  | -pi    | -2pi/3 | -pi/3 |    0 | pi/3 | 2pi/3 |
+     | centres | -5pi/6 | -pi/2  | -pi/6 | pi/6 | pi/2 | 5pi/6 |
+     | idx     | 0      | 1      | 2     |    3 | 4    | 5     |
+
+     thetabins = 8
+     thetabw=pi/4
+     | binval  | -pi    | -3pi/4 | -pi/2  | -pi/4 |    0 | pi/4  | pi/2  | 3pi/4 |
+     | centres | -7pi/8 | -5pi/8 | -3pi/8 | -pi/8 | pi/8 | 3pi/8 | 5pi/8 | 7pi/8 |
+     | idx     | 0      | 1      | 2      | 3     |    4 | 5     | 6     | 7     |
+
+     thetabins = 3
+     thetabw = 2pi/3
+     | bin val | -pi    | -pi/3 | pi/3  |
+     | centres | -2pi/3 |     0 | 2pi/3 |
+     | idx     | 0      |     1 | 2     |
+
+     thetabins = 5
+     thetabw = 2pi/5
+     | bin val | -pi    | -3pi/5 | -pi/5 | pi/5  | 3pi/5 |
+     | centres | -4pi/5 | -2pi/5 |     0 | 2pi/5 | 4pi/5 |
+     | idx     | 0      | 1      |     2 | 3     | 4     |
+
   */
 
-  dTheta = 2.0 * M_PI / (Thetabins - 1);
+  dTheta = 2.0 * M_PI / Thetabins;
 
   if (GSL_IS_EVEN(Thetabins))
     {
-      jmax = (Thetabins / 2) - 1; /* Intentionally round down. */
-      midTheta = INT_MIN; /* Unused, but initialize to silence compiler. */
-      ThetabinsOdd = 0;
+      ThetabinsEven = 1;
+      jmax = (Thetabins - 1) / 4; /* Intentionally round down. */
+      midThetalow = (Thetabins - 1) / 2; /* Intentionally round down. */
+      midThetahigh = midThetalow + 1;
     }
   else
     {
-      jmax = Thetabins / 4; /* Intentionally round down. */
-      midTheta = Thetabins / 2; /* Intentionally round down. */
-      ThetabinsOdd = 1;
+      ThetabinsEven = 0;
+      jmax = Thetabins / 2; /* Intentionally round down. */
+      /* These are unused for the Thetabins odd case, but initialize
+	 anyway to silence compiler. */
+      midThetalow = INT_MIN;
+      midThetahigh = INT_MIN;
     }
 
   upper_bound = rk + __UPPER_BOUND_FACTOR * sigma;
@@ -153,14 +200,14 @@ basisfn(PyObject *self, PyObject *args)
       int j;
       int dim1 = i * Thetabins;
       double R = i + 0.5;
-      params.R = R;
 
+      params.R = R;
 
       for (j = 0; j <= jmax; j++)
 	{
 	  int status;
 	  double result, abserr;
-	  double Theta = -M_PI + j * dTheta;
+	  double Theta = -M_PI + (j + 0.5) * dTheta;
 	  
 	  params.RcosTheta = R * cos (Theta);
 	  
@@ -185,25 +232,17 @@ basisfn(PyObject *self, PyObject *args)
 		 P_L(cos(Theta))=P_L(cos(-Theta)). */
 	      matrix[dim1 + Thetabins - j - 1] = result;
 
-	      if (ThetabinsOdd)
+	      if (ThetabinsEven)
 		{
 		  double valneg;
-
-		  if (j == jmax)
-		    continue;
 
 		  if (l % 2) /* l is odd */
 		    valneg = -result;
 		  else /* l is even */
 		    valneg = result;
 
-		  if (j == 0)
-		    matrix[dim1 + midTheta] = valneg;
-		  else
-		    {
-		      matrix[dim1 + midTheta + j] = valneg;
-		      matrix[dim1 + midTheta - j] = valneg;
-		    }
+		  matrix[dim1 + midThetahigh + j] = valneg;
+		  matrix[dim1 + midThetalow - j] = valneg;
 		}
 	    }
 	  else
@@ -218,7 +257,7 @@ basisfn(PyObject *self, PyObject *args)
 		{
 		case GSL_EMAXITER:
 		  if (asprintf(&errstring,
-			       "Failed to integrate: max number of subdivisions exceeded.\nk: %d l: %d R: %d Theta: %f\n", 
+			       "Failed to integrate: max number of subdivisions exceeded.\nk: %d l: %d R: %f Theta: %f\n",
 			       k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
@@ -226,7 +265,7 @@ basisfn(PyObject *self, PyObject *args)
 		  
 		case GSL_EROUND:
 		  if (asprintf(&errstring,
-			       "Failed to integrate: round-off error.\nk: %d l: %d R: %d Theta: %f\n", 
+			       "Failed to integrate: round-off error.\nk: %d l: %d R: %f Theta: %f\n",
 			       k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
@@ -234,7 +273,7 @@ basisfn(PyObject *self, PyObject *args)
 		  
 		case GSL_ESING:
 		  if (asprintf(&errstring,
-			       "Failed to integrate: singularity.\nk: %d l: %d R: %d Theta: %f\n", 
+			       "Failed to integrate: singularity.\nk: %d l: %d R: %f Theta: %f\n",
 			       k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
@@ -242,7 +281,7 @@ basisfn(PyObject *self, PyObject *args)
 		  
 		case GSL_EDIVERGE:
 		  if (asprintf(&errstring,
-			       "Failed to integrate: divergent.\nk: %d l: %d R: %d Theta: %f\n", 
+			       "Failed to integrate: divergent.\nk: %d l: %d R: %f Theta: %f\n",
 			       k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
@@ -250,7 +289,7 @@ basisfn(PyObject *self, PyObject *args)
 		  
 		default:
 		  if (asprintf(&errstring,
-			       "Failed to integrate: unknown error. status: %d.\nk: %d l: %d R: %d Theta: %f\n", 
+			       "Failed to integrate: unknown error. status: %d.\nk: %d l: %d R: %f Theta: %f\n",
 			       status, k, l, R, Theta) < 0)
 		    errstring = NULL;
 		  
