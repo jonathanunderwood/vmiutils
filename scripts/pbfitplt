@@ -11,6 +11,10 @@ matplotlib.use('PDF')
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plot
 
+
+def augment(arr):
+    return numpy.append(arr, arr[-1] + arr[1] - arr[0])
+
 logging.basicConfig(format="%(threadName)s:%(message)s", level=logging.DEBUG)
 logger = logging.getLogger('pbfit')
 
@@ -95,7 +99,8 @@ logger.debug('beta coefficients calculated')
 r3, cosn = fit.cosn_expval()
 logger.debug('cos^n(theta) expectation values calculated')
 
-invimg_cart = fit.cartesian_distribution_threaded(bins=250, weighting='compound')
+invimg_cart = fit.cartesian_distribution_threaded(
+    bins=250, weighting='compound')
 logger.debug('cartesian distribution calculated')
 
 vmicart_zoom = vmicart.zoom_circle(fit.rmax, pad=True)
@@ -115,46 +120,90 @@ fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
 #cy = invimg_cart.centre_pixel[1]
 # invimg_cart.image[cx-10:cx+10,cy-10:cy+10]=0.0
 
-
 ax = plot.subplot2grid((2, 2), (0, 0))
-im = plot.imshow(vmicart_zoom.image.transpose(), origin='lower',
-                 extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
-                         vmicart_zoom.y[0], vmicart_zoom.y[-1]),
-                 interpolation='none',
-                 cmap=plot.cm.gist_heat)
+# im = plot.imshow(vmicart_zoom.image.transpose(), origin='lower',
+#                  extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
+#                          vmicart_zoom.y[0], vmicart_zoom.y[-1]),
+#                  interpolation='none',
+#                  cmap=plot.cm.gist_heat)
+
+im = plot.pcolormesh(augment(vmicart_zoom.x), augment(vmicart_zoom.y),
+                     vmicart_zoom.image,
+                     cmap=plot.cm.gist_heat,
+                     # rasterized=True is essential for PDF files -
+                     # without rasterizing the file will be huge, and
+                     # rendering takes forever
+                     rasterized=True
+                     )
+logger.debug('1/4 images done')
+
 ax.set_title('Experimental data')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
 ax = plot.subplot2grid((2, 2), (0, 1))
-im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
-                 extent=(invimg_cart.x[0], invimg_cart.x[-1],
-                         invimg_cart.y[0], invimg_cart.y[-1]),
-                 interpolation='none',
-                 cmap=plot.cm.gist_heat)
+# im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
+#                  extent=(invimg_cart.x[0], invimg_cart.x[-1],
+#                          invimg_cart.y[0], invimg_cart.y[-1]),
+#                  interpolation='none',
+#                  cmap=plot.cm.gist_heat)
+im = plot.pcolormesh(augment(invimg_cart.x), augment(invimg_cart.y),
+                     invimg_cart.image,
+                     cmap=plot.cm.gist_heat,
+                     # rasterized=True is essential for PDF files -
+                     # without rasterizing the file will be huge, and
+                     # rendering takes forever
+                     rasterized=True
+                     )
+logger.debug('2/4 images done')
+
 ax.set_title('pBasex reconstruction')
-#ax.get_xaxis().set_tick_params(direction='out')
-#ax.get_yaxis().set_tick_params(direction='out')
+# ax.get_xaxis().set_tick_params(direction='out')
+# ax.get_yaxis().set_tick_params(direction='out')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
 ax = plot.subplot2grid((2, 2), (1, 0))
-im = plot.imshow(vmicart_zoom.image.transpose(), origin='lower',
-                 extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
-                         vmicart_zoom.y[0], vmicart_zoom.y[-1]),
-                 interpolation='none',
-                 cmap=plot.cm.spectral)
+# im = plot.imshow(vmicart_zoom.image.transpose(), origin='lower',
+#                  extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
+#                          vmicart_zoom.y[0], vmicart_zoom.y[-1]),
+#                  interpolation='none',
+#                  cmap=plot.cm.spectral)
+im = plot.pcolormesh(augment(vmicart_zoom.x), augment(vmicart_zoom.y),
+                     vmicart_zoom.image,
+                     cmap=plot.cm.spectral,
+                     # rasterized=True is essential for PDF files -
+                     # without rasterizing the file will be huge, and
+                     # rendering takes forever
+                     rasterized=True
+                     )
+
 ax.set_title('Experimental data')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
+logger.debug('3/4 images done')
+
 ax = plot.subplot2grid((2, 2), (1, 1))
-im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
-                 extent=(invimg_cart.x[0], invimg_cart.x[-1],
-                         invimg_cart.y[0], invimg_cart.y[-1]),
-                 interpolation='none',
-                 cmap=plot.cm.spectral)
+# im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
+#                  extent=(invimg_cart.x[0], invimg_cart.x[-1],
+#                          invimg_cart.y[0], invimg_cart.y[-1]),
+#                  interpolation='none',
+#                  cmap=plot.cm.spectral)
+im = plot.pcolormesh(augment(invimg_cart.x), augment(invimg_cart.y),
+                     invimg_cart.image,
+                     cmap=plot.cm.spectral,
+                     # rasterized=True is essential for PDF files -
+                     # without rasterizing the file will be huge, and
+                     # rendering takes forever
+                     rasterized=True
+                     )
 ax.set_title('pBasex reconstruction')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
+logger.debug('4/4 images done')
+
 pdf_pages.savefig(fig)
+plot.close(fig)
+
+logger.debug('images plotted')
 
 # Second page containing the radial spectrum.
 fig = plot.figure(figsize=(8.27, 11.69 / 2), dpi=100)
@@ -163,6 +212,8 @@ plot.xlabel('r', style='italic')
 plot.ylabel('I(r)', style='italic')
 plot.title('Radial spectrum')
 pdf_pages.savefig(fig)
+plot.close(fig)
+logger.debug('radial spectrum plotted')
 
 # Plot beta parameters over a dashed radial spectrum - one plot per
 # beta parameter.
@@ -184,7 +235,7 @@ for page in xrange(pages_reqd):
     for this_plot in xrange(plots_per_page):
         this_beta = this_beta + inc
 
-        if this_beta > beta.shape[0]:
+        if this_beta > beta.shape[0] - 1:
             break
 
         ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
@@ -200,7 +251,9 @@ for page in xrange(pages_reqd):
         # plot.legend()
 
     pdf_pages.savefig(fig)
+    plot.close(fig)
 
+logger.debug('beta values plotted')
 
 # <cos^n(theta)> expectation values
 this_n = 0
@@ -211,7 +264,7 @@ for page in xrange(pages_reqd):
     for this_plot in xrange(plots_per_page):
         this_n = this_n + inc
 
-        if this_n > cosn.shape[0]:
+        if this_n > cosn.shape[0] - 1:
             break
 
         ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
@@ -232,6 +285,9 @@ for page in xrange(pages_reqd):
         # plot.legend()
 
     pdf_pages.savefig(fig)
+    plot.close(fig)
+
+logger.debug('<cos^n(theta)> plotted')
 
 # Close PDF file
 pdf_pages.close()
