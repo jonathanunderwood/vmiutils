@@ -266,15 +266,18 @@ class PbasexFit(object):
         xvals = numpy.linspace(-rmax, rmax, bins, endpoint=False)
         yvals = numpy.linspace(-rmax, rmax, bins, endpoint=False)
 
+        xbinw = xvals[1] - xvals[0]
+        ybinw = yvals[1] - yvals[0]
+
         dist = numpy.zeros((bins, bins))
         queue = Queue.Queue(0)
 
         # Here we exploit the mirror symmetry in the y axis
         for xbin in numpy.arange(bins / 2, bins):
-            xval = xvals[xbin]
+            xval = xvals[xbin] + 0.5 * xbinw # value at centre of pixel
             xval2 = xval * xval
             for ybin in numpy.arange(bins):
-                yval = yvals[ybin]
+                yval = yvals[ybin] + 0.5 * ybinw # value at centre of pixel
                 yval2 = yval * yval
                 if math.sqrt(xval2 + yval2) <= self.rmax:
                     queue.put(
@@ -323,6 +326,8 @@ class PbasexFit(object):
         if (weighting == 'rsquared') or (weighting == 'compound'):
             # r^2 weighting - we need the value of r at each pixel
             xm, ym = numpy.meshgrid(xvals, yvals)
+            xm += 0.5 * xbinw
+            ym += 0.5 * ybinw
             rsq = xm * xm + ym * ym
             if weighting == 'compound':
                 if bins % 2 != 0:  # bins is odd
