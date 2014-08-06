@@ -26,6 +26,9 @@ parser.add_argument('fit_file', help='Name of file containing PBASEX fit')
 parser.add_argument(
     'vmi_file', help='Name of file containing original VMI data')
 
+parser.add_argument(
+    'output_file', help='Name of file (PDF) to which the plots are to be saved')
+
 parser.add_argument('--swapxy', action='store_true',
                     help='If specified, the VMI image data will have the axes swapped before plotting')
 parser.add_argument('--filetype', default='matrix',
@@ -107,7 +110,7 @@ vmicart_zoom = vmicart.zoom_circle(fit.rmax, pad=True)
 logger.debug('zoom of original image calculated')
 
 # Generate plots in a multi page PDF file
-pdf_pages = PdfPages(args.vmi_file + '.pdf')
+pdf_pages = PdfPages(args.output_file)
 
 # Use a serif font by default
 matplotlib.rcParams.update({'font.family': 'serif'})
