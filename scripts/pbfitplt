@@ -118,86 +118,67 @@ matplotlib.rcParams.update({'font.family': 'serif'})
 # First page contains plots of the image data and the reconstructed
 # distribution. Plot with two different coloour maps.
 fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
+fig.set_tight_layout(True)
 
 #cx = invimg_cart.centre_pixel[0]
 #cy = invimg_cart.centre_pixel[1]
 # invimg_cart.image[cx-10:cx+10,cy-10:cy+10]=0.0
 
-ax = plot.subplot2grid((2, 2), (0, 0))
-# im = plot.imshow(vmicart_zoom.image.transpose(), origin='lower',
-#                  extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
-#                          vmicart_zoom.y[0], vmicart_zoom.y[-1]),
-#                  interpolation='none',
-#                  cmap=plot.cm.gist_heat)
-
-im = plot.pcolormesh(augment(vmicart_zoom.x), augment(vmicart_zoom.y),
-                     vmicart_zoom.image,
-                     cmap=plot.cm.gist_heat,
-                     # rasterized=True is essential for PDF files -
-                     # without rasterizing the file will be huge, and
-                     # rendering takes forever
-                     rasterized=True
-                     )
-logger.debug('1/4 images done')
-
+ax = plot.subplot2grid((2, 2), (0, 0), aspect=1.0)
+im = ax.pcolormesh(augment(vmicart_zoom.x), augment(vmicart_zoom.y),
+                   vmicart_zoom.image,
+                   cmap=plot.cm.gist_heat,
+                   # rasterized=True is essential for PDF files -
+                   # without rasterizing the file will be huge, and
+                   # rendering takes forever
+                   rasterized=True
+                   )
+ax.axis('image')
 ax.set_title('Experimental data')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
-ax = plot.subplot2grid((2, 2), (0, 1))
-# im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
-#                  extent=(invimg_cart.x[0], invimg_cart.x[-1],
-#                          invimg_cart.y[0], invimg_cart.y[-1]),
-#                  interpolation='none',
-#                  cmap=plot.cm.gist_heat)
-im = plot.pcolormesh(augment(invimg_cart.x), augment(invimg_cart.y),
-                     invimg_cart.image,
-                     cmap=plot.cm.gist_heat,
-                     # rasterized=True is essential for PDF files -
-                     # without rasterizing the file will be huge, and
-                     # rendering takes forever
-                     rasterized=True
-                     )
-logger.debug('2/4 images done')
+logger.debug('1/4 images done')
 
+ax = plot.subplot2grid((2, 2), (0, 1), aspect=1.0)
+im = ax.pcolormesh(augment(invimg_cart.x), augment(invimg_cart.y),
+                   invimg_cart.image,
+                   cmap=plot.cm.gist_heat,
+                   # rasterized=True is essential for PDF files -
+                   # without rasterizing the file will be huge, and
+                   # rendering takes forever
+                   rasterized=True
+                   )
+ax.axis('image')
 ax.set_title('pBasex reconstruction')
-# ax.get_xaxis().set_tick_params(direction='out')
-# ax.get_yaxis().set_tick_params(direction='out')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
-ax = plot.subplot2grid((2, 2), (1, 0))
-# im = plot.imshow(vmicart_zoom.image.transpose(), origin='lower',
-#                  extent=(vmicart_zoom.x[0], vmicart_zoom.x[-1],
-#                          vmicart_zoom.y[0], vmicart_zoom.y[-1]),
-#                  interpolation='none',
-#                  cmap=plot.cm.spectral)
-im = plot.pcolormesh(augment(vmicart_zoom.x), augment(vmicart_zoom.y),
-                     vmicart_zoom.image,
-                     cmap=plot.cm.spectral,
-                     # rasterized=True is essential for PDF files -
-                     # without rasterizing the file will be huge, and
-                     # rendering takes forever
-                     rasterized=True
-                     )
+logger.debug('2/4 images done')
 
+ax = plot.subplot2grid((2, 2), (1, 0), aspect=1.0)
+im = ax.pcolormesh(augment(vmicart_zoom.x), augment(vmicart_zoom.y),
+                   vmicart_zoom.image,
+                   cmap=plot.cm.spectral,
+                   # rasterized=True is essential for PDF files -
+                   # without rasterizing the file will be huge, and
+                   # rendering takes forever
+                   rasterized=True
+                   )
+ax.axis('image')
 ax.set_title('Experimental data')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
 logger.debug('3/4 images done')
 
-ax = plot.subplot2grid((2, 2), (1, 1))
-# im = plot.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
-#                  extent=(invimg_cart.x[0], invimg_cart.x[-1],
-#                          invimg_cart.y[0], invimg_cart.y[-1]),
-#                  interpolation='none',
-#                  cmap=plot.cm.spectral)
-im = plot.pcolormesh(augment(invimg_cart.x), augment(invimg_cart.y),
-                     invimg_cart.image,
-                     cmap=plot.cm.spectral,
-                     # rasterized=True is essential for PDF files -
-                     # without rasterizing the file will be huge, and
-                     # rendering takes forever
-                     rasterized=True
-                     )
+ax = plot.subplot2grid((2, 2), (1, 1), aspect=1.0)
+im = ax.pcolormesh(augment(invimg_cart.x), augment(invimg_cart.y),
+                   invimg_cart.image,
+                   cmap=plot.cm.spectral,
+                   # rasterized=True is essential for PDF files -
+                   # without rasterizing the file will be huge, and
+                   # rendering takes forever
+                   rasterized=True
+                   )
+ax.axis('image')
 ax.set_title('pBasex reconstruction')
 fig.colorbar(im, use_gridspec=True, shrink=0.6)
 
