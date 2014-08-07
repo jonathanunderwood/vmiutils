@@ -39,6 +39,17 @@ logger.addHandler(__null_handler)
 # we scale to the dimensions in the original image. So, once fittd, we
 # store sigma, rkstep etc rescaled to the original image.
 
+def _odd(n):
+    if n % 2:
+        return True
+    else:
+        return False
+
+def _even(n):
+    if n % 2:
+        return False
+    else:
+        return True
 
 class PbasexFit(object):
 
@@ -272,8 +283,19 @@ class PbasexFit(object):
         dist = numpy.zeros((bins, bins))
         queue = Queue.Queue(0)
 
-        # Here we exploit the mirror symmetry in the y axis
-        for xbin in numpy.arange(bins / 2, bins):
+        # Here we exploit the mirror symmetry in the y axis if bins is
+        # an even number, since in this case the points are
+        # symmetrically distributed about 0, unlike the case of odd
+        # bins.
+
+        if _even(bins):
+            evenbins = True
+            xstart = bins/2
+        else:
+            evenbins = False
+            xstart = 0
+
+        for xbin in numpy.arange(xstart, bins):
             xval = xvals[xbin] + 0.5 * xbinw # value at centre of pixel
             xval2 = xval * xval
             for ybin in numpy.arange(bins):
@@ -314,10 +336,8 @@ class PbasexFit(object):
         queue.join()
 
         # Mirror symmetry
-        if bins % 2 != 0:  # bins is odd
-            dist[bins / 2 - 1::-1] = dist[bins / 2 + 1:bins]
-        else:  # bins is even
-            dist[bins / 2 - 1::-1] = dist[bins / 2:bins]
+        if evenbins:
+            dist[xstart - 1::-1] = dist[xstart:bins]
 
         # Normalize image to max value of 1
         dist /= dist.max()
@@ -330,12 +350,10 @@ class PbasexFit(object):
             ym += 0.5 * ybinw
             rsq = xm * xm + ym * ym
             if weighting == 'compound':
-                if bins % 2 != 0:  # bins is odd
-                    dist[bins / 2 - 1::-1] *= rsq[bins / 2 - 1::-1]
-                    dist[bins / 2 - 1::-1] /= dist[bins / 2 - 1::-1].max()
-                else:  # bins is even
-                    dist[bins / 2 - 1::-1] *= rsq[bins / 2 - 1::-1]
-                    dist[bins / 2 - 1::-1] /= dist[bins / 2 - 1::-1].max()
+                # Note that this won't be quite a symmetrical image
+                # for the case that bins is an odd number.
+                dist[bins / 2 - 1::-1] *= rsq[bins / 2 - 1::-1]
+                dist[bins / 2 - 1::-1] /= dist[bins / 2 - 1::-1].max()
             else:
                 dist *= rsq
                 dist /= dist.max()
