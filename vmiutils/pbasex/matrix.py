@@ -98,8 +98,13 @@ class PbasexMatrix(object):
         mtx = numpy.empty([kmax + 1, lmax + 1, Rbins, Thetabins])
         queue = Queue.Queue(0)
 
-        for k in range(kmax + 1):
-            for l in range(lmax + 1):
+        if oddl is False:
+            linc = 2
+        else:
+            linc = 1
+
+        for k in xrange(kmax + 1):
+            for l in xrange(0, lmax + 1, linc):
                 queue.put({'k': k, 'l': l})
 
         shutdown_event = threading.Event()
