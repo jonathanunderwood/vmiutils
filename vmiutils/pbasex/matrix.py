@@ -102,8 +102,10 @@ class PbasexMatrix(object):
             for l in range(lmax + 1):
                 queue.put({'k': k, 'l': l})
 
+        shutdown_event = threading.Event()
+
         def __worker():
-            while not queue.empty():
+            while (not queue.empty()) and (not shutdown_event.is_set()):
                 job = queue.get()
                 k = job['k']
                 l = job['l']
@@ -116,25 +118,42 @@ class PbasexMatrix(object):
                 try:
                     bf = basisfn(k, l, Rbins, Thetabins, sigma, rk,
                                  epsabs, epsrel, wkspsize)
+                    mtx[k, l] = bf
+                    logger.info(
+                        'Finished calculating basis function for k={0}, l={1}'.format(k, l))
+                    queue.task_done()
                 except IntegrationError as errstring:
                     logger.info(errstring)
-                    # Should do something about killing all threads here.
-                    raise
+                    shutdown_event.set()
 
-                mtx[k, l] = bf
-                logger.info(
-                    'Finished calculating basis function for k={0}, l={1}'.format(k, l))
-                queue.task_done()
+            logger.info('Exiting')
 
         if nthreads is None:
             nthreads = multiprocessing.cpu_count()
 
+        threads = []
         for i in range(nthreads):
             t = threading.Thread(target=__worker)
+            threads.append(t)
             t.daemon = True
             t.start()
 
-        queue.join()
+        # Can't use queue.join() here as this will block forever if an
+        # exception is raised in a thread and the threads are killed
+        # before the queue is emptied. Instead we'll wait for the
+        # threads to have all exited and then see if an error
+        # occured. As a by-product, we can also trap Ctrl-C presses.
+        while len(threads) > 0:
+            try:
+                # Join all threads using a timeout so it doesn't block
+                # Filter out threads which have been joined or are None
+                threads = [t.join(1000) for t in threads if t is not None and t.isAlive()]
+            except KeyboardInterrupt:
+                print "Ctrl-c received, exiting."
+                shutdown_event.set()
+
+        if shutdown_event.is_set() or not queue.empty():
+            raise RuntimeError('Error calculating matrix')
 
         self.matrix = mtx
         self.kmax = kmax
