@@ -46,13 +46,15 @@ static double integrand(double r, void *params)
 
   val = r * rad * ang / sqrt(r + p.R);
 
+  return val;
+
   /* Round small values to 0 otherwise the integration error becomes
      dominated by the numerical error in exp such that the relative
      error is huge and the integration fails. */
-  if (fabs(val) > __SMALL)
-    return val;
-  else
-    return 0.0;
+  /* if (fabs(val) > __SMALL) */
+  /*   return val; */
+  /* else */
+  /*   return 0.0; */
 }
 
 static PyObject *
