@@ -203,10 +203,10 @@ if __name__ == "__main__":
     Thetabins = 256
     kmax = 128
     rkspacing = Rbins / kmax
-    sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)))
-    k = 63
+    sigma = 6.0 #rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)))
+    k = 33
     rk = k * rkspacing
-    l = 2
+    l = 8
     epsabs = 0.0
     epsrel = 1.0e-7
     wkspsize = 100000

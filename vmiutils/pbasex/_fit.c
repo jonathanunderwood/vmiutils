@@ -537,6 +537,9 @@ cosn_expval_point(PyObject *self, PyObject *args)
   params.linc = linc;
   params.beta = beta;
 
+  /* Turn off gsl error handler - we'll check return codes. */
+  gsl_set_error_handler_off ();
+
   wksp = gsl_integration_workspace_alloc (wkspsize);
   if (wksp == NULL)
     {
