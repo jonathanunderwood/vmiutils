@@ -95,13 +95,14 @@ class PbasexMatrix(object):
             # Gaussians equal to the Gaussian separation
             sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)))
 
-        mtx = numpy.empty([kmax + 1, lmax + 1, Rbins, Thetabins])
-        queue = Queue.Queue(0)
-
         if oddl is False:
             linc = 2
+            mtx = numpy.empty([kmax + 1, lmax / 2 + 1, Rbins, Thetabins])
         else:
             linc = 1
+            mtx = numpy.empty([kmax + 1, lmax + 1, Rbins, Thetabins])
+
+        queue = Queue.Queue(0)
 
         for k in xrange(kmax + 1):
             for l in xrange(0, lmax + 1, linc):
@@ -123,7 +124,12 @@ class PbasexMatrix(object):
                 try:
                     bf = basisfn(k, l, Rbins, Thetabins, sigma, rk,
                                  epsabs, epsrel, wkspsize)
-                    mtx[k, l] = bf
+
+                    if oddl is True:
+                        mtx[k, l] = bf
+                    else:
+                        mtx[k, l / 2] = bf
+
                     logger.info(
                         'Finished calculating basis function for k={0}, l={1}'.format(k, l))
                     queue.task_done()
