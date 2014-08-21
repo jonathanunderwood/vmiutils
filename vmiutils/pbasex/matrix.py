@@ -160,10 +160,11 @@ class PbasexMatrix(object):
                 # Filter out threads which have been joined or are None
                 threads = [t.join(1000) for t in threads if t is not None and t.isAlive()]
             except KeyboardInterrupt:
-                print "Ctrl-c received, exiting."
+                logger.info('Ctrl-c received, exiting')
                 shutdown_event.set()
 
         if shutdown_event.is_set() or not queue.empty():
+            logger.info('Error calculating matrix')
             raise RuntimeError('Error calculating matrix')
 
         self.matrix = mtx
