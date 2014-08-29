@@ -239,13 +239,16 @@ beta_coeffs(PyObject *self, PyObject *args)
   return NULL;
 }
 
+#define __SMALL 1.0e-30
+
 static int
 beta_calc(const double r, const double rkstep, const double sigma, 
 	  const double truncate, const int kmax, const int lmax, 
 	  const int linc, const double * coef, double * beta)
-/* Calculate the beta parameter values at this r value. */
+/* Calculate the beta parameter values at this r value. Values are
+   returned in beta, which should be pre-allocated. Values are
+   normalized to Beta_0=1.0. */
 {
-
   double s = 2.0 * sigma * sigma;
   double norm;
   int kstart = floor((r - truncate * sigma) / rkstep);
@@ -273,12 +276,27 @@ beta_calc(const double r, const double rkstep, const double sigma,
 	}
     }
 
+  /* Here we normalize to Beta_0=1. But, we have to avoid doing a
+     division by zero here in the case that Beta_0=~0. */
   norm = beta[0];
-  for (l = 0; l <= lmax; l += linc)
-      beta[l] /= norm;
+  printf("%g\n", norm);
+  if (fabs(norm) > __SMALL)
+    {
+      for (l = 0; l <= lmax; l += linc)
+	beta[l] /= norm;
+    }
+  else
+    {
+      beta[0] = 1.0;
+      for (l = 1; l <= lmax; l += linc)
+	beta[l] = 0.0;
+    }
 
   return 0;
 }
+
+#undef __SMALL
+
 
 static PyObject *
 beta_coeffs_point(PyObject *self, PyObject *args)
