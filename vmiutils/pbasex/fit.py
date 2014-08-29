@@ -40,17 +40,20 @@ logger.addHandler(__null_handler)
 # we scale to the dimensions in the original image. So, once fittd, we
 # store sigma, rkstep etc rescaled to the original image.
 
+
 def _odd(n):
     if n % 2:
         return True
     else:
         return False
 
+
 def _even(n):
     if n % 2:
         return False
     else:
         return True
+
 
 class PbasexFit(object):
 
@@ -316,16 +319,16 @@ class PbasexFit(object):
 
         if _even(bins):
             evenbins = True
-            xstart = bins/2
+            xstart = bins / 2
         else:
             evenbins = False
             xstart = 0
 
         for xbin in numpy.arange(xstart, bins):
-            xval = xvals[xbin] + 0.5 * xbinw # value at centre of pixel
+            xval = xvals[xbin] + 0.5 * xbinw  # value at centre of pixel
             xval2 = xval * xval
             for ybin in numpy.arange(bins):
-                yval = yvals[ybin] + 0.5 * ybinw # value at centre of pixel
+                yval = yvals[ybin] + 0.5 * ybinw  # value at centre of pixel
                 yval2 = yval * yval
                 if math.sqrt(xval2 + yval2) <= self.rmax:
                     queue.put(
@@ -468,8 +471,8 @@ class PbasexFit(object):
         return r, expval
 
     def cosn_expval2(self, nmax=None, rbins=500, rmax=None,
-                    truncate=5.0, nthreads=None,
-                    epsabs=1.0e-7, epsrel=1.0e-7):
+                     truncate=5.0, nthreads=None,
+                     epsabs=1.0e-7, epsrel=1.0e-7):
         '''Calculates the expectation values of cos^n(theta) for the fit as a
         function r up to rmax and for n from 0 to nmax.
 
@@ -546,7 +549,7 @@ class PbasexFit(object):
                     if job.exception() is not None:
                         logger.error(job.exception())
                         for j in jobs:
-                            if not j.done():# and not j.running():
+                            if not j.done():  # and not j.running():
                                 j.cancel()
                         raise job.exception()
                 except StopIteration:
@@ -554,7 +557,7 @@ class PbasexFit(object):
                 except KeyboardInterrupt:
                     logger.info('Ctrl-c received, exiting.')
                     for j in jobs:
-                        if not j.done():# and not j.running():
+                        if not j.done():  # and not j.running():
                             j.cancel()
                     raise
 
