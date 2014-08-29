@@ -169,9 +169,11 @@ class PbasexFit(object):
             raise NotImplementedError
 
         if method == 'least_squares':
+            logger.debug('fitting with least squares')
             coef, resid, rank, s = numpy.linalg.lstsq(mtx.transpose(), img)
             # TODO: do something with resid
         elif method == 'projected_landweber':
+            logger.debug('fitting with projected Landweber iteration')
             krange = xrange(matrix.kmax + 1)
 
             def __filter(x, kdim, ldim, krange):
@@ -184,13 +186,13 @@ class PbasexFit(object):
             coef = vmiutils.landweber.projected_landweber(mtx.T,
                                                           img,
                                                           max_iterations=max_iterations,
-                                                          tolernace=tolerance,
+                                                          tolerance=tolerance,
                                                           filter_func=__filter,
                                                           extra_args=(kdim,
                                                                       ldim,
                                                                       krange), )
         else:
-            raise NotImplemented
+            raise NotImplementedError
 
         coef = coef.reshape((kdim, ldim))
 
