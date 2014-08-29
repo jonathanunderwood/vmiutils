@@ -160,7 +160,8 @@ class PbasexMatrix(object):
             try:
                 # Join all threads using a timeout so it doesn't block
                 # Filter out threads which have been joined or are None
-                threads = [t.join(1000) for t in threads if t is not None and t.isAlive()]
+                threads = [t.join(1000)
+                           for t in threads if t is not None and t.isAlive()]
             except KeyboardInterrupt:
                 logger.info('Ctrl-c received, exiting')
                 shutdown_event.set()
@@ -212,7 +213,7 @@ if __name__ == "__main__":
     Thetabins = 256
     kmax = 128
     rkspacing = Rbins / kmax
-    sigma = 6.0 #rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)))
+    sigma = 6.0  # rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)))
     k = 33
     rk = k * rkspacing
     l = 8
@@ -231,8 +232,8 @@ if __name__ == "__main__":
 
     # Plot using polar projection
     gs = gridspec.GridSpec(1, 2,
-                           width_ratios=[10,1],
-                       )
+                           width_ratios=[10, 1],
+                           )
 
     ax = plot.subplot(gs[0], projection="polar", aspect=1.)
     cb = plot.subplot(gs[1])
