@@ -24,6 +24,9 @@ parser.add_argument('--centre', nargs=2, type=float, default=None,
                     help='The x and y coordinates of the image centre (before swapping axes, if requested)')
 parser.add_argument('--swapxy', action='store_true',
                     help='If specified, the image data will have the axes swapped before fitting')
+parser.add_argument('--method', default='least_squares',
+                    choices=['least_squares', 'projected_landweber'],
+                    help='Specifies the method to use for fitting the data')
 parser.add_argument('--filetype', default='matrix',
                     choices=['matrix', 'threecolumn'],
                     help='Specifies the type of data file')
@@ -31,7 +34,7 @@ parser.add_argument('--delimiter', default=None,
                     help='Specifies the delimiter used (defaults to whitespace)')
 
 args = parser.parse_args()
-
+print 'meth:', args.method
 if args.lmax is -1:
     lmax = None
 else:
@@ -103,7 +106,7 @@ logger.debug('image converted to polar coordinates')
 
 logger.debug('fitting polar image...')
 fit = pb.PbasexFit()
-fit.fit_data(vmipolar, mtx, oddl=oddl, lmax=lmax)
+fit.fit_data(vmipolar, mtx, oddl=oddl, lmax=lmax, method=args.method)
 logger.debug('data fit')
 
 logger.debug('writing data to {0}'.format(args.output_file))
