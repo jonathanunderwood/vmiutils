@@ -9,6 +9,7 @@ import futures
 
 import vmiutils as vmi
 import matrix as pbm
+import vmiutils.landweber
 from _fit import *
 
 logger = logging.getLogger('vmiutils.pbasex.fit')
@@ -182,7 +183,6 @@ class PbasexFit(object):
                     if c[k, 0] < 0.0:
                         c[k, :] = 0.0
 
-            import vmiutils.landweber
             coef = vmiutils.landweber.projected_landweber(mtx.T,
                                                           img,
                                                           max_iterations=max_iterations,
