@@ -69,7 +69,8 @@ class PbasexFit(object):
                            'rkstep',
                            'rmax']
 
-    def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None):
+    def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None,
+                 method='least_squares', max_iterations=500, tolerance=1.0e-4):
         '''Performs a fit to the data stored in the vmi.PolarImage instance
         image using the PbasexMatrix instance matrix previously calculated.
 
@@ -86,6 +87,9 @@ class PbasexFit(object):
 
         image must have the same number of Rbins and Thetabins as
         matrix.
+
+        method specifies the fitting method to use. Currently this can
+        be 'least_squares' or 'projected_landweber'
 
         '''
 
@@ -161,8 +165,29 @@ class PbasexFit(object):
         else:
             raise NotImplementedError
 
-        coef, resid, rank, s = numpy.linalg.lstsq(mtx.transpose(), img)
-        # TODO: do something with resid
+        if method == 'least_squares':
+            coef, resid, rank, s = numpy.linalg.lstsq(mtx.transpose(), img)
+            # TODO: do something with resid
+        elif method == 'projected_landweber':
+            krange = xrange(matrix.kmax + 1)
+
+            def __filter(x, kdim, ldim, krange):
+                c = x.reshape((kdim, ldim))
+                for k in krange:
+                    if c[k, 0] < 0.0:
+                        c[k, :] = 0.0
+
+            import vmiutils.landweber
+            coef = vmiutils.landweber.projected_landweber(mtx.T,
+                                                          img,
+                                                          max_iterations=max_iterations,
+                                                          tolernace=tolerance,
+                                                          filter_func=__filter,
+                                                          extra_args=(kdim,
+                                                                      ldim,
+                                                                      krange), )
+        else:
+            raise NotImplemented
 
         coef = coef.reshape((kdim, ldim))
 
