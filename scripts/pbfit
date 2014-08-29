@@ -27,6 +27,10 @@ parser.add_argument('--swapxy', action='store_true',
 parser.add_argument('--method', default='least_squares',
                     choices=['least_squares', 'projected_landweber'],
                     help='Specifies the method to use for fitting the data')
+parser.add_argument('--tolerance', type=float, default=1.0e-4,
+                    help='The tolerance used in the fitting - currently used only for projected_landweber')
+parser.add_argument('--max-iterations', type=int, default=500,
+                    help='The maximum number of iterations used in the fitting - currently used only for projected_landweber')
 parser.add_argument('--filetype', default='matrix',
                     choices=['matrix', 'threecolumn'],
                     help='Specifies the type of data file')
@@ -106,7 +110,8 @@ logger.debug('image converted to polar coordinates')
 
 logger.debug('fitting polar image...')
 fit = pb.PbasexFit()
-fit.fit_data(vmipolar, mtx, oddl=oddl, lmax=lmax, method=args.method)
+fit.fit_data(vmipolar, mtx, oddl=oddl, lmax=lmax, method=args.method,
+             tolerance=args.tolerance, max_iterations=args.max_iterations)
 logger.debug('data fit')
 
 logger.debug('writing data to {0}'.format(args.output_file))
