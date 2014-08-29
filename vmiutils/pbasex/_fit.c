@@ -279,7 +279,6 @@ beta_calc(const double r, const double rkstep, const double sigma,
   /* Here we normalize to Beta_0=1. But, we have to avoid doing a
      division by zero here in the case that Beta_0=~0. */
   norm = beta[0];
-  printf("%g\n", norm);
   if (fabs(norm) > __SMALL)
     {
       for (l = 0; l <= lmax; l += linc)
