@@ -99,11 +99,11 @@ logger.debug('radial spectrum calculated')
 r2, beta = fit.beta_coefficients_threaded()
 logger.debug('beta coefficients calculated')
 
-r3, cosn = fit.cosn_expval()
+r3, cosn = fit.cosn_expval2()
 logger.debug('cos^n(theta) expectation values calculated')
 
 invimg_cart = fit.cartesian_distribution_threaded(
-    bins=250, weighting='compound')
+    bins=250)#, weighting='compound')
 logger.debug('cartesian distribution calculated')
 
 vmicart_zoom = vmicart.zoom_circle(fit.rmax, pad=True)
@@ -120,13 +120,17 @@ matplotlib.rcParams.update({'font.family': 'serif'})
 fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
 fig.set_tight_layout(True)
 
-#cx = invimg_cart.centre_pixel[0]
-#cy = invimg_cart.centre_pixel[1]
-# invimg_cart.image[cx-10:cx+10,cy-10:cy+10]=0.0
+
+# import scipy.ndimage
+# invimg_cart.image = scipy.ndimage.median_filter(invimg_cart.image, size=3).clip(0.0)
+
+# cx = invimg_cart.centre_pixel[0]
+# cy = invimg_cart.centre_pixel[1]
+# invimg_cart.image[cx-5:cx+5,cy-5:cy+5]=0.0
 
 ax = plot.subplot2grid((2, 2), (0, 0), aspect=1.0)
 im = ax.pcolormesh(augment(vmicart_zoom.x), augment(vmicart_zoom.y),
-                   vmicart_zoom.image,
+                   vmicart_zoom.image.T,
                    cmap=plot.cm.gist_heat,
                    # rasterized=True is essential for PDF files -
                    # without rasterizing the file will be huge, and
@@ -141,7 +145,7 @@ logger.debug('1/4 images done')
 
 ax = plot.subplot2grid((2, 2), (0, 1), aspect=1.0)
 im = ax.pcolormesh(augment(invimg_cart.x), augment(invimg_cart.y),
-                   invimg_cart.image,
+                   invimg_cart.image.T,
                    cmap=plot.cm.gist_heat,
                    # rasterized=True is essential for PDF files -
                    # without rasterizing the file will be huge, and
@@ -156,7 +160,7 @@ logger.debug('2/4 images done')
 
 ax = plot.subplot2grid((2, 2), (1, 0), aspect=1.0)
 im = ax.pcolormesh(augment(vmicart_zoom.x), augment(vmicart_zoom.y),
-                   vmicart_zoom.image,
+                   vmicart_zoom.image.T,
                    cmap=plot.cm.spectral,
                    # rasterized=True is essential for PDF files -
                    # without rasterizing the file will be huge, and
@@ -171,7 +175,7 @@ logger.debug('3/4 images done')
 
 ax = plot.subplot2grid((2, 2), (1, 1), aspect=1.0)
 im = ax.pcolormesh(augment(invimg_cart.x), augment(invimg_cart.y),
-                   invimg_cart.image,
+                   invimg_cart.image.T,
                    cmap=plot.cm.spectral,
                    # rasterized=True is essential for PDF files -
                    # without rasterizing the file will be huge, and
