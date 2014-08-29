@@ -548,7 +548,7 @@ class PbasexFit(object):
                         for j in jobs:
                             if not j.done():# and not j.running():
                                 j.cancel()
-                                raise job.exception()
+                        raise job.exception()
                 except StopIteration:
                     break
                 except KeyboardInterrupt:
