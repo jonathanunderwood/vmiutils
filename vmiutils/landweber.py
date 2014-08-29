@@ -91,7 +91,6 @@ def projected_landweber(A, b, xguess=None, reduced_tau=1.0,
         bb_new = numpy.dot(A, x)
         delta = numpy.linalg.norm(bb_new - bb) / bnorm
 
-        print delta
         if delta < tolerance:
             return x
 
