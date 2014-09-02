@@ -5,6 +5,7 @@ import logging
 import multiprocessing
 import Queue
 import threading
+import futures
 
 import vmiutils.pbasex as pbasex
 
@@ -137,87 +138,80 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
 
         mtx = numpy.empty([kmax + 1, lmax + 1, Rbins, Thetabins])
 
-        queue = Queue.Queue(0)
-
         if oddl is True:
             linc = 1
         else:
             linc = 2
 
-        for k in numpy.arange(kmax + 1):
-            for l in numpy.arange(0, lmax + 1, linc):
-                queue.put({'k': k, 'l': l})
+        def __worker(k, l):
+            rk = rkspacing * k
 
-        shutdown_event = threading.Event()
+            logger.info(
+                'Calculating basis function for k={0}, l={1}'.format(k, l))
 
-        def __worker():
-            while not queue.empty():
-                if not shutdown_event.is_set():
-                    job = queue.get()
-                    k = job['k']
-                    l = job['l']
+            bf = basisfn_detfn1(
+                k, l, Rbins, Thetabins, sigma, rk,
+                epsabs, epsrel, wkspsize, threshold,
+                detectionfn.coef, detectionfn.kmax, df_sigma,
+                df_rkstep, detectionfn.lmax, df_oddl,
+                alpha, beta, method)
 
-                    rk = rkspacing * k
-
-                    logger.info(
-                        'Calculating basis function for k={0}, l={1}'.format(k, l))
-
-                    try:
-                        bf = basisfn_detfn1(
-                            k, l, Rbins, Thetabins, sigma, rk,
-                            epsabs, epsrel, wkspsize, threshold,
-                            detectionfn.coef, detectionfn.kmax, df_sigma,
-                            df_rkstep, detectionfn.lmax, df_oddl,
-                            alpha, beta, method)
-                    except (IntegrationError, MemoryError) as errstring:
-                        logger.error(errstring)
-                        shutdown_event.set()  # shutdown all threads
-                        raise
-
-                    mtx[k, l] = bf
-                    logger.info(
-                        'Finished calculating basis function for k={0}, l={1}'.format(
-                            k, l)
-                    )
-                    queue.task_done()
-                else:
-                    break
+            mtx[k, l] = bf
+            logger.info(
+                'Finished calculating basis function for k={0}, l={1}'.format(
+                    k, l)
+            )
 
         if nthreads is None:
             nthreads = multiprocessing.cpu_count()
 
-        threads = []
-        for i in range(nthreads):
-            t = threading.Thread(target=__worker)
-            t.daemon = True
-            t.start()
-            threads.append(t)
+        with futures.ThreadPoolExecutor(max_workers=nthreads) as executor:
+            jobs = []
 
-        for thread in threads:
-            thread.join()
+            for k in numpy.arange(kmax + 1):
+                for l in numpy.arange(0, lmax + 1, linc):
+                    j = executor.submit(__worker, k, l)
+                    jobs.append(j)
 
-        if shutdown_event.is_set():
-            logger.error('Error occured, calculation aborted')
-            raise RuntimeError
-        else:
-            self.matrix = mtx
-            self.kmax = kmax
-            self.sigma = sigma
-            self.lmax = lmax
-            self.oddl = oddl
-            self.Rbins = Rbins
-            self.Thetabins = Thetabins
-            self.epsabs = epsabs
-            self.epsrel = epsrel
-            self.method = method
-            self.threshold = threshold
-            # It's important we save this as part of the matrix
-            # object, as subsequent fits with this matrix are only
-            # valid if they have the same binning and scaling. Note
-            # that we can always calculate the relevant rscale from
-            # (self.Rbins / self.rmax) if needs be, so we don't save
-            # that.
-            self.rmax = detectionfn.rmax
+            jobs_done = futures.as_completed(jobs)
+
+            while True:
+                try:
+                    job = next(jobs_done)
+
+                    if job.exception() is not None:
+                        logger.error(job.exception())
+                        for j in jobs:
+                            if not j.done():  # and not j.running():
+                                j.cancel()
+                        raise job.exception()
+                except StopIteration:
+                    break
+                except KeyboardInterrupt:
+                    logger.info('Ctrl-c received, exiting.')
+                    for j in jobs:
+                        if not j.done():  # and not j.running():
+                            j.cancel()
+                    raise
+
+        self.matrix = mtx
+        self.kmax = kmax
+        self.sigma = sigma
+        self.lmax = lmax
+        self.oddl = oddl
+        self.Rbins = Rbins
+        self.Thetabins = Thetabins
+        self.epsabs = epsabs
+        self.epsrel = epsrel
+        self.method = method
+        self.threshold = threshold
+        # It's important we save this as part of the matrix
+        # object, as subsequent fits with this matrix are only
+        # valid if they have the same binning and scaling. Note
+        # that we can always calculate the relevant rscale from
+        # (self.Rbins / self.rmax) if needs be, so we don't save
+        # that.
+        self.rmax = detectionfn.rmax
 
 if __name__ == "__main__":
     import vmiutils as vmi
