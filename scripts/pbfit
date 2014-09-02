@@ -5,7 +5,7 @@ import logging
 import numpy
 import vmiutils as vmi
 import vmiutils.pbasex as pbasex
-import vmiutils.pbasex as pbasex_detfn1
+import vmiutils.pbasex.detfn1 as pbasex_detfn1
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('pbfit')
@@ -55,8 +55,8 @@ else:
 
 if args.detfn_type is None:
     mtx = pbasex.PbasexMatrix()
-elif args.detfn_type is 'detfn11':
-    mtc = pbasex_detfn1.PbasexMatrixDetFn1()
+elif args.detfn_type == 'detfn1':
+    mtx = pbasex_detfn1.PbasexMatrixDetFn1()
 else:
     raise NotImplementedError
 
@@ -117,7 +117,7 @@ vmipolar = vmi.PolarImage()
 if args.detfn_type is None:
     vmipolar.from_CartesianImage(vmicart, rbins=mtx.Rbins,
                                  thetabins=mtx.Thetabins)
-elif args.detfn_type == "detfn1":
+elif args.detfn_type == 'detfn1':
     # This next part is key. The matrix has been calculated using a
     # previous pbasex fit, and so (unlike the general pbasex case) the
     # matrix is only meaningful for a polar image with the same radial
