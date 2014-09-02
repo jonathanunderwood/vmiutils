@@ -3,8 +3,6 @@ import cPickle as pickle
 import math as m
 import logging
 import multiprocessing
-import Queue
-import threading
 import futures
 
 import vmiutils.pbasex as pbasex
@@ -109,10 +107,12 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         rkspacing = Rbins / float(kmax)
 
         if sigma is None:
-            # If sigma is not specified, we calculate the spacing between the
-            # centers of the Gaussian radial functions and set the FWHM of the
-            # Gaussians equal to the Gaussian separation
-            sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)))
+            # If sigma is not specified, we calculate a reasonable
+            # value based on rkspacing. In the original Powis et al
+            # paper they had rkspacing=2, and set their sigma (=2
+            # sigma^2) = 2 pixels. We do similar here, and then make
+            # it 20% bigger to avoid oscillations.
+            sigma = m.sqrt(rkspacing / 2.0) * 1.2
 
         # We need to rescale the detection function parameters to
         # express them in terms of bins for the actual matrix
