@@ -4,7 +4,8 @@ import argparse
 import logging
 import numpy
 import vmiutils as vmi
-import vmiutils.pbasex as pb
+import vmiutils.pbasex as pbasex
+import vmiutils.pbasex as pbasex_detfn1
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('pbfit')
@@ -36,6 +37,9 @@ parser.add_argument('--filetype', default='matrix',
                     help='Specifies the type of data file')
 parser.add_argument('--delimiter', default=None,
                     help='Specifies the delimiter used (defaults to whitespace)')
+parser.add_argument('--detfn-type', default=None,
+                    choices=['detfn1',],
+                    help='Specify the detection function model to be used. Currently only type 1 is allowed, corresponding to detfn1')
 
 args = parser.parse_args()
 print 'meth:', args.method
@@ -49,7 +53,13 @@ if args.no_oddl is True:
 else:
     oddl = True
 
-mtx = pb.PbasexMatrix()
+if args.detfn_type is None:
+    mtx = pbasex.PbasexMatrix()
+elif args.detfn_type is 'detfn11':
+    mtc = pbasex_detfn1.PbasexMatrixDetFn1()
+else:
+    raise NotImplementedError
+
 logger.debug('loading matrix file: {0}'.format(args.matrix_file))
 mtx.load(args.matrix_file)
 logger.debug('matrix loaded')
@@ -102,14 +112,26 @@ if centre is not None:
 
 logger.debug('image loaded and converted to cartesian image')
 
-# Convert to polar image
 vmipolar = vmi.PolarImage()
-vmipolar.from_CartesianImage(vmicart, rbins=mtx.Rbins, thetabins=mtx.Thetabins)
+
+if args.detfn_type is None:
+    vmipolar.from_CartesianImage(vmicart, rbins=mtx.Rbins,
+                                 thetabins=mtx.Thetabins)
+elif args.detfn_type == "detfn1":
+    # This next part is key. The matrix has been calculated using a
+    # previous pbasex fit, and so (unlike the general pbasex case) the
+    # matrix is only meaningful for a polar image with the same radial
+    # bin width and maximum radius.
+    vmicart_zoom = vmicart.zoom_circle(mtx.rmax, pad=True)
+    vmipolar.from_CartesianImage(vmicart_zoom, rbins=mtx.Rbins,
+                                 thetabins=mtx.Thetabins)
+else:
+    raise NotImplementedError
 
 logger.debug('image converted to polar coordinates')
 
 logger.debug('fitting polar image...')
-fit = pb.PbasexFit()
+fit = pbasex.PbasexFit()
 fit.fit_data(vmipolar, mtx, oddl=oddl, lmax=lmax, method=args.method,
              tolerance=args.tolerance, max_iterations=args.max_iterations)
 logger.debug('data fit')
