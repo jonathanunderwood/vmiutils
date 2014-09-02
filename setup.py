@@ -24,7 +24,6 @@ setup(name='VMIutils',
       scripts=['scripts/pbmatrix',
                'scripts/pbmatrix_detfn1',
                'scripts/pbfit',
-               'scripts/pbfit_detfn1',
                'scripts/pbfitplt',
                'scripts/cnfit'],
       )
