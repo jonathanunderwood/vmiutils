@@ -136,12 +136,12 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         else:
             df_oddl = 0
 
-        mtx = numpy.empty([kmax + 1, lmax + 1, Rbins, Thetabins])
-
-        if oddl is True:
-            linc = 1
-        else:
+        if oddl is False:
             linc = 2
+            mtx = numpy.empty([kmax + 1, lmax / 2 + 1, Rbins, Thetabins])
+        else:
+            linc = 1
+            mtx = numpy.empty([kmax + 1, lmax + 1, Rbins, Thetabins])
 
         def __worker(k, l):
             rk = rkspacing * k
@@ -156,7 +156,11 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
                 df_rkstep, detectionfn.lmax, df_oddl,
                 alpha, beta, method)
 
-            mtx[k, l] = bf
+            if oddl is True:
+                mtx[k, l] = bf
+            else:
+                mtx[k, l / 2] = bf
+
             logger.info(
                 'Finished calculating basis function for k={0}, l={1}'.format(
                     k, l)
