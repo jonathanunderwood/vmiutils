@@ -61,7 +61,6 @@ def calc(args):
                              epsabs=args.epsabs, 
                              epsrel=args.epsrel, 
                              wkspsize=args.wkspsize,
-                             threshold=args.threshold,
                              nthreads=args.nthreads,
                              method=args.method,
     )
@@ -115,8 +114,6 @@ parser_calc.add_argument('--epsrel', type=float, default=1.0e-7,
                          help='Relative integration tolerance for numerical integration')
 parser_calc.add_argument('--wkspsize', type=int, default=100000,
                          help='Maximum number of divisions in numerical integration')
-parser_calc.add_argument('--threshold', type=float, default=1.0e-18,
-                         help='Value below which basis function integrand is set to 0')
 parser_calc.add_argument('--nthreads', type=int, default=None,
                          help='Number of threads to use')
 parser_calc.add_argument('--method', default='cquad', choices=['qags', 'qaws', 'cquad'],

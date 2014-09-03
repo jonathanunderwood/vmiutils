@@ -30,13 +30,12 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         self.rmax = None
         self.description = 'pbasex_detfn1_matrix'
         self._metadata += ['method',
-                           'threshold',
                            'rmax']
 
     def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax,
                              detectionfn, alpha=0.0, beta=0.0,
                              sigma=None, oddl=True, method='cquad',
-                             epsabs=0.0, epsrel=1.0e-7, threshold=1.0e-18,
+                             epsabs=0.0, epsrel=1.0e-7,
                              wkspsize=100000, nthreads=None):
         """Calculates an inversion matrix using multiple threads.
 
@@ -71,15 +70,6 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
 
         wkspsize specifies the maximum number of subintervals used for
         the numerical integration of the basis functions.
-
-        threshold specifies the lowest value of the integrand which will
-        not be set to zero during the basis function calculation at
-        each point. I.e. any value of the intgrand below thresh will
-        be set to zero. This is necessary because numerical noise in
-        the integrand can prevent the integration routine from
-        converging. A value of 1.0e-18 is probably sufficient, but it
-        may need to be increased if the detection function is
-        particularly badly behaved.
 
         detectionfn specifies a detection function. At present this
         can be None, or an instance of PbasexFit from a previous fit.
@@ -151,7 +141,7 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
 
             bf = basisfn_detfn1(
                 k, l, Rbins, Thetabins, sigma, rk,
-                epsabs, epsrel, wkspsize, threshold,
+                epsabs, epsrel, wkspsize,
                 detectionfn.coef, detectionfn.kmax, df_sigma,
                 df_rkstep, detectionfn.lmax, df_oddl,
                 alpha, beta, method)
@@ -208,7 +198,6 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         self.epsabs = epsabs
         self.epsrel = epsrel
         self.method = method
-        self.threshold = threshold
         # It's important we save this as part of the matrix
         # object, as subsequent fits with this matrix are only
         # valid if they have the same binning and scaling. Note
@@ -237,7 +226,6 @@ if __name__ == "__main__":
     epsrel = 1.0e-7
     wkspsize = 100000
     method = 'cquad'
-    threshold = 1.0e-18
     dffile = '/home/jgu/Code/vmi_invert/aarhus/junderwood/Probe.pbfit'
     detectionfn = pbasex.PbasexFit()
     detectionfn.load(dffile)

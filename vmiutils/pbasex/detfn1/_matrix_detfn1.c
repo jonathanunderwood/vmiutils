@@ -41,7 +41,6 @@ typedef struct
 {
   int l, df_linc, df_kmax, df_lmax;
   double R, rk, two_sigma2, RcosTheta, RsinTheta;
-  double threshold;
   double df_sigma, df_two_sigma2, df_rkstep, df_rmax;
   double df_cos_alpha, df_sin_alpha, df_cos_beta, df_sin_beta;
   double *df_coef, *df_beta;
@@ -162,10 +161,7 @@ integrand_detfn1 (double r, void *params)
 	return 0.0;
     }
 
-  if (fabs(val) > p.threshold)
-    return val;
-  else
-    return 0.0;
+  return val;
 }
 
 static PyObject *
@@ -181,7 +177,7 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   int df_kmax, df_lmax;
   double df_sigma, df_rkstep, df_alpha, df_beta;
   double sigma, epsabs, epsrel; /* Suggest epsabs = 0.0, epsrel = 1.0e-7 */   
-  double rk, dTheta, upper_bound, threshold;
+  double rk, dTheta, upper_bound;
   double *matrix = NULL;
   void *wksp;
   gsl_function fn;
@@ -194,9 +190,9 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   PyArrayObject *df_coef = NULL;
   size_t df_ldim;
 
-  if (!PyArg_ParseTuple(args, "iiiiddddidOiddiidds",
+  if (!PyArg_ParseTuple(args, "iiiiddddiOiddiidds",
 			&k, &l, &Rbins, &Thetabins, &sigma, &rk,
-			&epsabs, &epsrel, &wkspsize, &threshold,
+			&epsabs, &epsrel, &wkspsize,
 			&df_coef_arg, &df_kmax, &df_sigma,
 			&df_rkstep, &df_lmax, &df_oddl,
 			&df_alpha, &df_beta, &method_str
@@ -261,7 +257,6 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   params.df_sin_beta = sin (df_beta);
   params.df_cos_alpha = cos (df_alpha);
   params.df_sin_alpha = sin (df_alpha);
-  params.threshold = threshold;
   
   /* method_str should be one of 'qags', 'qaws', or 'cquad' */
   if (!strncmp(method_str, "qaws", 4))
