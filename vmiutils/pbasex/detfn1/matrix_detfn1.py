@@ -256,9 +256,9 @@ if __name__ == "__main__":
     r_aug = numpy.append(r, r[-1] + r[1] - r[0])
     theta_aug = numpy.append(theta, theta[-1] + theta[1] - theta[0])
     # Plot using polar projection
-    gs = gridspec.GridSpec(1, 2,
-                           width_ratios=[10,1],
-                       )
+    gs = matplotlib.gridspec.GridSpec(1, 2,
+                                      width_ratios=[10,1],
+                                  )
 
     ax = plot.subplot(gs[0], projection="polar", aspect=1.)
     cb = plot.subplot(gs[1])
