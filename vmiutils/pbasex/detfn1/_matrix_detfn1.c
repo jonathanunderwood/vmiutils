@@ -43,7 +43,7 @@ typedef struct
   double R, rk, two_sigma2, RcosTheta, RsinTheta;
   double threshold;
   double df_sigma, df_two_sigma2, df_rkstep, df_rmax;
-  double df_alpha, df_cos_beta, df_sin_beta;
+  double df_cos_alpha, df_sin_alpha, df_cos_beta, df_sin_beta;
   double *df_coef, *df_beta;
   integration_method method;
 } int_params_detfn1;
@@ -63,29 +63,22 @@ integrand_detfn1 (double r, void *params)
    However, in practice, lack of precision in the numerator and
    denominator causes a problem when the argument should evaluate to
    -1.0, it ends up evaluating to slightly less than -1.0, and asin
-   returns NaN. And so below we have to work around this by testing if
-   sin_phi lies outside the range [-1,1], and if so, force it back
-   into that range. This is very ugly, and can mask other problems. I
-   wish there was a better way!
+   returns NaN. And so we avoid calculating phi, and instead calculate
+   cos(phi) and sin(phi) from that, and then expand cos(alpha - phi)
+   as cos(alpha)cos(phi)+sin(alpha)sin(phi).
 */
 {
   int_params_detfn1 p = *(int_params_detfn1 *) params;
   double cos_theta = p.RcosTheta / r;
   double sin_theta = sqrt ((1.0 + cos_theta) * (1.0 - cos_theta));/* sin (acos(cos_theta)) */
   double sin_phi = p.RsinTheta / (r * sin_theta);
-  double phi, cos_theta_det_frame;
+  double cos_phi = sqrt((1.0 + sin_phi) * (1.0 - sin_phi));
+  double cos_theta_det_frame;
   double a, rad, ang, val, df_val, delta;
   int k, l, df_lidx, kmin, kmax, df_ldim;
 
-  if (sin_phi < -1.0)
-    phi = -M_PI / 2.0;
-  else if (sin_phi > 1.0)
-    phi = M_PI;
-  else
-    phi = asin (sin_phi);
-
   cos_theta_det_frame = p.df_cos_beta * cos_theta + 
-    p.df_sin_beta * sin_theta * cos (p.df_alpha - phi);
+    p.df_sin_beta * sin_theta * (p.df_cos_alpha * cos_phi + p.df_sin_alpha * sin_phi);
 
   /* Usual basis function for pbasex */
   a = r - p.rk;
@@ -264,9 +257,10 @@ basisfn_detfn1(PyObject *self, PyObject *args)
   params.df_sigma = df_sigma;
   params.df_two_sigma2 = 2.0 * df_sigma  * df_sigma;
   params.df_rkstep = df_rkstep;
-  params.df_alpha = df_alpha;
   params.df_cos_beta = cos (df_beta);
   params.df_sin_beta = sin (df_beta);
+  params.df_cos_alpha = cos (df_alpha);
+  params.df_sin_alpha = sin (df_alpha);
   params.threshold = threshold;
   
   /* method_str should be one of 'qags', 'qaws', or 'cquad' */
