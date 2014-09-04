@@ -94,14 +94,18 @@ def projected_landweber(A, b, xguess=None, reduced_tau=1.0,
     tau = reduced_tau / (Anorm * Anorm)
 
     AT = A.T
-    ATb = numpy.dot(AT, b)
-    ATA = numpy.dot(AT, A)
+    #ATb = numpy.dot(AT, b)
+    #ATA = numpy.dot(AT, A)
 
     bnorm = numpy.linalg.norm(b)
     bb = numpy.dot(A, x)
 
     for i in xrange(max_iterations):
-        x = x + tau * (ATb - numpy.dot(ATA, x))
+        # The following line is equivalent to:
+        # x = x + tau * (ATb - numpy.dot(ATA, x))
+        # but doesn't require us to calculate and store ATb and ATA above
+        x = x + tau * numpy.dot(AT, b - bb)
+
         if filter_func is not None:
             filter_func(x, *extra_args, **extra_kwargs)
 
