@@ -112,6 +112,20 @@ class PbasexFit(object):
         method specifies the fitting method to use. Currently this can
         be 'least_squares' or 'projected_landweber'
 
+        If method is 'projected_landweber' the following options are
+        also used:
+
+        tolerance: the value used to terminate Landweber iteration. Iteration is
+        terminated using a simple discrepancy calculation. The
+        simulated vector b_k is calculated from the current x vector,
+        x_k, from Ax_k=b_k. The norm of the discrepancy vector
+        (i.e. b-b_k) is then calculated and normalized to the norm of
+        b. If this value is less than tolerance, iteration is
+        terminated.
+
+        max_iterations: specifies the maximum number of iterations
+        allowed before returning from Landweber iteration.
+
         '''
 
         if not isinstance(image, vmi.PolarImage):
