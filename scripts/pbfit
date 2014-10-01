@@ -139,7 +139,9 @@ elif args.detfn_type == 'detfn1':
     # previous pbasex fit, and so (unlike the general pbasex case) the
     # matrix is only meaningful for a polar image with the same radial
     # bin width and maximum radius.
+    logger.debug('zooming into image to match matrix rmax={0}'.format(mtx.rmax))
     vmicart_zoom = vmicart.zoom_circle(mtx.rmax, pad=True)
+    logger.debug('zoom of image created to match matrix rmax={0}'.format(mtx.rmax))
     vmipolar.from_CartesianImage(vmicart_zoom, rbins=mtx.Rbins,
                                  thetabins=mtx.Thetabins)
 else:
