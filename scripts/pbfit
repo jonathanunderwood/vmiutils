@@ -103,56 +103,17 @@ elif args.filetype == 'threecolumn':
 else:
     raise NotImplementedError
 
-# Wrap VMI data into instance of CartesianImage
-if args.swapxy is True:
-    img = img.transpose()
-    if x is not None and y is not None:
-        newx = y
-        newy = x
-        x = newx
-        y = newy
-    if args.centre is not None:
-        centre = (args.centre[1], args.centre[0])
-    else:
-        centre = None
-else:
-    if args.centre is not None:
-        centre = (args.centre[0], args.centre[1])
-    else:
-        centre = None
-
-vmicart = vmi.CartesianImage(image=img, x=x, y=y)
-
-# Set centre
-if centre is not None:
-    vmicart.set_centre(centre)
-
-logger.debug('image loaded and converted to cartesian image')
-
-vmipolar = vmi.PolarImage()
-
 if args.detfn_type is None:
-    vmipolar.from_CartesianImage(vmicart, rbins=mtx.Rbins,
-                                 thetabins=mtx.Thetabins)
+    fit = pbasex.PbasexFit()
 elif args.detfn_type == 'detfn1':
-    # This next part is key. The matrix has been calculated using a
-    # previous pbasex fit, and so (unlike the general pbasex case) the
-    # matrix is only meaningful for a polar image with the same radial
-    # bin width and maximum radius.
-    logger.debug('zooming into image to match matrix rmax={0}'.format(mtx.rmax))
-    vmicart_zoom = vmicart.zoom_circle(mtx.rmax, pad=True)
-    logger.debug('zoom of image created to match matrix rmax={0}'.format(mtx.rmax))
-    vmipolar.from_CartesianImage(vmicart_zoom, rbins=mtx.Rbins,
-                                 thetabins=mtx.Thetabins)
+    fit = pbasex_detfn1.PbasexFitDetfn1()
 else:
     raise NotImplementedError
 
-logger.debug('image converted to polar coordinates')
-
-logger.debug('fitting polar image...')
-fit = pbasex.PbasexFit()
-fit.fit_data(vmipolar, mtx, oddl=oddl, lmax=lmax, method=args.method,
-             tolerance=args.tolerance, max_iterations=args.max_iterations)
+logger.debug('fitting image...')
+fit.fit(vmipolar, mtx, centre=args.centre, swapxy=args.swapxy,
+        oddl=oddl, lmax=lmax, method=args.method,
+        tolerance=args.tolerance, max_iterations=args.max_iterations)
 logger.debug('data fit')
 
 logger.debug('writing data to {0}'.format(args.output_file))

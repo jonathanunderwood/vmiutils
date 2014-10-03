@@ -83,12 +83,56 @@ class PbasexFit(object):
         self.sigma = None
         self.rkstep = None
         self.rmax = None
+        self.vmi_image = None
         self.__metadata = ['kmax',
                            'lmax',
                            'oddl',
                            'sigma',
                            'rkstep',
-                           'rmax']
+                           'rmax',
+                           'vmi_image']
+
+    def _build_CartesianImage(self, image, x, y, centre, swapxy):
+        # Wrap VMI data into instance of CartesianImage
+        if args.swapxy is True:
+            img = img.transpose()
+            if x is not None and y is not None:
+                newx = y
+                newy = x
+                x = newx
+                y = newy
+                if args.centre is not None:
+                    centre = (args.centre[1], args.centre[0])
+                else:
+                    centre = None
+            else:
+                if args.centre is not None:
+                    centre = (args.centre[0], args.centre[1])
+                else:
+                    centre = None
+
+        cart = vmi.CartesianImage(image=img, x=x, y=y)
+
+        # Set centre
+        if centre is not None:
+            cart.set_centre(centre)
+
+        return cart
+
+    def fit(self, image, matrix, x=None, y=None, centre=None,
+            swapxy=False, section='whole', lmax=None,
+            oddl=None, method='least_squares',
+            max_iterations=500, tolerance=1.0e-4):
+
+    image_cart = _build_CartesianImage(image, x, y, centre, swapxy)
+    image_polar = vmi.PolarImage()
+    image_polar.from_CartesianImage(image_cart, rbins=matrix.Rbins,
+                                    thetabins=matrix.Thetabins)
+
+    fit_data(image_polar, matrix, oddl=oddl, lmax=lmax, method=method,
+             tolerance=tolerance, max_iterations=max_iterations)
+
+    self.vmi_image = image_cart.image.copy()
 
     def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None,
                  method='least_squares', max_iterations=500, tolerance=1.0e-4):
