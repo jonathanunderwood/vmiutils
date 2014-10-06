@@ -90,7 +90,7 @@ class PbasexFit(object):
                            'sigma',
                            'rkstep',
                            'rmax',
-                           'vmi_image']
+                           ]
 
     def _build_CartesianImage(self, image, x, y, centre, swapxy):
         # Wrap VMI data into instance of CartesianImage
@@ -739,6 +739,8 @@ class PbasexFit(object):
         for object in self.__metadata:
             pickle.dump(getattr(self, object), fd, protocol=2)
         numpy.save(fd, self.coef)
+        numpy.save(fd, self.vmi_image)
+        self.vmi_image.dump(fd)
 
         fd.close()
 
@@ -749,5 +751,7 @@ class PbasexFit(object):
             for object in self.__metadata:
                 setattr(self, object, pickle.load(fd))
             self.coef = numpy.load(fd)
+            self.vmi_image = numpy.load(fd)
+            self.vmi_image.load(fd)
         finally:
             fd.close()
