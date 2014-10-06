@@ -40,6 +40,8 @@ def _round_int(x):
 
 
 class CartesianImage():
+    self.__metadata = [xbinw, ybinw, centre, shape, quad]
+    self.__numpydata = [x, y, image]
 
     """Class used to represent a VMI image stored as a cartesian array.
 
@@ -497,6 +499,22 @@ class CartesianImage():
         yc = self.y[0] + 0.5 * (self.y[-1] - self.y[0])
         return xc, yc
 
+    def dump(self, fd):
+        """ Dump instance of this class to a file descriptor fd.
+        """
+
+        for object in self.__metadata:
+            pickle.dump(getattr(self, object), fd, protocol=2)
+        for object in self.__numpydata:
+            numpy.save(fd, getattr(self, object))
+
+    def load(self, fd):
+        """ Load a previously dumped instance of this class from a file
+        descriptor. """
+        for object in self.__metadata:
+            setattr(self, object, pickle.load(fd))
+        for object in self.__numpydata:
+            setattr(self, object, numpy.load(fd))
 
 class PolarImage():
 
