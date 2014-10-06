@@ -22,6 +22,7 @@ import logging
 import scipy.ndimage
 from scipy.special import lpn as legpol
 import copy
+import matplotlib
 
 logger = logging.getLogger('vmiutils.image')
 
@@ -515,6 +516,16 @@ class CartesianImage():
             setattr(self, object, pickle.load(fd))
         for object in self.__numpydata:
             setattr(self, object, numpy.load(fd))
+
+    def _augment(arr):
+        return numpy.append(arr, arr[-1] + arr[1] - arr[0])
+
+    def plot(self, axis, cmap=matplotlib.cm.spectral,
+             rasterized=True):
+        return axis.pcolormesh(_augment(self.x), augment(self.y),
+                               self.image, cmap=cmap,
+                               rasterized=rasterized)
+
 
 class PolarImage():
 
