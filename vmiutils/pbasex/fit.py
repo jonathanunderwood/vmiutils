@@ -23,6 +23,7 @@ import threading
 import multiprocessing
 import math
 import futures
+import matplotlib
 
 import vmiutils as vmi
 import matrix as pbm
@@ -755,3 +756,8 @@ class PbasexFit(object):
             self.vmi_image.load(fd)
         finally:
             fd.close()
+
+        def plot_vmi_image(self, axis, cmap=matplotlib.cm.spectral,
+                           rasterized=True):
+            return self.vmi_image.plot(axis, cmap=cmap,
+                                       rasterized=rasterized)
