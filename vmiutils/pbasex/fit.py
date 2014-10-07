@@ -761,3 +761,17 @@ class PbasexFit(object):
                            rasterized=True):
             return self.vmi_image.plot(axis, cmap=cmap,
                                        rasterized=rasterized)
+        def _augment(arr):
+            return numpy.append(arr, arr[-1] + arr[1] - arr[0])
+
+        def plot_cartesian_distribution(self, axis, bins=500,
+                                        cmap=matplotlib.cm.spectral,
+                                        rasterized=True):
+
+            image = self.cartesian_distribution_threaded(bins=bins)
+
+            return ax.pcolormesh(self._augment(img.x),
+                                 self._augment(img.y),
+                                 image.image.T,
+                                 cmap=cmap,
+                                 rasterized=rasterized)
