@@ -522,7 +522,8 @@ class CartesianImage():
 
     def plot(self, axis, cmap=matplotlib.cm.spectral,
              rasterized=True):
-        return axis.pcolormesh(_augment(self.x), augment(self.y),
+        return axis.pcolormesh(self._augment(self.x),
+                               self._augment(self.y),
                                self.image, cmap=cmap,
                                rasterized=rasterized)
 
