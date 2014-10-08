@@ -775,3 +775,12 @@ class PbasexFit(object):
                                  image.image.T,
                                  cmap=cmap,
                                  rasterized=rasterized)
+
+        def plot_radial_spectrum(self, axis, rbins=500):
+            r, spec = self.calc_radial_spectrum(rbins=rbins)
+            line = axis.plot(r, spec)
+            axis.set_xlabel(r'$r$')#, style='italic')
+            axis.set_ylabel(r'$I(r)$ (a.u)')#, style='italic')
+            axis.set_xlim(r.min(), r.max())
+
+            return line
