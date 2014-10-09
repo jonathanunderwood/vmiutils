@@ -784,3 +784,44 @@ class PbasexFit(object):
             axis.set_xlim(r.min(), r.max())
 
             return line
+
+        def plot_beta_spectrum(self, axis, betavals, rbins=500,
+                               scale_min=None, scale_max=None):
+
+            # TODO: adjust beta value calculation to only calculate
+            # requested beta values, not all of them
+            r, beta = self.beta_coefficients_threaded(rbins=rbins)
+
+            if len(betavals) == 1:
+                b = betavals[0]
+                lines = axis.plot(r, beta[b],
+                                  label=r'$l=${0}'.format(b))
+                axis.set_ylabel(r'$\beta_{0}$'.format(b))
+                axis.set_xlabel(r'$r$')
+            else:
+                lines = []
+                for b in betavals:
+                    line = axis.plot(r, beta[b], label=r'$l=${0}'.format(b))
+                    lines.append(line)
+                    ymin = min(ymin, beta[b].min())
+                    ymax = max(ymax, beta[b].max())
+
+                # TODO: add options for legend.
+                # ax.legend(loc='upper left',
+                #           bbox_to_anchor=(1.1, 1.0),
+                #           fontsize=8)
+                axis.set_ylabel(r'$\beta_l$')
+                axis.set_xlabel(r'$r$')
+
+            axis.set_autoscale_on(False)
+
+            if scale_min is not None:
+                ymin = scale_min
+
+            if scale_max is not None:
+                ymax = scale_max
+
+            axis.set_ylim(ymin, ymax)
+            axis.set_xlim(r.min(), r.max())
+
+            return lines
