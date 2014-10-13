@@ -36,95 +36,34 @@ logging.basicConfig(format="%(threadName)s:%(message)s", level=logging.DEBUG)
 logger = logging.getLogger('pbfit')
 
 parser = argparse.ArgumentParser(
-    description='Utility for generating plots from a PBASEX fit file and a VMI data file')
+    description='Utility for generating plots from a PBASEX fit file')
 
 parser.add_argument('fit_file', help='Name of file containing PBASEX fit')
 
 parser.add_argument(
-    'vmi_file', help='Name of file containing original VMI data')
-
-parser.add_argument(
     'output_file', help='Name of file (PDF) to which the plots are to be saved')
 
-parser.add_argument('--swapxy', action='store_true',
-                    help='If specified, the VMI image data will have the axes swapped before plotting')
-parser.add_argument('--filetype', default='matrix',
-                    choices=['matrix', 'threecolumn'],
-                    help='Specifies the type of VMI data file')
-parser.add_argument('--centre', nargs=2, type=float, default=None,
-                    help='The x and y coordinates of the VMI image centre (before swapping axes, if requested)')
-parser.add_argument('--delimiter', default=None,
-                    help='Specifies the delimiter used (defaults to whitespace)')
-
 args = parser.parse_args()
-
-if args.filetype == 'matrix':
-    logger.debug('loading VMI matrix file: {0}'.format(args.vmi_file))
-    try:
-        if args.delimiter is not None:
-            img = numpy.loadtxt(args.vmi_file, delimiter=args.delimiter)
-        else:
-            img = numpy.loadtxt(args.vmi_file)
-        x = None
-        y = None
-    except IOError:
-        logger.error('could not read file: {0}'.format(vmi_file))
-        sys.exit(74)
-elif args.filetype == 'threecolumn':
-    import vmiutils.threecolumns
-    try:
-        x, y, img = vmiutils.threecolumns.threecolumns_read(args.vmi_file)
-    except IOError:
-        logger.error('could not read file: {0}'.format(vmi_file))
-        sys.exit(74)
-else:
-    raise NotImplementedError
-
-# Wrap VMI data into instance of CartesianImage
-if args.swapxy is True:
-    img = img.transpose()
-    if x is not None and y is not None:
-        newx = y
-        newy = x
-        x = newx
-        y = newy
-    if args.centre is not None:
-        centre = (args.centre[1], args.centre[0])
-    else:
-        centre = None
-else:
-    if args.centre is not None:
-        centre = (args.centre[0], args.centre[1])
-    else:
-        centre = None
-
-vmicart = vmi.CartesianImage(image=img, x=x, y=y)
-
-# Set centre
-if centre is not None:
-    vmicart.set_centre(centre)
-
-logger.debug('image loaded and converted to cartesian image')
 
 fit = pb.PbasexFit()
 fit.load(args.fit_file)
 logger.debug('fit data loaded')
 
-r1, spec = fit.calc_radial_spectrum()
-logger.debug('radial spectrum calculated')
+# r1, spec = fit.calc_radial_spectrum()
+# logger.debug('radial spectrum calculated')
 
-r2, beta = fit.beta_coefficients_threaded()
-logger.debug('beta coefficients calculated')
+# r2, beta = fit.beta_coefficients_threaded()
+# logger.debug('beta coefficients calculated')
 
-r3, cosn = fit.cosn_expval2()
-logger.debug('cos^n(theta) expectation values calculated')
+# r3, cosn = fit.cosn_expval2()
+# logger.debug('cos^n(theta) expectation values calculated')
 
-invimg_cart = fit.cartesian_distribution_threaded(
-    bins=250)#, weighting='compound')
-logger.debug('cartesian distribution calculated')
+# invimg_cart = fit.cartesian_distribution_threaded(
+#     bins=250)#, weighting='compound')
+# logger.debug('cartesian distribution calculated')
 
-vmicart_zoom = vmicart.zoom_circle(fit.rmax, pad=True)
-logger.debug('zoom of original image calculated')
+# vmicart_zoom = vmicart.zoom_circle(fit.rmax, pad=True)
+# logger.debug('zoom of original image calculated')
 
 # Generate plots in a multi page PDF file
 pdf_pages = PdfPages(args.output_file)
@@ -146,62 +85,42 @@ fig.set_tight_layout(True)
 # invimg_cart.image[cx-5:cx+5,cy-5:cy+5]=0.0
 
 ax = plot.subplot2grid((2, 2), (0, 0), aspect=1.0)
-im = ax.pcolormesh(augment(vmicart_zoom.x), augment(vmicart_zoom.y),
-                   vmicart_zoom.image.T,
-                   cmap=plot.cm.gist_heat,
-                   # rasterized=True is essential for PDF files -
-                   # without rasterizing the file will be huge, and
-                   # rendering takes forever
-                   rasterized=True
-                   )
+fit.plot_vmi_image(axis=ax, cmap=plot.cm.gist_heat)
 ax.axis('image')
 ax.set_title('Experimental data')
-fig.colorbar(im, use_gridspec=True, shrink=0.6)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.05)
+plot.colorbar(im, cax=cax)
 
 logger.debug('1/4 images done')
 
 ax = plot.subplot2grid((2, 2), (0, 1), aspect=1.0)
-im = ax.pcolormesh(augment(invimg_cart.x), augment(invimg_cart.y),
-                   invimg_cart.image.T,
-                   cmap=plot.cm.gist_heat,
-                   # rasterized=True is essential for PDF files -
-                   # without rasterizing the file will be huge, and
-                   # rendering takes forever
-                   rasterized=True
-                   )
+fit.plot_cartesian_distribution(axis=ax, cmap=plot.cm.gist_heat)
 ax.axis('image')
 ax.set_title('pBasex reconstruction')
-fig.colorbar(im, use_gridspec=True, shrink=0.6)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.05)
+plot.colorbar(im, cax=cax)
 
 logger.debug('2/4 images done')
 
-ax = plot.subplot2grid((2, 2), (1, 0), aspect=1.0)
-im = ax.pcolormesh(augment(vmicart_zoom.x), augment(vmicart_zoom.y),
-                   vmicart_zoom.image.T,
-                   cmap=plot.cm.spectral,
-                   # rasterized=True is essential for PDF files -
-                   # without rasterizing the file will be huge, and
-                   # rendering takes forever
-                   rasterized=True
-                   )
+ax = plot.subplot2grid((2, 2), (0, 0), aspect=1.0)
+fit.plot_vmi_image(axis=ax)
 ax.axis('image')
 ax.set_title('Experimental data')
-fig.colorbar(im, use_gridspec=True, shrink=0.6)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.05)
+plot.colorbar(im, cax=cax)
 
 logger.debug('3/4 images done')
 
-ax = plot.subplot2grid((2, 2), (1, 1), aspect=1.0)
-im = ax.pcolormesh(augment(invimg_cart.x), augment(invimg_cart.y),
-                   invimg_cart.image.T,
-                   cmap=plot.cm.spectral,
-                   # rasterized=True is essential for PDF files -
-                   # without rasterizing the file will be huge, and
-                   # rendering takes forever
-                   rasterized=True
-                   )
+ax = plot.subplot2grid((2, 2), (0, 1), aspect=1.0)
+fit.plot_cartesian_distribution(axis=ax)
 ax.axis('image')
 ax.set_title('pBasex reconstruction')
-fig.colorbar(im, use_gridspec=True, shrink=0.6)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.05)
+plot.colorbar(im, cax=cax)
 
 logger.debug('4/4 images done')
 
@@ -212,10 +131,9 @@ logger.debug('images plotted')
 
 # Second page containing the radial spectrum.
 fig = plot.figure(figsize=(8.27, 11.69 / 2), dpi=100)
-plot.plot(r1, spec)
-plot.xlabel('r', style='italic')
-plot.ylabel('I(r)', style='italic')
-plot.title('Radial spectrum')
+ax=plot.axes
+fit.plot_radial_spectrum(axis=ax)
+ax.set_title('Radial spectrum')
 pdf_pages.savefig(fig)
 plot.close(fig)
 logger.debug('radial spectrum plotted')
@@ -224,9 +142,11 @@ logger.debug('radial spectrum plotted')
 # beta parameter.
 if fit.oddl == True:
     inc = 1
+    lvals = range(fit.lmax + 1)
     nplots = fit.lmax
 else:
     inc = 2
+    lvals = range(0, fit.lmax + 1, 2)
     nplots = fit.lmax / 2
 
 plots_per_page = 3
@@ -240,27 +160,24 @@ for page in xrange(pages_reqd):
     for this_plot in xrange(plots_per_page):
         this_beta = this_beta + inc
 
-        if this_beta > beta.shape[0] - 1:
+        if this_beta > fit.lmax:
             break
 
         ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
-        ax1.plot(r1, spec, ':')
-        ax1.set_xlabel('r', style='italic')
-        ax1.set_ylabel('I(r)', style='italic')
+        fit.plot_beta_spectrum(axis=ax1, bvals=[this_beta])
+
         ax2 = ax1.twinx()
-        ax2.set_autoscaley_on(False)
-        ax2.set_ybound(-5.0, 5.0)
-        ax2.plot(r2, beta[this_beta, :], label=r'$\beta_{%d}$' % this_beta)
-        ax2.set_ylabel(r'$\beta_{%d}$' % this_beta)
-        ax2.set_title(r'Radial dependence of $\beta_{%d}$' % this_beta)
-        # plot.legend()
+        fit.plot_radial_spectrum(axis=ax2)
 
     pdf_pages.savefig(fig)
     plot.close(fig)
 
 logger.debug('beta values plotted')
 
-# <cos^n(theta)> expectation values
+# <cos^n(theta)> expectation values. Here we plot up to
+# <cos^lmax(theta)>, which is rather arbitrary - unlike the beta
+# values, the cos^l are not orthogonal, and so we don't expect values
+# with l>lmax to be zero.
 this_n = 0
 for page in xrange(pages_reqd):
     fig = plot.figure(figsize=(8.27, 11.69), dpi=100)
@@ -269,22 +186,17 @@ for page in xrange(pages_reqd):
     for this_plot in xrange(plots_per_page):
         this_n = this_n + inc
 
-        if this_n > cosn.shape[0] - 1:
+        if this_n > fit.lmax:
             break
 
         ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
-        ax1.plot(r1, spec, ':')
-        ax1.set_xlabel('r', style='italic')
-        ax1.set_ylabel('I(r)', style='italic')
+
+        ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
+        fit.plot_cosn_spectrum(axis=ax1, nvals=[this_n])
+
         ax2 = ax1.twinx()
-        ax2.set_autoscaley_on(False)
-        if this_n % 2:  # odd n
-            ax2.set_ybound(-1.0, 1.0)
-        else:  # even n
-            ax2.set_ybound(0.0, 1.0)
-        ax2.plot(
-            r2, cosn[this_n, :], label=r'$\langle\cos^{%d}\theta\rangle$' % this_n)
-        ax2.set_ylabel(r'$\langle\cos^{%d}\theta\rangle$' % this_n)
+        fit.plot_radial_spectrum(axis=ax2)
+
         ax2.set_title(
             r'Radial dependence of $\langle\cos^{%d}\theta\rangle$' % this_n)
         # plot.legend()
