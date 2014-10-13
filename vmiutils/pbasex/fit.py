@@ -825,3 +825,44 @@ class PbasexFit(object):
             axis.set_xlim(r.min(), r.max())
 
             return lines
+
+        def plot_cosn_spectrum(self, axis, nvals, rbins=500,
+                               scale_min=None, scale_max=None):
+
+            # TODO: adjust beta value calculation to only calculate
+            # requested beta values, not all of them
+            r, cosn = self.cosn_expval2(rbins=rbins)
+
+            if len(nvals) == 1:
+                n = nvals[0]
+                lines = axis.plot(r, cosn[n],
+                                  label=r'$n=${0}'.format(b))
+                ax.set_ylabel(r'$\langle\cos^{0}\theta\rangle$'.format(n))
+                axis.set_xlabel(r'$r$')
+            else:
+                lines = []
+                for n in nvals:
+                    line = axis.plot(r, cosn[n], label=r'$n=${0}'.format(n))
+                    lines.append(line)
+                    ymin = min(ymin, cosn[n].min())
+                    ymax = max(ymax, cosn[n].max())
+
+                # TODO: add options for legend.
+                # ax.legend(loc='upper left',
+                #           bbox_to_anchor=(1.1, 1.0),
+                #           fontsize=8)
+                ax.set_ylabel(r'$\langle\cos^n\theta\rangle$')
+                axis.set_xlabel(r'$r$')
+
+            axis.set_autoscale_on(False)
+
+            if scale_min is not None:
+                ymin = scale_min
+
+            if scale_max is not None:
+                ymax = scale_max
+
+            axis.set_ylim(ymin, ymax)
+            axis.set_xlim(r.min(), r.max())
+
+            return lines
