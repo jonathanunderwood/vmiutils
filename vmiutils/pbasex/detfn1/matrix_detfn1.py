@@ -44,6 +44,7 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
 
     def __init__(self):
         super(PbasexMatrixDetFn1, self).__init__()
+        self.detectionfn = None
         self.rmax = None
         self.description = 'pbasex_detfn1_matrix'
         self._metadata += ['method',
@@ -222,6 +223,17 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         # (self.Rbins / self.rmax) if needs be, so we don't save
         # that.
         self.rmax = detectionfn.rmax
+        # Also save the detectionfn for future reference
+        self.detectionfn = detectionfn
+
+        def dump(fd):
+            super(PbasexFit, self).dump(fd)
+            self.detectionfn.dump(fd)
+
+        def load(fd):
+            super(PbasexFit, self).load(fd)
+            self.detectionfn = PbasexFit()
+            self.detectionfn.load(fd)
 
 if __name__ == "__main__":
     import vmiutils as vmi
