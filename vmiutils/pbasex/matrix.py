@@ -63,10 +63,9 @@ class PbasexMatrix(object):
     def __init__(self):
         pass
 
-    def calc_matrix_threaded(
-        self, Rbins, Thetabins, kmax, lmax, sigma=None, oddl=True,
-                             epsabs=0.0, epsrel=1.0e-7, wkspsize=100000,
-                             nthreads=None):
+    def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax, sigma=None,
+                             oddl=True, epsabs=0.0, epsrel=1.0e-7,
+                             wkspsize=100000, nthreads=None):
         """Calculates an inversion matrix using multiple threads.
 
         kmax determines the number of radial basis functions (from k=0..kmax).
