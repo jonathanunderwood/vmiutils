@@ -111,7 +111,7 @@ else:
     raise NotImplementedError
 
 logger.debug('fitting image...')
-fit.fit(vmipolar, mtx, centre=args.centre, swapxy=args.swapxy,
+fit.fit(img, mtx, centre=args.centre, swapxy=args.swapxy,
         oddl=oddl, lmax=lmax, method=args.method,
         tolerance=args.tolerance, max_iterations=args.max_iterations)
 logger.debug('data fit')
