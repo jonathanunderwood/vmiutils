@@ -130,8 +130,8 @@ class PbasexFit(object):
         image_polar.from_CartesianImage(image_cart, rbins=matrix.Rbins,
                                         thetabins=matrix.Thetabins)
 
-        fit_data(image_polar, matrix, oddl=oddl, lmax=lmax, method=method,
-                 tolerance=tolerance, max_iterations=max_iterations)
+        self.fit_data(image_polar, matrix, oddl=oddl, lmax=lmax, method=method,
+                      tolerance=tolerance, max_iterations=max_iterations)
 
         self.vmi_image = image_cart.image.copy()
 
@@ -753,6 +753,7 @@ class PbasexFit(object):
                 setattr(self, object, pickle.load(fd))
             self.coef = numpy.load(fd)
             self.vmi_image = numpy.load(fd)
+            self.vmi_image = vmi.PolarImage()
             self.vmi_image.load(fd)
         finally:
             fd.close()
