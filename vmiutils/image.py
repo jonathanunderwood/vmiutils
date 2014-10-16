@@ -23,6 +23,7 @@ import scipy.ndimage
 from scipy.special import lpn as legpol
 import copy
 import matplotlib
+import matplotlib.cm
 
 logger = logging.getLogger('vmiutils.image')
 
@@ -41,8 +42,8 @@ def _round_int(x):
 
 
 class CartesianImage():
-    self.__metadata = [xbinw, ybinw, centre, shape, quad]
-    self.__numpydata = [x, y, image]
+    _metadata = ['xbinw', 'ybinw', 'centre', 'shape', 'quad']
+    _numpydata = ['x', 'y', 'image']
 
     """Class used to represent a VMI image stored as a cartesian array.
 
@@ -504,17 +505,17 @@ class CartesianImage():
         """ Dump instance of this class to a file descriptor fd.
         """
 
-        for object in self.__metadata:
+        for object in self._metadata:
             pickle.dump(getattr(self, object), fd, protocol=2)
-        for object in self.__numpydata:
+        for object in self._numpydata:
             numpy.save(fd, getattr(self, object))
 
     def load(self, fd):
         """ Load a previously dumped instance of this class from a file
         descriptor. """
-        for object in self.__metadata:
+        for object in self._metadata:
             setattr(self, object, pickle.load(fd))
-        for object in self.__numpydata:
+        for object in self._numpydata:
             setattr(self, object, numpy.load(fd))
 
     def _augment(arr):
