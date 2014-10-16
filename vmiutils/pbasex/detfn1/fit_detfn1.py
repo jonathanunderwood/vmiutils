@@ -16,7 +16,7 @@
 # along with VMIUtils.  If not, see <http://www.gnu.org/licenses/>.
 
 import vmiutils.pbasex as pbasex
-import logger
+import logging
 
 logger = logging.getLogger('vmiutils.pbasex.fit')
 
