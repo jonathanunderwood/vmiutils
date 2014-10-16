@@ -125,7 +125,7 @@ class PbasexFit(object):
             oddl=None, method='least_squares',
             max_iterations=500, tolerance=1.0e-4):
 
-        image_cart = _build_CartesianImage(image, x, y, centre, swapxy)
+        image_cart = self._build_CartesianImage(image, x, y, centre, swapxy)
         image_polar = vmi.PolarImage()
         image_polar.from_CartesianImage(image_cart, rbins=matrix.Rbins,
                                         thetabins=matrix.Thetabins)
