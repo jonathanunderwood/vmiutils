@@ -84,8 +84,11 @@ fig.set_tight_layout(True)
 # cy = invimg_cart.centre_pixel[1]
 # invimg_cart.image[cx-5:cx+5,cy-5:cy+5]=0.0
 
+# TODO: move colorbar stuff to respective functions
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 ax = plot.subplot2grid((2, 2), (0, 0), aspect=1.0)
-fit.plot_vmi_image(axis=ax, cmap=plot.cm.gist_heat)
+im = fit.plot_vmi_image(axis=ax, cmap=plot.cm.gist_heat)
 ax.axis('image')
 ax.set_title('Experimental data')
 divider = make_axes_locatable(ax)
@@ -95,7 +98,7 @@ plot.colorbar(im, cax=cax)
 logger.debug('1/4 images done')
 
 ax = plot.subplot2grid((2, 2), (0, 1), aspect=1.0)
-fit.plot_cartesian_distribution(axis=ax, cmap=plot.cm.gist_heat)
+im = fit.plot_cartesian_distribution(axis=ax, cmap=plot.cm.gist_heat)
 ax.axis('image')
 ax.set_title('pBasex reconstruction')
 divider = make_axes_locatable(ax)
@@ -104,8 +107,8 @@ plot.colorbar(im, cax=cax)
 
 logger.debug('2/4 images done')
 
-ax = plot.subplot2grid((2, 2), (0, 0), aspect=1.0)
-fit.plot_vmi_image(axis=ax)
+ax = plot.subplot2grid((2, 2), (1, 0), aspect=1.0)
+im = fit.plot_vmi_image(axis=ax)
 ax.axis('image')
 ax.set_title('Experimental data')
 divider = make_axes_locatable(ax)
@@ -114,8 +117,8 @@ plot.colorbar(im, cax=cax)
 
 logger.debug('3/4 images done')
 
-ax = plot.subplot2grid((2, 2), (0, 1), aspect=1.0)
-fit.plot_cartesian_distribution(axis=ax)
+ax = plot.subplot2grid((2, 2), (1, 1), aspect=1.0)
+im = fit.plot_cartesian_distribution(axis=ax)
 ax.axis('image')
 ax.set_title('pBasex reconstruction')
 divider = make_axes_locatable(ax)
@@ -131,7 +134,7 @@ logger.debug('images plotted')
 
 # Second page containing the radial spectrum.
 fig = plot.figure(figsize=(8.27, 11.69 / 2), dpi=100)
-ax=plot.axes
+ax=plot.axes()
 fit.plot_radial_spectrum(axis=ax)
 ax.set_title('Radial spectrum')
 pdf_pages.savefig(fig)
@@ -164,10 +167,10 @@ for page in xrange(pages_reqd):
             break
 
         ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
-        fit.plot_beta_spectrum(axis=ax1, bvals=[this_beta])
+        fit.plot_beta_spectrum(axis=ax1, betavals=[this_beta])
 
         ax2 = ax1.twinx()
-        fit.plot_radial_spectrum(axis=ax2)
+        fit.plot_radial_spectrum(axis=ax2, linestyle='--')
 
     pdf_pages.savefig(fig)
     plot.close(fig)
@@ -195,7 +198,7 @@ for page in xrange(pages_reqd):
         fit.plot_cosn_spectrum(axis=ax1, nvals=[this_n])
 
         ax2 = ax1.twinx()
-        fit.plot_radial_spectrum(axis=ax2)
+        fit.plot_radial_spectrum(axis=ax2, linestyle='--')
 
         ax2.set_title(
             r'Radial dependence of $\langle\cos^{%d}\theta\rangle$' % this_n)

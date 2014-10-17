@@ -85,7 +85,7 @@ class PbasexFit(object):
         self.rkstep = None
         self.rmax = None
         self.vmi_image = None
-        self.__metadata = ['kmax',
+        self._metadata = ['kmax',
                            'lmax',
                            'oddl',
                            'sigma',
@@ -133,7 +133,7 @@ class PbasexFit(object):
         self.fit_data(image_polar, matrix, oddl=oddl, lmax=lmax, method=method,
                       tolerance=tolerance, max_iterations=max_iterations)
 
-        self.vmi_image = image_cart.image.copy()
+        self.vmi_image = image_cart.zoom_circle(self.rmax, pad=True)
 
     def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None,
                  method='least_squares', max_iterations=500, tolerance=1.0e-4):
@@ -737,133 +737,142 @@ class PbasexFit(object):
     def dump(self, file):
         fd = open(file, 'w')
 
-        for object in self.__metadata:
+        for object in self._metadata:
             pickle.dump(getattr(self, object), fd, protocol=2)
         numpy.save(fd, self.coef)
-        numpy.save(fd, self.vmi_image)
         self.vmi_image.dump(fd)
-
         fd.close()
 
     def load(self, file):
         fd = open(file, 'r')
 
         try:
-            for object in self.__metadata:
+            for object in self._metadata:
                 setattr(self, object, pickle.load(fd))
             self.coef = numpy.load(fd)
-            self.vmi_image = numpy.load(fd)
-            self.vmi_image = vmi.PolarImage()
+            self.vmi_image = vmi.CartesianImage()
             self.vmi_image.load(fd)
         finally:
             fd.close()
 
-        def plot_vmi_image(self, axis, cmap=matplotlib.cm.spectral,
-                           rasterized=True):
-            return self.vmi_image.plot(axis, cmap=cmap,
-                                       rasterized=rasterized)
-        def _augment(arr):
-            return numpy.append(arr, arr[-1] + arr[1] - arr[0])
+    def plot_vmi_image(self, axis, cmap=matplotlib.cm.spectral,
+                       rasterized=True):
+        return self.vmi_image.plot(axis, cmap=cmap,
+                                   rasterized=rasterized)
+    def _augment(self, arr):
+        return numpy.append(arr, arr[-1] + arr[1] - arr[0])
 
-        def plot_cartesian_distribution(self, axis, bins=500,
-                                        cmap=matplotlib.cm.spectral,
-                                        rasterized=True):
+    def plot_cartesian_distribution(self, axis, bins=500,
+                                    cmap=matplotlib.cm.spectral,
+                                    rasterized=True):
 
-            image = self.cartesian_distribution_threaded(bins=bins)
+        image = self.cartesian_distribution_threaded(bins=bins)
 
-            return ax.pcolormesh(self._augment(img.x),
-                                 self._augment(img.y),
-                                 image.image.T,
-                                 cmap=cmap,
-                                 rasterized=rasterized)
+        return axis.pcolormesh(self._augment(image.x),
+                               self._augment(image.y),
+                               image.image.T,
+                               cmap=cmap,
+                               rasterized=rasterized)
 
-        def plot_radial_spectrum(self, axis, rbins=500):
-            r, spec = self.calc_radial_spectrum(rbins=rbins)
-            line = axis.plot(r, spec)
-            axis.set_xlabel(r'$r$')#, style='italic')
-            axis.set_ylabel(r'$I(r)$ (a.u)')#, style='italic')
-            axis.set_xlim(r.min(), r.max())
+    def plot_radial_spectrum(self, axis, rbins=500, linestyle='-'):
+        r, spec = self.calc_radial_spectrum(rbins=rbins)
+        line = axis.plot(r, spec, linestyle=linestyle)
+        axis.set_xlabel(r'$r$')#, style='italic')
+        axis.set_ylabel(r'$I(r)$ (a.u)')#, style='italic')
+        axis.set_xlim(r.min(), r.max())
 
-            return line
+        return line
 
-        def plot_beta_spectrum(self, axis, betavals, rbins=500,
-                               scale_min=None, scale_max=None):
+    def plot_beta_spectrum(self, axis, betavals, rbins=500,
+                           scale_min=None, scale_max=None):
 
-            # TODO: adjust beta value calculation to only calculate
-            # requested beta values, not all of them
-            r, beta = self.beta_coefficients_threaded(rbins=rbins)
+        # TODO: adjust beta value calculation to only calculate
+        # requested beta values, not all of them
+        r, beta = self.beta_coefficients_threaded(rbins=rbins)
 
-            if len(betavals) == 1:
-                b = betavals[0]
-                lines = axis.plot(r, beta[b],
-                                  label=r'$l=${0}'.format(b))
-                axis.set_ylabel(r'$\beta_{0}$'.format(b))
-                axis.set_xlabel(r'$r$')
-            else:
-                lines = []
-                for b in betavals:
-                    line = axis.plot(r, beta[b], label=r'$l=${0}'.format(b))
-                    lines.append(line)
-                    ymin = min(ymin, beta[b].min())
-                    ymax = max(ymax, beta[b].max())
+        ymin = scale_min
+        ymax = scale_max
 
-                # TODO: add options for legend.
-                # ax.legend(loc='upper left',
-                #           bbox_to_anchor=(1.1, 1.0),
-                #           fontsize=8)
-                axis.set_ylabel(r'$\beta_l$')
-                axis.set_xlabel(r'$r$')
+        if len(betavals) == 1:
+            b = betavals[0]
+            lines = axis.plot(r, beta[b],
+                              label=r'$l=${0}'.format(b))
+            axis.set_ylabel(r'$\beta_{{{0}}}$'.format(b))
+            axis.set_xlabel(r'$r$')
+        else:
+            lines = []
+            for b in betavals:
+                line = axis.plot(r, beta[b], label=r'$l=${0}'.format(b))
+                lines.append(line)
 
-            axis.set_autoscale_on(False)
+                if scale_min is None:
+                    if ymin is None:
+                        ymin = beta[b].min()
+                    else:
+                        ymin = min(ymin, beta[b].min())
 
-            if scale_min is not None:
-                ymin = scale_min
+                if scale_max is None:
+                    if ymax is None:
+                        ymax = beta[b].max()
+                    else:
+                        ymax = max(ymax, beta[b].max())
 
-            if scale_max is not None:
-                ymax = scale_max
+            # TODO: add options for legend.
+            # ax.legend(loc='upper left',
+            #           bbox_to_anchor=(1.1, 1.0),
+            #           fontsize=8)
+            axis.set_ylabel(r'$\beta_l$')
+            axis.set_xlabel(r'$r$')
 
-            axis.set_ylim(ymin, ymax)
-            axis.set_xlim(r.min(), r.max())
+        axis.set_autoscale_on(False)
+        axis.set_ylim(ymin, ymax)
+        axis.set_xlim(r.min(), r.max())
 
-            return lines
+        return lines
 
-        def plot_cosn_spectrum(self, axis, nvals, rbins=500,
-                               scale_min=None, scale_max=None):
+    def plot_cosn_spectrum(self, axis, nvals, rbins=500,
+                           scale_min=None, scale_max=None):
 
-            # TODO: adjust beta value calculation to only calculate
-            # requested beta values, not all of them
-            r, cosn = self.cosn_expval2(rbins=rbins)
+        # TODO: adjust cosn value calculation to only calculate
+        # requested beta values, not all of them
+        r, cosn = self.cosn_expval2(rbins=rbins)
 
-            if len(nvals) == 1:
-                n = nvals[0]
-                lines = axis.plot(r, cosn[n],
-                                  label=r'$n=${0}'.format(b))
-                ax.set_ylabel(r'$\langle\cos^{0}\theta\rangle$'.format(n))
-                axis.set_xlabel(r'$r$')
-            else:
-                lines = []
-                for n in nvals:
-                    line = axis.plot(r, cosn[n], label=r'$n=${0}'.format(n))
-                    lines.append(line)
+        ymin = scale_min
+        ymax = scale_max
+
+        if len(nvals) == 1:
+            n = nvals[0]
+            lines = axis.plot(r, cosn[n],
+                              label=r'$n=${0}'.format(n))
+            axis.set_ylabel(r'$\langle\cos^{{{0}}}\theta\rangle$'.format(n))
+            axis.set_xlabel(r'$r$')
+        else:
+            lines = []
+            for n in nvals:
+                line = axis.plot(r, cosn[n], label=r'$n=${0}'.format(n))
+                lines.append(line)
+
+            if scale_min is None:
+                if ymin is None:
+                    ymin = cosn[n].min()
+                else:
                     ymin = min(ymin, cosn[n].min())
+
+            if scale_max is None:
+                if ymax is None:
+                    ymax = cosn[n].max()
+                else:
                     ymax = max(ymax, cosn[n].max())
 
-                # TODO: add options for legend.
-                # ax.legend(loc='upper left',
-                #           bbox_to_anchor=(1.1, 1.0),
-                #           fontsize=8)
-                ax.set_ylabel(r'$\langle\cos^n\theta\rangle$')
-                axis.set_xlabel(r'$r$')
+            # TODO: add options for legend.
+            # ax.legend(loc='upper left',
+            #           bbox_to_anchor=(1.1, 1.0),
+            #           fontsize=8)
+            axis.set_ylabel(r'$\langle\cos^n\theta\rangle$')
+            axis.set_xlabel(r'$r$')
 
-            axis.set_autoscale_on(False)
+        axis.set_autoscale_on(False)
+        axis.set_ylim(ymin, ymax)
+        axis.set_xlim(r.min(), r.max())
 
-            if scale_min is not None:
-                ymin = scale_min
-
-            if scale_max is not None:
-                ymax = scale_max
-
-            axis.set_ylim(ymin, ymax)
-            axis.set_xlim(r.min(), r.max())
-
-            return lines
+        return lines

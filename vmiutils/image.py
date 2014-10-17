@@ -22,6 +22,7 @@ import logging
 import scipy.ndimage
 from scipy.special import lpn as legpol
 import copy
+import pickle
 import matplotlib
 import matplotlib.cm
 
@@ -504,28 +505,29 @@ class CartesianImage():
     def dump(self, fd):
         """ Dump instance of this class to a file descriptor fd.
         """
-
         for object in self._metadata:
             pickle.dump(getattr(self, object), fd, protocol=2)
+
         for object in self._numpydata:
             numpy.save(fd, getattr(self, object))
 
     def load(self, fd):
         """ Load a previously dumped instance of this class from a file
-        descriptor. """
+        descriptor fd. """
         for object in self._metadata:
             setattr(self, object, pickle.load(fd))
+
         for object in self._numpydata:
             setattr(self, object, numpy.load(fd))
 
-    def _augment(arr):
+    def _augment(self, arr):
         return numpy.append(arr, arr[-1] + arr[1] - arr[0])
 
     def plot(self, axis, cmap=matplotlib.cm.spectral,
              rasterized=True):
         return axis.pcolormesh(self._augment(self.x),
                                self._augment(self.y),
-                               self.image, cmap=cmap,
+                               self.image.T, cmap=cmap,
                                rasterized=rasterized)
 
 
