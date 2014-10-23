@@ -756,35 +756,71 @@ class PbasexFit(object):
             fd.close()
 
     def plot_vmi_image(self, axis, cmap=matplotlib.cm.spectral,
-                       rasterized=True):
-        return self.vmi_image.plot(axis, cmap=cmap,
-                                   rasterized=rasterized)
+                       xlabel=None, ylabel=None, rasterized=True):
+        im = self.vmi_image.plot(axis, cmap=cmap,
+                                 rasterized=rasterized)
+        if xlabel is None:
+            axis.set_xlabel(r'$x$ (pixels)')
+        else:
+            axis.set_xlabel(xlabel)
+
+        if ylabel is None:
+            axis.set_ylabel(r'$y$ (pixels)')
+        else:
+            axis.set_ylabel(ylabel)
+
+        return im
+
     def _augment(self, arr):
         return numpy.append(arr, arr[-1] + arr[1] - arr[0])
 
     def plot_cartesian_distribution(self, axis, bins=500,
                                     cmap=matplotlib.cm.spectral,
+                                    xlabel=None, ylabel=None,
                                     rasterized=True):
 
         image = self.cartesian_distribution_threaded(bins=bins)
 
-        return axis.pcolormesh(self._augment(image.x),
-                               self._augment(image.y),
-                               image.image.T,
-                               cmap=cmap,
-                               rasterized=rasterized)
+        im = axis.pcolormesh(self._augment(image.x),
+                             self._augment(image.y),
+                             image.image.T,
+                             cmap=cmap,
+                             rasterized=rasterized)
+        if xlabel is None:
+            axis.set_xlabel(r'$x$ (pixels)')
+        else:
+            axis.set_xlabel(xlabel)
 
-    def plot_radial_spectrum(self, axis, rbins=500, linestyle='-'):
+        if ylabel is None:
+            axis.set_ylabel(r'$y$ (pixels)')
+        else:
+            axis.set_ylabel(ylabel)
+
+        return im
+
+    def plot_radial_spectrum(self, axis, rbins=500, linestyle='-',
+                             xlabel=None, ylabel=None):
         r, spec = self.calc_radial_spectrum(rbins=rbins)
+
         line = axis.plot(r, spec, linestyle=linestyle)
-        axis.set_xlabel(r'$r$')#, style='italic')
-        axis.set_ylabel(r'$I(r)$ (a.u)')#, style='italic')
+
+        if xlabel is None:
+            axis.set_xlabel(r'$r$')#, style='italic')
+        else:
+            axis.set_xlabel(xlabel)
+
+        if ylabel is None:
+            axis.set_ylabel(r'$I(r)$ (a.u)')#, style='italic')
+        else:
+            axis.set_ylabel(ylabel)
+
         axis.set_xlim(r.min(), r.max())
 
         return line
 
     def plot_beta_spectrum(self, axis, betavals, rbins=500,
-                           scale_min=None, scale_max=None):
+                           scale_min=None, scale_max=None,
+                           xlabel=None, ylabel=None):
 
         # TODO: adjust beta value calculation to only calculate
         # requested beta values, not all of them
@@ -797,8 +833,15 @@ class PbasexFit(object):
             b = betavals[0]
             lines = axis.plot(r, beta[b],
                               label=r'$l=${0}'.format(b))
-            axis.set_ylabel(r'$\beta_{{{0}}}$'.format(b))
-            axis.set_xlabel(r'$r$')
+            if ylabel is None:
+                axis.set_ylabel(r'$\beta_{{{0}}}$'.format(b))
+            else:
+                axis.set_ylabel(ylabel)
+
+            if xlabel is None:
+                axis.set_xlabel(r'$r$ (pixels)')
+            else:
+                axis.set_xlabel(xlabel)
         else:
             lines = []
             for b in betavals:
@@ -821,8 +864,15 @@ class PbasexFit(object):
             # ax.legend(loc='upper left',
             #           bbox_to_anchor=(1.1, 1.0),
             #           fontsize=8)
-            axis.set_ylabel(r'$\beta_l$')
-            axis.set_xlabel(r'$r$')
+            if ylabel is None:
+                axis.set_ylabel(r'$\beta_l$')
+            else:
+                axis.set_ylabel(ylabel)
+
+            if xlabel is None:
+                axis.set_xlabel(r'$r$ (pixels)')
+            else:
+                axis.set_xlabel(xlabel)
 
         axis.set_autoscale_on(False)
         axis.set_ylim(ymin, ymax)
@@ -831,8 +881,8 @@ class PbasexFit(object):
         return lines
 
     def plot_cosn_spectrum(self, axis, nvals, rbins=500,
-                           scale_min=None, scale_max=None):
-
+                           scale_min=None, scale_max=None,
+                           xlabel=None, ylabel=None):
         # TODO: adjust cosn value calculation to only calculate
         # requested beta values, not all of them
         r, cosn = self.cosn_expval2(rbins=rbins)
@@ -844,8 +894,15 @@ class PbasexFit(object):
             n = nvals[0]
             lines = axis.plot(r, cosn[n],
                               label=r'$n=${0}'.format(n))
-            axis.set_ylabel(r'$\langle\cos^{{{0}}}\theta\rangle$'.format(n))
-            axis.set_xlabel(r'$r$')
+            if ylabel is None:
+                axis.set_ylabel(r'$\langle\cos^{{{0}}}\theta\rangle$'.format(n))
+            else:
+                axis.set_ylabel(ylabel)
+
+            if xlabel is None:
+                axis.set_xlabel(r'$r$ (pixels)')
+            else:
+                axis.set_xlabel(xlabel)
         else:
             lines = []
             for n in nvals:
@@ -868,8 +925,15 @@ class PbasexFit(object):
             # ax.legend(loc='upper left',
             #           bbox_to_anchor=(1.1, 1.0),
             #           fontsize=8)
-            axis.set_ylabel(r'$\langle\cos^n\theta\rangle$')
-            axis.set_xlabel(r'$r$')
+            if ylabel is None:
+                axis.set_ylabel(r'$\langle\cos^n\theta\rangle$')
+            else:
+                axis.set_ylabel(ylabel)
+
+            if xlabel is None:
+                axis.set_xlabel(r'$r$ (pixels)')
+            else:
+                axis.set_xlabel(xlabel)
 
         axis.set_autoscale_on(False)
         axis.set_ylim(ymin, ymax)
