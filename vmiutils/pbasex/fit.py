@@ -811,7 +811,7 @@ class PbasexFitRadialSpectrum(object):
         line = axis.plot(self.r, self.spec, linestyle=linestyle)
 
         if xlabel is None:
-            axis.set_xlabel(r'$r$')#, style='italic')
+            axis.set_xlabel(r'$r$ (pixels)')#, style='italic')
         else:
             axis.set_xlabel(xlabel)
 
