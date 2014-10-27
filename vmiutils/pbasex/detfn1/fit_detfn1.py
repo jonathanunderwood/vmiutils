@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with VMIUtils.  If not, see <http://www.gnu.org/licenses/>.
 
+import vmiutils as vmi
 import vmiutils.pbasex as pbasex
 import logging
 
@@ -35,7 +36,7 @@ class PbasexFitDetfn1(pbasex.PbasexFit):
             oddl=None, method='least_squares',
             max_iterations=500, tolerance=1.0e-4):
 
-        image_cart = _build_CartesianImage(image, x, y, centre, swapxy)
+        image_cart = self._build_CartesianImage(image, x, y, centre, swapxy)
 
         # This next part is key. The matrix has been calculated using a
         # previous pbasex fit, and so (unlike the general pbasex case) the
@@ -49,7 +50,7 @@ class PbasexFitDetfn1(pbasex.PbasexFit):
         image_polar.from_CartesianImage(image_cart_zoom, rbins=matrix.Rbins,
                                         thetabins=matrix.Thetabins)
 
-        fit_data(image_polar, matrix, oddl=oddl, lmax=lmax, method=method,
-                 tolerance=tolerance, max_iterations=max_iterations)
+        self.fit_data(image_polar, matrix, oddl=oddl, lmax=lmax, method=method,
+                      tolerance=tolerance, max_iterations=max_iterations)
 
-        self.vmi_image = image_cart.image.copy()
+        self.vmi_image = image_cart_zoom

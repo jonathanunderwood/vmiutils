@@ -96,7 +96,7 @@ class PbasexFit(object):
     def _build_CartesianImage(self, image, x, y, centre, swapxy):
         # Wrap VMI data into instance of CartesianImage
         if swapxy is True:
-            img = img.transpose()
+            image = image.transpose()
             if x is not None and y is not None:
                 newx = y
                 newy = x
@@ -107,7 +107,7 @@ class PbasexFit(object):
                 else:
                     centre = None
             else:
-                if args.centre is not None:
+                if centre is not None:
                     centre = (centre[0], centre[1])
                 else:
                     centre = None
