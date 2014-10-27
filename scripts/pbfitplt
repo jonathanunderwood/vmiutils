@@ -49,21 +49,20 @@ fit = pb.PbasexFit()
 fit.load(args.fit_file)
 logger.debug('fit data loaded')
 
-# r1, spec = fit.calc_radial_spectrum()
-# logger.debug('radial spectrum calculated')
+vmi_im = pb.PbasexFitVMI(fit)
+logger.debug('VMI established')
 
-# r2, beta = fit.beta_coefficients_threaded()
-# logger.debug('beta coefficients calculated')
+cart_im = pb.PbasexFitCartesianImage(fit)
+logger.debug('cartesian distribution calculated')
 
-# r3, cosn = fit.cosn_expval2()
-# logger.debug('cos^n(theta) expectation values calculated')
+radial_spec = pb.PbasexFitRadialSpectrum(fit)
+logger.debug('radial spectrum calculated')
 
-# invimg_cart = fit.cartesian_distribution_threaded(
-#     bins=250)#, weighting='compound')
-# logger.debug('cartesian distribution calculated')
+beta_spec = pb.PbasexFitBetaSpectrum(fit)
+logger.debug('beta coefficients calculated')
 
-# vmicart_zoom = vmicart.zoom_circle(fit.rmax, pad=True)
-# logger.debug('zoom of original image calculated')
+cosn_spec = pb.PbasexFitCosnSpectrum(fit)
+logger.debug('cos^n(theta) expectation values calculated')
 
 # Generate plots in a multi page PDF file
 pdf_pages = PdfPages(args.output_file)
@@ -88,7 +87,7 @@ fig.set_tight_layout(True)
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 ax = plot.subplot2grid((2, 2), (0, 0), aspect=1.0)
-im = fit.plot_vmi_image(axis=ax, cmap=plot.cm.gist_heat)
+im = vmi_im.plot(axis=ax, cmap=plot.cm.gist_heat)
 ax.axis('image')
 ax.set_title('Experimental data')
 divider = make_axes_locatable(ax)
@@ -98,7 +97,7 @@ plot.colorbar(im, cax=cax)
 logger.debug('1/4 images done')
 
 ax = plot.subplot2grid((2, 2), (0, 1), aspect=1.0)
-im = fit.plot_cartesian_distribution(axis=ax, cmap=plot.cm.gist_heat)
+im = cart_im.plot(axis=ax, cmap=plot.cm.gist_heat)
 ax.axis('image')
 ax.set_title('pBasex reconstruction')
 divider = make_axes_locatable(ax)
@@ -108,7 +107,7 @@ plot.colorbar(im, cax=cax)
 logger.debug('2/4 images done')
 
 ax = plot.subplot2grid((2, 2), (1, 0), aspect=1.0)
-im = fit.plot_vmi_image(axis=ax)
+im = vmi_im.plot(axis=ax)
 ax.axis('image')
 ax.set_title('Experimental data')
 divider = make_axes_locatable(ax)
@@ -118,7 +117,7 @@ plot.colorbar(im, cax=cax)
 logger.debug('3/4 images done')
 
 ax = plot.subplot2grid((2, 2), (1, 1), aspect=1.0)
-im = fit.plot_cartesian_distribution(axis=ax)
+im = cart_im.plot(axis=ax)
 ax.axis('image')
 ax.set_title('pBasex reconstruction')
 divider = make_axes_locatable(ax)
@@ -135,7 +134,7 @@ logger.debug('images plotted')
 # Second page containing the radial spectrum.
 fig = plot.figure(figsize=(8.27, 11.69 / 2), dpi=100)
 ax=plot.axes()
-fit.plot_radial_spectrum(axis=ax)
+radial_spec.plot(axis=ax)
 ax.set_title('Radial spectrum')
 pdf_pages.savefig(fig)
 plot.close(fig)
@@ -167,10 +166,10 @@ for page in xrange(pages_reqd):
             break
 
         ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
-        fit.plot_beta_spectrum(axis=ax1, betavals=[this_beta])
+        beta_spec.plot(axis=ax1, betavals=[this_beta])
 
         ax2 = ax1.twinx()
-        fit.plot_radial_spectrum(axis=ax2, linestyle='--')
+        radial_spec.plot(axis=ax2, linestyle='--')
 
     pdf_pages.savefig(fig)
     plot.close(fig)
@@ -193,12 +192,10 @@ for page in xrange(pages_reqd):
             break
 
         ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
-
-        ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
-        fit.plot_cosn_spectrum(axis=ax1, nvals=[this_n])
+        cosn_spec.plot(axis=ax1, nvals=[this_n])
 
         ax2 = ax1.twinx()
-        fit.plot_radial_spectrum(axis=ax2, linestyle='--')
+        radial_spec.plot(axis=ax2, linestyle='--')
 
         ax2.set_title(
             r'Radial dependence of $\langle\cos^{%d}\theta\rangle$' % this_n)

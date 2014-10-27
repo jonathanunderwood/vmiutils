@@ -16,4 +16,4 @@
 # along with VMIUtils.  If not, see <http://www.gnu.org/licenses/>.
 
 from matrix import PbasexMatrix
-from fit import PbasexFit
+from fit import PbasexFit, PbasexFitVMI, PbasexFitCartesianImage, PbasexFitRadialSpectrum, PbasexFitBetaSpectrum, PbasexFitCosnSpectrum
