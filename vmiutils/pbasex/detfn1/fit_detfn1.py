@@ -54,3 +54,17 @@ class PbasexFitDetfn1(pbasex.PbasexFit):
                       tolerance=tolerance, max_iterations=max_iterations)
 
         self.vmi_image = image_cart_zoom
+
+        # Store the detection function as well, so that we can
+        # calculate overlap functions of the extracted distribution
+        # with the detection function.
+        self.detectionfn = matrix.detectionfn
+
+    def dump(self, fd):
+        super(PbasexFit, self).dump(fd)
+        self.detectionfin.dump(fd)
+
+    def load(self, fd):
+        super(Pbasexfit, self).dump(fd)
+        self.detectionfn = PbasexFit()
+        self.detectionfin.load(fd)

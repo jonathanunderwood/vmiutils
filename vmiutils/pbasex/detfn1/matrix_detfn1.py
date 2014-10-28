@@ -45,10 +45,14 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
     def __init__(self):
         super(PbasexMatrixDetFn1, self).__init__()
         self.detectionfn = None
+        self.alpha = None
+        self.beta = None
         self.rmax = None
         self.description = 'pbasex_detfn1_matrix'
         self._metadata += ['method',
-                           'rmax']
+                           'rmax',
+                           'alpha',
+                           'beta']
 
     def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax,
                              detectionfn, alpha=0.0, beta=0.0,
@@ -223,14 +227,17 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         # (self.Rbins / self.rmax) if needs be, so we don't save
         # that.
         self.rmax = detectionfn.rmax
-        # Also save the detectionfn for future reference
-        self.detectionfn = detectionfn
 
-        def dump(fd):
+        # Also save the detectionfn details for future reference
+        self.detectionfn = detectionfn
+        self.alpha = alpha
+        self.beta = beta
+
+        def dump(self, fd):
             super(PbasexFit, self).dump(fd)
             self.detectionfn.dump(fd)
 
-        def load(fd):
+        def load(self, fd):
             super(PbasexFit, self).load(fd)
             self.detectionfn = PbasexFit()
             self.detectionfn.load(fd)

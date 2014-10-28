@@ -117,5 +117,8 @@ fit.fit(img, mtx, centre=args.centre, swapxy=args.swapxy,
 logger.debug('data fit')
 
 logger.debug('writing data to {0}'.format(args.output_file))
-fit.dump(args.output_file)
+fd = open(args.output_file, 'w')
+fit.dump(fd)
+fd.close()
+
 logger.debug('done')
