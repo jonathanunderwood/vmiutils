@@ -40,9 +40,7 @@ def calc(args):
     detectfn = pbasex.PbasexFit()
     logger.info ('loading detector function file: {0}'.format(args.detectfn))
     try:
-        fd = open(args.detectfn, 'r')
-        detectfn.load(fd)
-        fd.close()
+        detectfn.load(args.detectfn)
     except IOError:
         logger.error('could not read file: {0}'.format(args.detectfn))
 

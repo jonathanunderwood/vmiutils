@@ -59,7 +59,7 @@ parser.add_argument('--detfn-type', default=None,
                     help='Specify the detection function model to be used. Currently only type 1 is allowed, corresponding to detfn1')
 
 args = parser.parse_args()
-print 'meth:', args.method
+
 if args.lmax is -1:
     lmax = None
 else:
@@ -117,8 +117,6 @@ fit.fit(img, mtx, centre=args.centre, swapxy=args.swapxy,
 logger.debug('data fit')
 
 logger.debug('writing data to {0}'.format(args.output_file))
-fd = open(args.output_file, 'w')
-fit.dump(fd)
-fd.close()
+fit.dump(args.output_file)
 
 logger.debug('done')

@@ -196,22 +196,25 @@ class PbasexMatrix(object):
         self.epsabs = epsabs
         self.epsrel = epsrel
 
-    def dump(self, file):
-        fd = open(file, 'w')
-
+    def dumpfd(self, fd):
         for object in self._metadata:
             pickle.dump(getattr(self, object), fd, protocol=2)
         numpy.save(fd, self.matrix)
 
+    def loadfd(self, fd):
+        for object in self._metadata:
+            setattr(self, object, pickle.load(fd))
+        self.matrix = numpy.load(fd)
+
+    def dump(self, file):
+        fd = open(file, 'w')
+        self.dumpfd(fd)
         fd.close()
 
     def load(self, file):
         fd = open(file, 'r')
-
         try:
-            for object in self._metadata:
-                setattr(self, object, pickle.load(fd))
-            self.matrix = numpy.load(fd)
+            self.loadfd(fd)
         finally:
             fd.close()
 

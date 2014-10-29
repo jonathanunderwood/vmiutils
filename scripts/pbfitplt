@@ -28,10 +28,6 @@ matplotlib.use('PDF')
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plot
 
-
-def augment(arr):
-    return numpy.append(arr, arr[-1] + arr[1] - arr[0])
-
 logging.basicConfig(format="%(threadName)s:%(message)s", level=logging.DEBUG)
 logger = logging.getLogger('pbfit')
 
@@ -46,9 +42,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 fit = pb.PbasexFit()
-fd = open(args.fit_file, 'r')
-fit.load(fd)
-fd.close()
+fit.load(args.fit_file)
 logger.debug('fit data loaded')
 
 vmi_im = pb.PbasexFitVMI(fit)

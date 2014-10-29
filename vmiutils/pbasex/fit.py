@@ -734,19 +734,30 @@ class PbasexFit(object):
 
         return r, beta
 
-    def dump(self, fd):
+    def dumpfd(self, fd):
         for object in self._metadata:
             pickle.dump(getattr(self, object), fd, protocol=2)
         numpy.save(fd, self.coef)
         self.vmi_image.dump(fd)
 
-    def load(self, fd):
+    def loadfd(self, fd):
         for object in self._metadata:
             setattr(self, object, pickle.load(fd))
         self.coef = numpy.load(fd)
         self.vmi_image = vmi.CartesianImage()
         self.vmi_image.load(fd)
 
+    def dump(self, file):
+        fd = open(file, 'w')
+        self.dumpfd(fd)
+        fd.close()
+
+    def load(self, file):
+        fd = open(file, 'r')
+        try:
+            self.loadfd(fd)
+        finally:
+            fd.close()
 
 class PbasexFitVMI(object):
     def __init__(self, fit):

@@ -60,11 +60,11 @@ class PbasexFitDetfn1(pbasex.PbasexFit):
         # with the detection function.
         self.detectionfn = matrix.detectionfn
 
-    def dump(self, fd):
-        super(PbasexFit, self).dump(fd)
-        self.detectionfin.dump(fd)
+    def dumpfd(self, fd):
+        super(PbasexFitDetfn1, self).dumpfd(fd)
+        self.detectionfn.dumpfd(fd)
 
-    def load(self, fd):
-        super(Pbasexfit, self).dump(fd)
+    def loadfd(self, fd):
+        super(PbasexFitDetfn1, self).dumpfd(fd)
         self.detectionfn = PbasexFit()
-        self.detectionfin.load(fd)
+        self.detectionfn.loadfd(fd)

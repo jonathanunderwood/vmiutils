@@ -233,14 +233,15 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         self.alpha = alpha
         self.beta = beta
 
-        def dump(self, fd):
-            super(PbasexFit, self).dump(fd)
-            self.detectionfn.dump(fd)
+    def dumpfd(self, fd):
+        super(PbasexMatrixDetFn1, self).dumpfd(fd)
+        self.detectionfn.dumpfd(fd)
 
-        def load(self, fd):
-            super(PbasexFit, self).load(fd)
-            self.detectionfn = PbasexFit()
-            self.detectionfn.load(fd)
+    def loadfd(self, fd):
+        print 'here'
+        super(PbasexMatrixDetFn1, self).loadfd(fd)
+        self.detectionfn = pbasex.PbasexFit()
+        self.detectionfn.loadfd(fd)
 
 if __name__ == "__main__":
     import vmiutils as vmi
