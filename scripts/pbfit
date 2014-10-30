@@ -106,7 +106,7 @@ else:
 if args.detfn_type is None:
     fit = pbasex.PbasexFit()
 elif args.detfn_type == 'detfn1':
-    fit = pbasex_detfn1.PbasexFitDetfn1()
+    fit = pbasex_detfn1.PbasexFitDetFn1()
 else:
     raise NotImplementedError
 

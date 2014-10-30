@@ -23,6 +23,7 @@ import logging
 import numpy
 import vmiutils as vmi
 import vmiutils.pbasex as pb
+import vmiutils.pbasex.detfn1 as pbdetfn1
 import matplotlib
 matplotlib.use('PDF')
 from matplotlib.backends.backend_pdf import PdfPages
@@ -39,9 +40,18 @@ parser.add_argument('fit_file', help='Name of file containing PBASEX fit')
 parser.add_argument(
     'output_file', help='Name of file (PDF) to which the plots are to be saved')
 
+parser.add_argument(
+    '--type', help='Type of fit file. Currently supported are "normal" (default) and "detfn1"', default='normal')
+
 args = parser.parse_args()
 
-fit = pb.PbasexFit()
+if args.type == 'normal':
+    fit = pb.PbasexFit()
+elif args.type == 'detfn1':
+    fit = pbdetfn1.PbasexFitDetFn1()
+else:
+    raise NotImplementedError
+
 fit.load(args.fit_file)
 logger.debug('fit data loaded')
 
@@ -201,6 +211,22 @@ for page in xrange(pages_reqd):
     plot.close(fig)
 
 logger.debug('<cos^n(theta)> plotted')
+
+if args.type == 'detfn1':
+    overlap = pbdetfn1.PbasexFitDetFn1OverlapSpectrum(fit)
+    logger.debug('overlap spectrum calculated')
+    probespec = pbdetfn1.PbasexFitDetFn1ProbeRadialSpectrum(fit)
+    logger.debug('probe spectrum calculated')
+    fig = plot.figure(figsize=(8.27, 11.69 / 2), dpi=100)
+    ax1 = plot.axes()
+    overlap.plot(axis=ax1)#, scale_min=0.0, scale_max=1.0)
+    ax2 = ax1.twinx()
+    probespec.plot(axis=ax2, linestyle='--')
+    ax1.set_title('Angular overlap factor')
+    pdf_pages.savefig(fig)
+    plot.close(fig)
+    logger.debug('overlap factor and probe radial spectrum plotted')
+
 
 # Close PDF file
 pdf_pages.close()

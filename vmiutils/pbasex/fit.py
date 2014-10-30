@@ -807,6 +807,9 @@ class PbasexFitCartesianImage(object):
         return im
 
 class PbasexFitRadialSpectrum(object):
+    xlabel = r'$r$ (pixels)'
+    ylabel = r'$I(r)$ (a.u)'
+
     def __init__(self, fit, rbins=500):
         self.r, self.spec = fit.calc_radial_spectrum(rbins=rbins)
 
@@ -815,12 +818,12 @@ class PbasexFitRadialSpectrum(object):
         line = axis.plot(self.r, self.spec, linestyle=linestyle)
 
         if xlabel is None:
-            axis.set_xlabel(r'$r$ (pixels)')#, style='italic')
+            axis.set_xlabel(self.xlabel)
         else:
             axis.set_xlabel(xlabel)
 
         if ylabel is None:
-            axis.set_ylabel(r'$I(r)$ (a.u)')#, style='italic')
+            axis.set_ylabel(self.ylabel)
         else:
             axis.set_ylabel(ylabel)
 

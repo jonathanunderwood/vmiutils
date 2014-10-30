@@ -1,2 +1,2 @@
 from matrix_detfn1 import PbasexMatrixDetFn1
-from fit_detfn1 import  PbasexFitDetfn1
+from fit_detfn1 import PbasexFitDetFn1, PbasexFitDetFn1OverlapSpectrum, PbasexFitDetFn1ProbeRadialSpectrum
