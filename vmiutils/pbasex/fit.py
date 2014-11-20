@@ -777,6 +777,8 @@ class PbasexFitVMI(object):
         else:
             axis.set_ylabel(ylabel)
 
+        axis.axis('image')
+
         return im
 
 def _augment(arr):
@@ -804,11 +806,13 @@ class PbasexFitCartesianImage(object):
         else:
             axis.set_ylabel(ylabel)
 
+        axis.axis('image')
+
         return im
 
 class PbasexFitRadialSpectrum(object):
     xlabel = r'$r$ (pixels)'
-    ylabel = r'$I(r)$ (a.u)'
+    ylabel = r'$I$ (a.u)'
 
     def __init__(self, fit, rbins=500):
         self.r, self.spec = fit.calc_radial_spectrum(rbins=rbins)
@@ -834,11 +838,21 @@ class PbasexFitRadialSpectrum(object):
 class PbasexFitBetaSpectrum(object):
     def __init__(self, fit, rbins=500):
         self.r, self.beta = fit.beta_coefficients_threaded(rbins=rbins)
+        self.lmax = fit.lmax
+        self.oddl = fit.oddl
 
-    def plot(self, axis, betavals, rbins=500, scale_min=None,
-             scale_max=None, xlabel=None, ylabel=None):
+    def plot(self, axis, betavals=None, rbins=500, scale_min=None,
+             scale_max=None, xlabel=None, ylabel=None, colormap=matplotlib.cm.jet):
         ymin = scale_min
         ymax = scale_max
+
+        if betavals is None:
+            if self.oddl is True:
+                linc = 1
+            else:
+                linc = 2
+
+            betavals = range(linc, self.lmax + 1, linc)
 
         if len(betavals) == 1:
             b = betavals[0]
@@ -855,22 +869,24 @@ class PbasexFitBetaSpectrum(object):
                 axis.set_xlabel(xlabel)
         else:
             lines = []
+            colors = iter(colormap(numpy.linspace(0.0, 0.95, len(betavals))))
             for b in betavals:
+                color = next(colors)
                 line = axis.plot(self.r, self.beta[b],
-                                 label=r'$l=${0}'.format(b))
+                                 label=r'$l=${0}'.format(b), color=color)
                 lines.append(line)
 
                 if scale_min is None:
                     if ymin is None:
-                        ymin = beta[b].min()
+                        ymin = self.beta[b].min()
                     else:
-                        ymin = min(ymin, beta[b].min())
+                        ymin = min(ymin, self.beta[b].min())
 
                 if scale_max is None:
                     if ymax is None:
-                        ymax = beta[b].max()
+                        ymax = self.beta[b].max()
                     else:
-                        ymax = max(ymax, beta[b].max())
+                        ymax = max(ymax, self.beta[b].max())
 
             # TODO: add options for legend.
             # ax.legend(loc='upper left',
@@ -895,11 +911,21 @@ class PbasexFitBetaSpectrum(object):
 class PbasexFitCosnSpectrum(object):
     def __init__(self, fit, rbins=500):
         self.r, self.cosn = fit.cosn_expval2(rbins=rbins)
+        self.lmax = fit.lmax
+        self.oddl = fit.oddl
 
     def plot(self, axis, nvals, rbins=500, scale_min=None,
-             scale_max=None, xlabel=None, ylabel=None):
+             scale_max=None, xlabel=None, ylabel=None, colormap=matplotlib.cm.jet):
         ymin = scale_min
         ymax = scale_max
+
+        if nvals is None:
+            if self.oddl is True:
+                linc = 1
+            else:
+                linc = 2
+
+            nvals = range(linc, self.lmax + 1, linc)
 
         if len(nvals) == 1:
             n = nvals[0]
@@ -916,9 +942,11 @@ class PbasexFitCosnSpectrum(object):
                 axis.set_xlabel(xlabel)
         else:
             lines = []
+            colors = iter(colormap(numpy.linspace(0.0, 0.95, len(nvals))))
             for n in nvals:
+                color = next(colors)
                 line = axis.plot(self.r, self.cosn[n],
-                                 label=r'$n=${0}'.format(n))
+                                 label=r'$n=${0}'.format(n), color=color)
                 lines.append(line)
 
             if scale_min is None:
