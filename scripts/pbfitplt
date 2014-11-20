@@ -94,7 +94,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 ax = plot.subplot2grid((2, 2), (0, 0), aspect=1.0)
 im = vmi_im.plot(axis=ax, cmap=plot.cm.gist_heat)
-ax.axis('image')
 ax.set_title('Experimental data')
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -104,7 +103,6 @@ logger.debug('1/4 images done')
 
 ax = plot.subplot2grid((2, 2), (0, 1), aspect=1.0)
 im = cart_im.plot(axis=ax, cmap=plot.cm.gist_heat)
-ax.axis('image')
 ax.set_title('pBasex reconstruction')
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="5%", pad=0.05)
