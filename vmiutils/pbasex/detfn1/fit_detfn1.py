@@ -214,7 +214,7 @@ class PbasexFitDetFn1OverlapSpectrum(object):
             axis.set_xlabel(xlabel)
 
         if ylabel is None:
-            axis.set_ylabel(r'Angular overlap factor$(r)$ (a.u)')#, style='italic')
+            axis.set_ylabel(r'Overlap (a.u)')#, style='italic')
         else:
             axis.set_ylabel(ylabel)
 
@@ -237,7 +237,7 @@ class PbasexFitDetFn1OverlapSpectrum(object):
 
 class PbasexFitDetFn1ProbeRadialSpectrum(pbasex.PbasexFitRadialSpectrum):
     xlabel = r'$r$ (pixels)'
-    ylabel = r'$I_\mathrm{probe}(r)$ (a.u)'
+    ylabel = r'$I_\mathrm{probe}$ (a.u)'
 
     def __init__(self, fit, rbins=500):
         self.r, self.spec = fit.probe_radial_spectrum(rbins=rbins)
