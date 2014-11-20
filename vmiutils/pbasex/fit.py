@@ -842,7 +842,7 @@ class PbasexFitBetaSpectrum(object):
         self.oddl = fit.oddl
 
     def plot(self, axis, betavals=None, rbins=500, scale_min=None,
-             scale_max=None, xlabel=None, ylabel=None, colormap=matplotlib.cm.jet):
+             scale_max=None, xlabel=None, ylabel=None, cmap=matplotlib.cm.jet):
         ymin = scale_min
         ymax = scale_max
 
@@ -869,7 +869,7 @@ class PbasexFitBetaSpectrum(object):
                 axis.set_xlabel(xlabel)
         else:
             lines = []
-            colors = iter(colormap(numpy.linspace(0.0, 0.95, len(betavals))))
+            colors = iter(cmap(numpy.linspace(0.0, 0.95, len(betavals))))
             for b in betavals:
                 color = next(colors)
                 line = axis.plot(self.r, self.beta[b],
@@ -915,7 +915,7 @@ class PbasexFitCosnSpectrum(object):
         self.oddl = fit.oddl
 
     def plot(self, axis, nvals, rbins=500, scale_min=None,
-             scale_max=None, xlabel=None, ylabel=None, colormap=matplotlib.cm.jet):
+             scale_max=None, xlabel=None, ylabel=None, cmap=matplotlib.cm.jet):
         ymin = scale_min
         ymax = scale_max
 
@@ -929,6 +929,7 @@ class PbasexFitCosnSpectrum(object):
 
         if len(nvals) == 1:
             n = nvals[0]
+
             lines = axis.plot(self.r, self.cosn[n],
                               label=r'$n=${0}'.format(n))
             if ylabel is None:
@@ -942,7 +943,7 @@ class PbasexFitCosnSpectrum(object):
                 axis.set_xlabel(xlabel)
         else:
             lines = []
-            colors = iter(colormap(numpy.linspace(0.0, 0.95, len(nvals))))
+            colors = iter(cmap(numpy.linspace(0.0, 0.95, len(nvals))))
             for n in nvals:
                 color = next(colors)
                 line = axis.plot(self.r, self.cosn[n],
