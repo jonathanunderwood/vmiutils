@@ -764,9 +764,11 @@ class PbasexFitVMI(object):
         self.vmi_image = fit.vmi_image
 
     def plot(self, axis, cmap=matplotlib.cm.spectral,
-             xlabel=None, ylabel=None, rasterized=True):
+             xlabel=None, ylabel=None, rasterized=True,
+             transpose=False):
         im = self.vmi_image.plot(axis, cmap=cmap,
-                                 rasterized=rasterized)
+                                 rasterized=rasterized,
+                                 transpose=transpose)
         if xlabel is None:
             axis.set_xlabel(r'$x$ (pixels)')
         else:
