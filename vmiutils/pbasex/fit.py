@@ -106,11 +106,11 @@ class PbasexFit(object):
                     centre = (centre[1], centre[0])
                 else:
                     centre = None
+        else:
+            if centre is not None:
+                centre = (centre[0], centre[1])
             else:
-                if centre is not None:
-                    centre = (centre[0], centre[1])
-                else:
-                    centre = None
+                centre = None
 
         cart = vmi.CartesianImage(image=image, x=x, y=y)
 
