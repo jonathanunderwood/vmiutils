@@ -524,12 +524,19 @@ class CartesianImage():
         return numpy.append(arr, arr[-1] + arr[1] - arr[0])
 
     def plot(self, axis, cmap=matplotlib.cm.spectral,
-             rasterized=True):
-        return axis.pcolormesh(self._augment(self.x),
-                               self._augment(self.y),
-                               self.image.T, cmap=cmap,
-                               rasterized=rasterized)
-
+             rasterized=True, transpose=False):
+        if transpose is False:
+            return axis.pcolormesh(self._augment(self.x),
+                                   self._augment(self.y),
+                                   self.image.T, cmap=cmap,
+                                   rasterized=rasterized)
+        elif transpose is True:
+            return axis.pcolormesh(self._augment(self.y),
+                                   self._augment(self.x),
+                                   self.image, cmap=cmap,
+                                   rasterized=rasterized)
+        else:
+            raise ValueError('transpose must be True or False')
 
 class PolarImage():
 
