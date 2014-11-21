@@ -238,7 +238,6 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         self.detectionfn.dumpfd(fd)
 
     def loadfd(self, fd):
-        print 'here'
         super(PbasexMatrixDetFn1, self).loadfd(fd)
         self.detectionfn = pbasex.PbasexFit()
         self.detectionfn.loadfd(fd)
