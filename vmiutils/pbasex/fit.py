@@ -791,13 +791,23 @@ class PbasexFitCartesianImage(object):
         self.image = fit.cartesian_distribution_threaded(bins=bins)
 
     def plot(self, axis, cmap=matplotlib.cm.spectral,
-             xlabel=None, ylabel=None, rasterized=True):
+             xlabel=None, ylabel=None, rasterized=True,
+             transpose=False):
+        if transpose is False:
+            im = axis.pcolormesh(_augment(self.image.x),
+                                 _augment(self.image.y),
+                                 self.image.image.T,
+                                 cmap=cmap,
+                                 rasterized=rasterized)
+        elif transpose is True:
+            im = axis.pcolormesh(_augment(self.image.y),
+                                 _augment(self.image.x),
+                                 self.image.image,
+                                 cmap=cmap,
+                                 rasterized=rasterized)
+        else:
+            raise ValueError('transpose must be True or False')
 
-        im = axis.pcolormesh(_augment(self.image.x),
-                             _augment(self.image.y),
-                             self.image.image.T,
-                             cmap=cmap,
-                             rasterized=rasterized)
         if xlabel is None:
             axis.set_xlabel(r'$x$ (pixels)')
         else:
