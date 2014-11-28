@@ -1,0 +1,23 @@
+#!/usr/bin/python
+
+import numpy
+import matplotlib.pyplot as plot
+from matplotlib.widgets import Cursor
+import argparse
+
+parser = argparse.ArgumentParser(
+    description='Simple utility for examining a VMI data file and locating the centre of an image')
+
+parser.add_argument('vmifile', help='Name of file containing VMI data')
+
+args=parser.parse_args()
+
+data=numpy.loadtxt(args.vmifile)
+
+fig = plot.figure()
+ax = fig.add_subplot(111, axisbg='#FFFFCC')
+ax.pcolormesh(data.T)
+ax.axis('image')
+cursor = Cursor(ax, useblit=True, color='red')#, linewidth=2)
+
+plot.show()
