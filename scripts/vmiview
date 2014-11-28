@@ -26,10 +26,19 @@ parser = argparse.ArgumentParser(
     description='Simple utility for examining a VMI data file and locating the centre of an image')
 
 parser.add_argument('vmifile', help='Name of file containing VMI data')
+parser.add_argument('--delimiter', default=None,
+                    help='Specifies the delimiter used (defaults to whitespace)')
 
 args=parser.parse_args()
 
-data=numpy.loadtxt(args.vmifile)
+try:
+    if args.delimiter is not None:
+        data = numpy.loadtxt(args.vmifile, delimiter = args.delimiter)
+    else:
+        data = numpy.loadtxt(args.vmifile)
+except IOError:
+    print('could not read file: {0}'.format(args.vmifile))
+    sys.exit(74)
 
 fig = plot.figure()
 ax = fig.add_subplot(111, axisbg='#FFFFCC')
