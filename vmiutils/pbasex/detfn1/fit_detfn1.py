@@ -20,11 +20,14 @@ import vmiutils.pbasex as pbasex
 import logging
 import numpy
 import numpy.polynomial.legendre as legendre
+import Queue
+import threading
 import multiprocessing
 import futures
 import math
 import scipy.optimize
 from vmiutils.pbasex._fit import *
+from _fit_detfn1 import *
 
 logger = logging.getLogger('vmiutils.pbasex.fit')
 
@@ -36,6 +39,12 @@ class __NullHandler(logging.Handler):
 
 __null_handler = __NullHandler()
 logger.addHandler(__null_handler)
+
+def _even(n):
+    if n % 2:
+        return False
+    else:
+        return True
 
 class PbasexFitDetFn1(pbasex.PbasexFit):
 
@@ -77,6 +86,142 @@ class PbasexFitDetFn1(pbasex.PbasexFit):
         self.detectionfn = matrix.detectionfn
         self.alpha = matrix.alpha
         self.beta = matrix.beta
+
+    def detectionfn_cartesian_distribution(self, bins=250, rmax=None,
+                                               truncate=5.0, nthreads=None,
+                                               weighting='normal', func=None):
+        """Calculates a cartesian image of the detection function distribution
+        in the y-z plane i.e. the plane that we normally plot the
+        extracted axis distribution in. Multithreaded for speed.
+
+        bins specifes the number of bins in the y and z dimension to
+        calculate.
+
+        rmax specifies the maximum radius to consider in the
+        image. This is specified in coordinates of the original image
+        that was fitted to.
+
+        truncate specifies the number of basis function sigmas we
+        consider either side of each point when calculating the
+        intensity at each point. For example if truncate is 5.0, at
+        each point we'll consider all basis functions whose centre
+        lies within 5.0 * sigma of that point. 5.0 is the default.
+
+        nthreads specifies the number of threads to use. If None, then
+        we'll use all available cores.
+
+        weighting specifies the weighting given to each pixel. If
+        'normal', then no additional weighting is applied. If
+        weighting='rsquared' then each pixel's value is weighted by
+        the value of r squared for that pixel. If weighting='compund',
+        then the negative x half of the image is weighted with r
+        squared, and the +x half of the image is weighted
+        normally. For 'normal' and 'rsquared' the image is normalized
+        to a maximum value of 1.0. For 'compound' each half of the
+        image is normalized to a maximum value of 1.0.
+
+        """
+
+        if self.coef is None:
+            logger.error('no fit done')
+            raise AttributeError
+
+        if rmax is None:
+            rmax = self.detectionfn.rmax
+        elif rmax > self.detectionfn.rmax:
+            logger.error('rmax exceeds that of original detection function data')
+            raise ValueError
+
+        # Set enpoint=False here, since the x, y values are the lowest
+        # value of x, y in each bin.
+        xvals = numpy.linspace(-rmax, rmax, bins, endpoint=False)
+        yvals = numpy.linspace(-rmax, rmax, bins, endpoint=False)
+
+        xbinw = xvals[1] - xvals[0]
+        ybinw = yvals[1] - yvals[0]
+
+        dist = numpy.zeros((bins, bins))
+        queue = Queue.Queue(0)
+
+        # Here we exploit the mirror symmetry in the y axis if bins is
+        # an even number, since in this case the points are
+        # symmetrically distributed about 0, unlike the case of odd
+        # bins.
+
+        if _even(bins):
+            evenbins = True
+            xstart = bins / 2
+        else:
+            evenbins = False
+            xstart = 0
+
+        for xbin in numpy.arange(xstart, bins):
+            xval = xvals[xbin] + 0.5 * xbinw  # value at centre of pixel
+            xval2 = xval * xval
+            for ybin in numpy.arange(bins):
+                yval = yvals[ybin] + 0.5 * ybinw  # value at centre of pixel
+                yval2 = yval * yval
+                if math.sqrt(xval2 + yval2) <= rmax:
+                    queue.put(
+                        {'xbin': xbin, 'ybin': ybin, 'xval': xval, 'yval': yval})
+
+        if self.detectionfn.oddl:
+            oddl = 1
+        else:
+            oddl = 0
+
+        def __worker():
+            while not queue.empty():
+                job = queue.get()
+                xbin = job['xbin']
+                ybin = job['ybin']
+                xval = job['xval']
+                yval = job['yval']
+
+                #logger.debug('Calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
+                dist[xbin, ybin] = detfn_cartesian_distribution_point(
+                    xval, yval, self.beta, self.detectionfn.coef, 
+                    self.detectionfn.kmax, self.detectionfn.rkstep,
+                    self.detectionfn.sigma, self.detectionfn.lmax, 
+                    oddl, truncate)
+                #logger.debug('Finished calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
+                queue.task_done()
+
+        if nthreads is None:
+            nthreads = multiprocessing.cpu_count()
+
+        for i in range(nthreads):
+            t = threading.Thread(target=__worker)
+            t.daemon = True
+            t.start()
+
+        queue.join()
+
+        # Mirror symmetry
+        if evenbins:
+            dist[xstart - 1::-1] = dist[xstart:bins]
+
+        # Normalize image to max value of 1
+        dist /= dist.max()
+
+        # Now we weight with r squared if requested.
+        if (weighting == 'rsquared') or (weighting == 'compound'):
+            # r^2 weighting - we need the value of r at each pixel
+            xm, ym = numpy.meshgrid(xvals, yvals)
+            xm += 0.5 * xbinw
+            ym += 0.5 * ybinw
+            rsq = xm * xm + ym * ym
+            if weighting == 'compound':
+                # Note that this won't be quite a symmetrical image
+                # for the case that bins is an odd number.
+                dist[bins / 2 - 1::-1] *= rsq[bins / 2 - 1::-1]
+                dist[bins / 2 - 1::-1] /= dist[bins / 2 - 1::-1].max()
+            else:
+                dist *= rsq
+                dist /= dist.max()
+
+        return vmi.CartesianImage(x=xvals, y=yvals, image=dist)
+
 
     def overlap_factor(self, rbins=500, rmax=None,
                        truncate=5.0, nthreads=None):
@@ -241,3 +386,7 @@ class PbasexFitDetFn1ProbeRadialSpectrum(pbasex.PbasexFitRadialSpectrum):
 
     def __init__(self, fit, rbins=500):
         self.r, self.spec = fit.probe_radial_spectrum(rbins=rbins)
+
+class PbasexFitDetFn1DetectionFnCartesianDistribution(pbasex.PbasexFitCartesianImage):
+    def __init__(self, fit, bins=500):
+        self.image = fit.detectionfn_cartesian_distribution(bins=bins)
