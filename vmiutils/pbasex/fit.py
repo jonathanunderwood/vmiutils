@@ -408,7 +408,7 @@ class PbasexFit(object):
             for ybin in numpy.arange(bins):
                 yval = yvals[ybin] + 0.5 * ybinw  # value at centre of pixel
                 yval2 = yval * yval
-                if math.sqrt(xval2 + yval2) <= self.rmax:
+                if math.sqrt(xval2 + yval2) <= rmax:
                     queue.put(
                         {'xbin': xbin, 'ybin': ybin, 'xval': xval, 'yval': yval})
 
