@@ -792,21 +792,28 @@ class PbasexFitCartesianImage(object):
 
     def plot(self, axis, cmap=matplotlib.cm.spectral,
              xlabel=None, ylabel=None, rasterized=True,
-             transpose=False):
+             transpose=False, plot_type='image'):
         if transpose is False:
-            im = axis.pcolormesh(_augment(self.image.x),
-                                 _augment(self.image.y),
-                                 self.image.image.T,
-                                 cmap=cmap,
-                                 rasterized=rasterized)
+            x=self.image.x
+            y=self.image.y
+            image=self.image.image.T
         elif transpose is True:
-            im = axis.pcolormesh(_augment(self.image.y),
-                                 _augment(self.image.x),
-                                 self.image.image,
-                                 cmap=cmap,
-                                 rasterized=rasterized)
+            x=self.image.y
+            y=self.image.x
+            image=self.image.image
         else:
             raise ValueError('transpose must be True or False')
+
+        if plot_type is 'image':
+            im = axis.pcolormesh(_augment(x), _augment(y),
+                                 image, cmap=cmap,
+                                 rasterized=rasterized)
+        elif plot_type is 'contour':
+            im = axis.contour(self.image.x, self.image.y,
+                              self.image.image.T, origin='lower',
+                              cmap=cmap, linewidths=0.5)
+        else:
+            raise NotImplementedError
 
         if xlabel is None:
             axis.set_xlabel(r'$x$ (pixels)')
