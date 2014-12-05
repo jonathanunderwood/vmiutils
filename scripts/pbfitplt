@@ -70,6 +70,14 @@ logger.debug('beta coefficients calculated')
 cosn_spec = pb.PbasexFitCosnSpectrum(fit)
 logger.debug('cos^n(theta) expectation values calculated')
 
+if args.type == 'detfn1':
+    img_probe = pbdetfn1.PbasexFitDetFn1DetectionFnCartesianDistribution(fit)
+    logger.debug('detection function cartesian distribution calculated')
+    overlap = pbdetfn1.PbasexFitDetFn1OverlapSpectrum(fit)
+    logger.debug('overlap spectrum calculated')
+    probespec = pbdetfn1.PbasexFitDetFn1ProbeRadialSpectrum(fit)
+    logger.debug('probe spectrum calculated')
+
 # Generate plots in a multi page PDF file
 pdf_pages = PdfPages(args.output_file)
 
@@ -122,6 +130,9 @@ logger.debug('3/4 images done')
 
 ax = plot.subplot2grid((2, 2), (1, 1), aspect=1.0)
 im = cart_im.plot(axis=ax)
+if args.type == 'detfn1':
+    img_probe.plot(axis=ax, plot_type='contour',
+                   cmap=matplotlib.cm.gray)
 ax.axis('image')
 ax.set_title('pBasex reconstruction')
 divider = make_axes_locatable(ax)
@@ -211,10 +222,6 @@ for page in xrange(pages_reqd):
 logger.debug('<cos^n(theta)> plotted')
 
 if args.type == 'detfn1':
-    overlap = pbdetfn1.PbasexFitDetFn1OverlapSpectrum(fit)
-    logger.debug('overlap spectrum calculated')
-    probespec = pbdetfn1.PbasexFitDetFn1ProbeRadialSpectrum(fit)
-    logger.debug('probe spectrum calculated')
     fig = plot.figure(figsize=(8.27, 11.69 / 2), dpi=100)
     ax1 = plot.axes()
     overlap.plot(axis=ax1)#, scale_min=0.0, scale_max=1.0)
