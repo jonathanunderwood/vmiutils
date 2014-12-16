@@ -302,8 +302,10 @@ class PbasexFit(object):
         self.rmax = image.r[-1] + rbinw
 
         # rkstep holds the spacing between the centres of adjacent
-        # Gaussian radial basis functions.
-        self.rkstep = rbinw * Rbins / kdim
+        # Gaussian radial basis functions. Note that the division here
+        # by kmax and not kmax+1 is consistent with matrix.py and
+        # ensures that the last basis function is centred on rmax
+        self.rkstep = rbinw * Rbins / float(matrix.kmax)
 
     def calc_radial_spectrum(self, rbins=500, rmax=None):
         """Calculate a radial spectrum from the parameters of a fit. Returns a
