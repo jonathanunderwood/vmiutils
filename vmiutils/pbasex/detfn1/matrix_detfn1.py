@@ -140,8 +140,11 @@ class PbasexMatrixDetFn1 (pbasex.PbasexMatrix):
         df_rkstep = detectionfn.rkstep / df_rscale
         df_sigma = detectionfn.sigma / df_rscale
 
-        # Normalize detection function coefficients to max of 1
-        detectionfn.coef /= detectionfn.coef.max()
+        # It seems like a good idea to normalize the detection
+        # coefficients to a maximum value of one, however, this seems
+        # to lead to instability, so we don't do it. But we leave this
+        # here as a reminder not to do it in the future.
+        #detectionfn.coef /= detectionfn.coef.max()
 
         if detectionfn.oddl is True:
             df_oddl = 1
