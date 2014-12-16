@@ -29,5 +29,7 @@ setup(name='VMIutils',
                'scripts/pbfit',
                'scripts/pbfitplt',
                'scripts/cnfit',
-               'scripts/vmiview',],
+               'scripts/vmiview',
+               'scripts/vmicentrefix',
+           ],
       )

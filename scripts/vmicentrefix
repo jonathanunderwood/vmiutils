@@ -1,0 +1,86 @@
+#!/usr/bin/python
+
+# Copyright (C) 2014 by Jonathan G. Underwood.
+#
+# This file is part of VMIUtils.
+#
+# VMIUtils is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# VMIUtils is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with VMIUtils.  If not, see <http://www.gnu.org/licenses/>.
+
+import math
+import numpy
+import matplotlib.pyplot as plot
+from matplotlib.widgets import Cursor
+import argparse
+
+parser = argparse.ArgumentParser(
+    description='Simple utility for examining removing a bright centre spot from a VMI image')
+
+parser.add_argument('vmifile', help='Name of file containing VMI data')
+parser.add_argument('centre', nargs=2, type=int, help='Coordinates of centre pixel')
+parser.add_argument('inner_radius', type=int, help='Radius of area to be replaced with smoothed value')
+parser.add_argument('outer_radius', type=int, help='Radius of area to use for calculating smoothed value')
+parser.add_argument('outfile', help='Output filename')
+parser.add_argument('--delimiter', default=None,
+                    help='Specifies the delimiter used (defaults to whitespace)')
+
+args=parser.parse_args()
+
+try:
+    if args.delimiter is not None:
+        data = numpy.loadtxt(args.vmifile, delimiter = args.delimiter)
+        delimiter = args.delimiter
+    else:
+        data = numpy.loadtxt(args.vmifile)
+        delimiter=' '
+
+except IOError:
+    print('could not read file: {0}'.format(args.vmifile))
+    sys.exit(74)
+
+cx = args.centre[0]
+cy = args.centre[1]
+irad = args.inner_radius
+orad = args.outer_radius
+
+sum = 0.0
+npix = 0
+for x in xrange(cx - orad, cx + orad + 1):
+    xsq = (x - cx) * (x - cx)
+    for y in xrange(cy - orad, cy + orad + 1):
+        ysq = (y - cy) * (y - cy)
+        rad = math.sqrt(xsq + ysq)
+        if  rad > irad and rad <= orad:
+            npix = npix + 1
+            sum = sum + data[y][x]
+
+avg = sum / npix
+print avg
+
+for x in xrange(cx - irad, cx + irad + 1):
+    xsq = (x - cx) * (x - cx)
+    for y in xrange(cy - irad, cy + irad + 1):
+        ysq = (y - cy) * (y - cy)
+        rad = math.sqrt(xsq + ysq)
+        if  rad <= irad:
+            data[y][x] = avg
+
+numpy.savetxt(args.outfile, data, delimiter=delimiter)
+
+fig = plot.figure()
+ax = fig.add_subplot(111, axisbg='#FFFFCC')
+ax.pcolormesh(data.T)
+ax.axis('image')
+cursor = Cursor(ax, useblit=True, color='red')#, linewidth=2)
+
+plot.show()
