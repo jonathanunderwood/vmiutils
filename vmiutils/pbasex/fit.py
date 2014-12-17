@@ -850,9 +850,9 @@ class PbasexFitRadialSpectrum(object):
     def __init__(self, fit, rbins=500):
         self.r, self.spec = fit.calc_radial_spectrum(rbins=rbins)
 
-    def plot(self, axis, linestyle='-', xlabel=None, ylabel=None):
+    def plot(self, axis, linestyle='-', xlabel=None, ylabel=None, label=None):
 
-        line = axis.plot(self.r, self.spec, linestyle=linestyle)
+        line = axis.plot(self.r, self.spec, linestyle=linestyle, label=label)
 
         if xlabel is None:
             axis.set_xlabel(self.xlabel)
