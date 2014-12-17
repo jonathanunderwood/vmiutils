@@ -767,10 +767,11 @@ class PbasexFitVMI(object):
 
     def plot(self, axis, cmap=matplotlib.cm.spectral,
              xlabel=None, ylabel=None, rasterized=True,
-             transpose=False):
+             transpose=False, clip=None):
         im = self.vmi_image.plot(axis, cmap=cmap,
                                  rasterized=rasterized,
-                                 transpose=transpose)
+                                 transpose=transpose,
+                                 clip=clip)
         if xlabel is None:
             if transpose is False:
                 axis.set_xlabel(r'$y$ (pixels)')
@@ -800,7 +801,7 @@ class PbasexFitCartesianImage(object):
 
     def plot(self, axis, cmap=matplotlib.cm.spectral,
              xlabel=None, ylabel=None, rasterized=True,
-             transpose=False, plot_type='image'):
+             transpose=False, plot_type='image', clip=None):
         if transpose is False:
             x=self.image.x
             y=self.image.y
@@ -811,6 +812,9 @@ class PbasexFitCartesianImage(object):
             image=self.image.image
         else:
             raise ValueError('transpose must be True or False')
+
+        if clip is not None:
+            image = image.clip(clip)
 
         if plot_type is 'image':
             im = axis.pcolormesh(_augment(x), _augment(y),
