@@ -772,12 +772,18 @@ class PbasexFitVMI(object):
                                  rasterized=rasterized,
                                  transpose=transpose)
         if xlabel is None:
-            axis.set_xlabel(r'$x$ (pixels)')
+            if transpose is False:
+                axis.set_xlabel(r'$y$ (pixels)')
+            else:
+                axis.set_xlabel(r'$z$ (pixels)')
         else:
             axis.set_xlabel(xlabel)
 
         if ylabel is None:
-            axis.set_ylabel(r'$y$ (pixels)')
+            if transpose is False:
+                axis.set_ylabel(r'$z$ (pixels)')
+            else:
+                axis.set_ylabel(r'$y$ (pixels)')
         else:
             axis.set_ylabel(ylabel)
 
@@ -818,12 +824,18 @@ class PbasexFitCartesianImage(object):
             raise NotImplementedError
 
         if xlabel is None:
-            axis.set_xlabel(r'$x$ (pixels)')
+            if transpose is False:
+                axis.set_xlabel(r'$y$ (pixels)')
+            else:
+                axis.set_xlabel(r'$z$ (pixels)')
         else:
             axis.set_xlabel(xlabel)
 
         if ylabel is None:
-            axis.set_ylabel(r'$y$ (pixels)')
+            if transpose is False:
+                axis.set_ylabel(r'$z$ (pixels)')
+            else:
+                axis.set_ylabel(r'$y$ (pixels)')
         else:
             axis.set_ylabel(ylabel)
 
