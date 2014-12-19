@@ -1,0 +1,71 @@
+#!/usr/bin/python
+
+# Copyright (C) 2014 by Jonathan G. Underwood.
+#
+# This file is part of VMIUtils.
+#
+# VMIUtils is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# VMIUtils is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with VMIUtils.  If not, see <http://www.gnu.org/licenses/>.
+
+import sys
+import argparse
+import logging
+import math
+import numpy
+import vmiutils.pbasex as pbasex
+import vmiutils.pbasex.detfn1 as pbasex_detfn1
+
+# Set up logging - output all log message to stdout
+logging.basicConfig()
+#logging.basicConfig(format="%(threadName)s:%(message)s",level=logging.DEBUG)
+logger = logging.getLogger('pbfittocsv')
+
+# Helper functions
+def load_fit(args):
+    if args.type == 'normal':
+        fit = pb.PbasexFit()
+    elif args.type == 'detfn1':
+        fit = pbasex_detfn1.PbasexFitDetFn1()
+    else:
+        raise NotImplementedError
+
+    fit.load(args.fit_file)
+    logger.debug('fit data loaded')
+    return fit
+
+# Define functions that will be called by the sub-commands
+def cosn(args):
+    fit = load_fit(args)
+    r, cosn = fit.cosn_expval2(rbins=args.rbins, nmax=args.nmax)
+    outdat = numpy.vstack((r, cosn)).T
+    numpy.savetxt(args.out_file, outdat)
+
+
+# Set up parsers
+parser = argparse.ArgumentParser(
+    description='Utility for writing useful fit data to text files')
+
+subparsers = parser.add_subparsers()
+
+# cosn sub-command
+parser_cosn = subparsers.add_parser('cosn', help='Write <cos^n(theta)> expectation values')
+parser_cosn.set_defaults(func=cosn)
+parser_cosn.add_argument('fit_file', help='pBasex fit file')
+parser_cosn.add_argument('out_file', help='Name of file to write data to')
+parser_cosn.add_argument('rbins', type=int, help='Number of radial bins to calculate expectation values for')
+parser_cosn.add_argument('nmax', type=int, help='Maximum value of n to calculate expectation values for')
+parser_cosn.add_argument('--type', help='Type of fit file. Currently supported are "normal" (default) and "detfn1"', default='normal')
+
+args = parser.parse_args()
+args.func(args)
+
