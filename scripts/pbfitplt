@@ -110,7 +110,7 @@ plot.colorbar(im, cax=cax)
 logger.debug('1/4 images done')
 
 ax = plot.subplot2grid((2, 2), (0, 1), aspect=1.0)
-im = cart_im.plot(axis=ax, cmap=plot.cm.gist_heat)
+im = cart_im.plot(axis=ax, cmap=plot.cm.gist_heat, clip=0.0)
 ax.set_title('pBasex reconstruction')
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -129,7 +129,7 @@ plot.colorbar(im, cax=cax)
 logger.debug('3/4 images done')
 
 ax = plot.subplot2grid((2, 2), (1, 1), aspect=1.0)
-im = cart_im.plot(axis=ax)
+im = cart_im.plot(axis=ax, clip=0.0)
 if args.type == 'detfn1':
     img_probe.plot(axis=ax, plot_type='contour',
                    cmap=matplotlib.cm.gray)
