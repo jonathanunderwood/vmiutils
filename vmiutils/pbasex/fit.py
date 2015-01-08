@@ -869,6 +869,7 @@ class PbasexFitRadialSpectrum(object):
             axis.set_ylabel(ylabel)
 
         axis.set_xlim(self.r.min(), self.r.max())
+        axis.set_ylim(self.spec.min(), self.spec.max())
 
         return line
 
