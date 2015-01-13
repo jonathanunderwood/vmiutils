@@ -60,11 +60,11 @@ subparsers = parser.add_subparsers()
 # cosn sub-command
 parser_cosn = subparsers.add_parser('cosn', help='Write <cos^n(theta)> expectation values')
 parser_cosn.set_defaults(func=cosn)
-parser_cosn.add_argument('fit_file', help='pBasex fit file')
-parser_cosn.add_argument('out_file', help='Name of file to write data to')
 parser_cosn.add_argument('rbins', type=int, help='Number of radial bins to calculate expectation values for')
 parser_cosn.add_argument('nmax', type=int, help='Maximum value of n to calculate expectation values for')
 parser_cosn.add_argument('--type', help='Type of fit file. Currently supported are "normal" (default) and "detfn1"', default='normal')
+parser_cosn.add_argument('fit_file', help='pBasex fit file')
+parser_cosn.add_argument('out_file', help='Name of file to write data to')
 
 args = parser.parse_args()
 args.func(args)
