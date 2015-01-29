@@ -50,6 +50,12 @@ def cosn(args):
     outdat = numpy.vstack((r, cosn)).T
     numpy.savetxt(args.out_file, outdat)
 
+def rspec(args):
+    fit = load_fit(args)
+    r, spec = fit.calc_radial_spectrum(rbins=args.rbins)
+    outdat = numpy.vstack((r, spec)).T
+    numpy.savetxt(args.out_file, outdat)
+
 
 # Set up parsers
 parser = argparse.ArgumentParser(
@@ -65,6 +71,15 @@ parser_cosn.add_argument('nmax', type=int, help='Maximum value of n to calculate
 parser_cosn.add_argument('--type', help='Type of fit file. Currently supported are "normal" (default) and "detfn1"', default='normal')
 parser_cosn.add_argument('fit_file', help='pBasex fit file')
 parser_cosn.add_argument('out_file', help='Name of file to write data to')
+
+# rspec sub-command
+parser_rspec = subparsers.add_parser('rspec', help='Write radial spectrum')
+parser_rspec.set_defaults(func=rspec)
+parser_rspec.add_argument('rbins', type=int, help='Number of radial bins to calculate spectrum for')
+parser_rspec.add_argument('--type', help='Type of fit file. Currently supported are "normal" (default) and "detfn1"', default='normal')
+parser_rspec.add_argument('fit_file', help='pBasex fit file')
+parser_rspec.add_argument('out_file', help='Name of file to write data to')
+
 
 args = parser.parse_args()
 args.func(args)
