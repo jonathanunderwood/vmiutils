@@ -767,11 +767,13 @@ class PbasexFitVMI(object):
 
     def plot(self, axis, cmap=matplotlib.cm.spectral,
              xlabel=None, ylabel=None, rasterized=True,
-             transpose=False, clip=None):
+             transpose=False, clip=None, origin_at_centre=True):
+
         im = self.vmi_image.plot(axis, cmap=cmap,
                                  rasterized=rasterized,
                                  transpose=transpose,
-                                 clip=clip)
+                                 clip=clip,
+                                 origin_at_centre=origin_at_centre)
         if xlabel is None:
             if transpose is False:
                 axis.set_xlabel(r'$y$ (pixels)')

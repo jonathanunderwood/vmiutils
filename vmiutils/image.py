@@ -524,18 +524,27 @@ class CartesianImage():
         return numpy.append(arr, arr[-1] + arr[1] - arr[0])
 
     def plot(self, axis, cmap=matplotlib.cm.spectral,
-             rasterized=True, transpose=False, clip=None):
+             rasterized=True, transpose=False, clip=None,
+             origin_at_centre=False):
 
         if transpose is False:
             x = self.x
             y = self.y
             image = self.image.T
+            xc = self.centre[0]
+            yc = self.centre[1]
         elif transpose is True:
             x = self.y
             y = self.x
             image = self.image
+            xc = self.centre[1]
+            yc = self.centre[0]
         else:
             raise ValueError('transpose must be True or False')
+
+        if origin_at_centre is True:
+            x = x - xc
+            y = y - yc
 
         if clip is not None:
             image = image.clip(clip)
