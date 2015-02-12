@@ -889,7 +889,7 @@ class PbasexFitBetaSpectrum(object):
 
     def plot(self, axis, betavals=None, rbins=500, scale_min=None,
              scale_max=None, xlabel=None, ylabel=None, cmap=matplotlib.cm.jet,
-             linestyle='-'):
+             linestyle='-', scaley=True):
         ymin = scale_min
         ymax = scale_max
 
@@ -951,7 +951,10 @@ class PbasexFitBetaSpectrum(object):
                 axis.set_xlabel(xlabel)
 
         axis.set_autoscale_on(False)
-        axis.set_ylim(ymin, ymax)
+
+        if scaley is True:
+            axis.set_ylim(ymin, ymax)
+
         axis.set_xlim(self.r.min(), self.r.max())
 
         return lines
