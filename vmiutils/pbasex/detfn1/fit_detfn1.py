@@ -390,3 +390,18 @@ class PbasexFitDetFn1ProbeRadialSpectrum(pbasex.PbasexFitRadialSpectrum):
 class PbasexFitDetFn1DetectionFnCartesianDistribution(pbasex.PbasexFitCartesianImage):
     def __init__(self, fit, bins=500):
         self.image = fit.detectionfn_cartesian_distribution(bins=bins)
+
+class PbasexFitDetFn1VMI(pbasex.PbasexFitVMI):
+    pass
+
+class PbasexFitDetFn1CartesianImage(pbasex.PbasexFitCartesianImage):
+    pass
+
+class PbasexFitDetFn1RadialSpectrum(pbasex.PbasexFitRadialSpectrum):
+    pass
+
+class PbasexFitDetFn1BetaSpectrum(pbasex.PbasexFitBetaSpectrum):
+    pass
+
+class PbasexFitDetFn1CosnSpectrum(pbasex.PbasexFitCosnSpectrum):
+    pass
