@@ -888,7 +888,8 @@ class PbasexFitBetaSpectrum(object):
         self.oddl = fit.oddl
 
     def plot(self, axis, betavals=None, rbins=500, scale_min=None,
-             scale_max=None, xlabel=None, ylabel=None, cmap=matplotlib.cm.jet):
+             scale_max=None, xlabel=None, ylabel=None, cmap=matplotlib.cm.jet,
+             linestyle='-'):
         ymin = scale_min
         ymax = scale_max
 
@@ -919,7 +920,8 @@ class PbasexFitBetaSpectrum(object):
             for b in betavals:
                 color = next(colors)
                 line = axis.plot(self.r, self.beta[b],
-                                 label=r'$l=${0}'.format(b), color=color)
+                                 label=r'$l=${0}'.format(b), color=color,
+                                 linestyle=linestyle)
                 lines.append(line)
 
                 if scale_min is None:
