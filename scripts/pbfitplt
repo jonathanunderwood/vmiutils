@@ -218,7 +218,7 @@ for page in xrange(pages_reqd):
             break
 
         ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
-        cosn_spec.plot(axis=ax1, nvals=[this_n])
+        cosn_spec.plot(axis=ax1, nvals=[this_n], scale_min=0.0, scale_max=1.0)
 
         ax2 = ax1.twinx()
         radial_spec.plot(axis=ax2, linestyle='--')
