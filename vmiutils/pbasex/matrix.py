@@ -78,12 +78,14 @@ class PbasexMatrix(object):
         Thetabins specifies the number of angular bins in the image to be
         inverted.
 
-        sigma specifes the width of the Gaussian radial basis functions. This is
-        defined according to the normal convention for Gaussian functions
-        i.e. FWHM=2*sigma*sqrt(2*ln2), and NOT as defined in the Garcia, Lahon,
-        Powis paper. If sigma is not specified it is set automatically such that
-        the half-maximum of the Gaussian occurs midway between each radial
-        function.
+        sigma specifes the width of the Gaussian radial basis
+        functions. This is defined according to the normal convention
+        for Gaussian functions i.e. FWHM=2*sigma*sqrt(2*ln2), and NOT
+        as defined in the Garcia, Lahon, Powis paper. If sigma is not
+        specified it is set automatically to 1.2*sqrt(rkspacing / 2.0)
+        where rkspacing is the radial basis function spacing
+        (Rbins/kmax). In other words, the default FWHM of the radial
+        basis functions will be 2.4*sqrt[ln(2)*rkspacing].
 
         epsabs and epsrel specify the desired integration tolerance when
         calculating the basis functions. The defaults should suffice.
