@@ -6,6 +6,30 @@ Fedora 20
    gcc
    numpy
    scipy
+   matplotlib
+   
+Ubuntu
+======
+1) Install the following packages:
+   gcc
+   python-dev
+   python-numpy
+   python-numpy-dev
+   libgsl0ldbl
+   libgsl0-dev
+   python-scipy
+   python-matplotlib
+   python-futures
+
+
 
 2) Run the command:
    python setup.py build
+
+   and (add --user for local install)
+
+   python setup.py install
+
+
+   Binaries/scripts are found in /usr/local/bin or ~/.local/bin
+   if --user is specified
