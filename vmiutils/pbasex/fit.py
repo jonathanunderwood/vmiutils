@@ -217,8 +217,8 @@ class PbasexFit(object):
         Thetabins = matrix.Thetabins
         Rbins = matrix.Rbins
 
-        Rdim = Rbins
-
+        # Decide whether to fit the whole range of Theta, or just
+        # one half, and adjust image and matrix accordingly
         if section == 'whole':
             # Fit the whole image
             Thetadim = Thetabins
