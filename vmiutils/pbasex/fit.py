@@ -136,7 +136,8 @@ class PbasexFit(object):
         self.vmi_image = image_cart.zoom_circle(self.rmax, pad=True)
 
     def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None,
-                 method='least_squares', max_iterations=500, tolerance=1.0e-4):
+                 Rbinmin=None, method='least_squares', max_iterations=500,
+                 tolerance=1.0e-4):
         '''Performs a fit to the data stored in the vmi.PolarImage instance
         image using the PbasexMatrix instance matrix previously calculated.
 
@@ -153,6 +154,11 @@ class PbasexFit(object):
 
         image must have the same number of Rbins and Thetabins as
         matrix.
+
+        Rbinmin specifies the minimum radial bin index used in the
+        fit. Radial bins with indices less than Rbinmin are
+        ignored. If this is None (the default), the the whole range of
+        radial bins is used in the fit.
 
         method specifies the fitting method to use. Currently this can
         be 'least_squares' or 'projected_landweber'
