@@ -244,6 +244,15 @@ class PbasexFit(object):
         else:
             raise NotImplementedError
 
+        # If Rbinmin is specified, we don't want to fit bins less than
+        # Rbinmin, so we remove them from the image and matrix
+        if Rbinmin is None:
+            Rdim = Rbins
+        else:
+            Rdim = Rbins - Rbinmin
+            img = img[Rbinmin:, :]
+            mtx = mtx[:, :, Rbinmin:, :]
+
         mtx = mtx.reshape((kdim * ldim, Rdim * Thetadim))
         img = image.image.reshape(Rdim * Thetadim)
 
