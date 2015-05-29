@@ -217,10 +217,11 @@ class PbasexFit(object):
         Thetabins = matrix.Thetabins
         Rbins = matrix.Rbins
 
+        Rdim = Rbins
+
         if section == 'whole':
             # Fit the whole image
-            mtx = mtx.reshape((kdim * ldim, Rbins * Thetabins))
-            img = image.image.reshape(Rbins * Thetabins)
+            Thetadim = Thetabins
         elif section == 'negative':
             # Fit only the part of the image in the region Theta = -Pi..0
             if _odd(Thetabins):
@@ -229,9 +230,8 @@ class PbasexFit(object):
                 endTheta = (Thetabins / 2) - 1
             halfThetabins = endTheta + 1
             mtx = mtx[:, :, :, 0:endTheta]
-            mtx = mtx.reshape((kdim * ldim, Rbins * halfThetabins))
             img = image.image[:, 0:endTheta]
-            img = img.reshape(Rbins * halfThetabins)
+            Thetadim = halfThetabins
         elif section == 'positive':
             # Fit only the part of the image in the region Theta = 0..Pi
             # Correct for both even and odd Thetabins
@@ -239,11 +239,14 @@ class PbasexFit(object):
             endtheta = Thetabins - 1
             halfThetabins = Thetabins - startTheta
             mtx = mtx[:, :, :, startTheta:endTheta]
-            mtx = mtx.reshape((kdim * ldim, Rbins * halfThetabins))
             img = image.image[:, startTheta:endTheta]
-            img = img.reshape(Rbins * halfThetabins)
+            Thetadim = halfThetabins
         else:
             raise NotImplementedError
+
+        mtx = mtx.reshape((kdim * ldim, Rdim * Thetadim))
+        img = image.image.reshape(Rdim * Thetadim)
+
 
         if method == 'least_squares':
             logger.debug('fitting with least squares')
