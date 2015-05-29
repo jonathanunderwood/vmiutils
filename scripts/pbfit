@@ -40,6 +40,8 @@ parser.add_argument('--no-oddl', action='store_true',
                     help='Specify whether to include odd order Legendre Polynomials')
 parser.add_argument('--centre', nargs=2, type=float, default=None,
                     help='The x and y coordinates of the image centre (before swapping axes, if requested)')
+parser.add_argument('--min-radius', type=float, default=None,
+                    help='Specify minimum radius to use in the fit. Data inside this radius will be ignored')
 parser.add_argument('--swapxy', action='store_true',
                     help='If specified, the image data will have the axes swapped before fitting')
 parser.add_argument('--method', default='least_squares',
@@ -112,8 +114,9 @@ else:
 
 logger.debug('fitting image...')
 fit.fit(img, mtx, centre=args.centre, swapxy=args.swapxy,
-        oddl=oddl, lmax=lmax, method=args.method,
-        tolerance=args.tolerance, max_iterations=args.max_iterations)
+        oddl=oddl, lmax=lmax, Rmin=args.min_radius,
+        method=args.method, tolerance=args.tolerance,
+        max_iterations=args.max_iterations)
 logger.debug('data fit')
 
 logger.debug('writing data to {0}'.format(args.output_file))
