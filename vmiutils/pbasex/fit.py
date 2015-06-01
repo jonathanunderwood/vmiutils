@@ -24,6 +24,7 @@ import multiprocessing
 import math
 import futures
 import matplotlib
+import scipy.linalg
 
 import vmiutils as vmi
 import matrix as pbm
@@ -122,7 +123,7 @@ class PbasexFit(object):
 
     def fit(self, image, matrix, x=None, y=None, centre=None,
             swapxy=False, section='whole', lmax=None,
-            oddl=None, Rmin=None, method='least_squares',
+            oddl=None, Rmin=None, method='least_squares', cond=None,
             max_iterations=500, tolerance=1.0e-4):
 
         image_cart = self._build_CartesianImage(image, x, y, centre, swapxy)
@@ -141,14 +142,14 @@ class PbasexFit(object):
             Rbinmin = int(math.ceil(Rmin / float(Rwidth)))
 
         self.fit_data(image_polar, matrix, oddl=oddl, lmax=lmax,
-                      Rbinmin=Rbinmin, method=method, tolerance=tolerance,
-                      max_iterations=max_iterations)
+                      Rbinmin=Rbinmin, method=method, cond=cond,
+                      tolerance=tolerance, max_iterations=max_iterations)
 
         self.vmi_image = image_cart.zoom_circle(self.rmax, pad=True)
 
     def fit_data(self, image, matrix, section='whole', lmax=None, oddl=None,
-                 Rbinmin=None, method='least_squares', max_iterations=500,
-                 tolerance=1.0e-4):
+                 Rbinmin=None, method='least_squares', cond=None,
+                 max_iterations=500, tolerance=1.0e-4):
         '''Performs a fit to the data stored in the vmi.PolarImage instance
         image using the PbasexMatrix instance matrix previously calculated.
 
@@ -173,6 +174,14 @@ class PbasexFit(object):
 
         method specifies the fitting method to use. Currently this can
         be 'least_squares' or 'projected_landweber'
+
+        if method is 'least_squares' the following options are also used:
+
+        cond: cutoff for ‘small’ singular values; used to determine
+        effective rank of the matrix. Singular values smaller than
+        cond * largest_singular_value are considered zero. This allows
+        some level of regularization to be achieved. Default is None
+        (ignored).
 
         If method is 'projected_landweber' the following options are
         also used:
@@ -277,7 +286,7 @@ class PbasexFit(object):
 
         if method == 'least_squares':
             logger.debug('fitting with least squares')
-            coef, resid, rank, s = numpy.linalg.lstsq(mtx.transpose(), img)
+            coef, resid, rank, s = scipy.linalg.lstsq(mtx.transpose(), img, cond=cond)
             # TODO: do something with resid
         elif method == 'projected_landweber':
             logger.debug('fitting with projected Landweber iteration')
