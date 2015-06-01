@@ -58,7 +58,7 @@ class PbasexFitDetFn1(pbasex.PbasexFit):
 
     def fit(self, image, matrix, x=None, y=None, centre=None,
             swapxy=False, section='whole', lmax=None,
-            oddl=None, method='least_squares',
+            oddl=None, Rmin=None, method='least_squares',
             max_iterations=500, tolerance=1.0e-4):
 
         image_cart = self._build_CartesianImage(image, x, y, centre, swapxy)
@@ -75,8 +75,19 @@ class PbasexFitDetFn1(pbasex.PbasexFit):
         image_polar.from_CartesianImage(image_cart_zoom, rbins=matrix.Rbins,
                                         thetabins=matrix.Thetabins)
 
-        self.fit_data(image_polar, matrix, oddl=oddl, lmax=lmax, method=method,
-                      tolerance=tolerance, max_iterations=max_iterations)
+        # Rmin as passed is a minimum radius in units of pixels of the
+        # image. So, we need to scale it to pixels in the polar image
+        # once it has been constructed using Rbins from matrix.
+        if Rmin is None:
+            Rbinmin = None
+        else:
+            Rvals = image_polar.r
+            Rwidth = Rvals[1] - Rvals[0]
+            Rbinmin = int(math.ceil(Rmin / float(Rwidth)))
+
+        self.fit_data(image_polar, matrix, oddl=oddl, lmax=lmax, Rbinmin=Rbinmin,
+                      method=method, tolerance=tolerance,
+                      max_iterations=max_iterations)
 
         self.vmi_image = image_cart_zoom
 
