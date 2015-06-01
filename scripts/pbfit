@@ -47,6 +47,8 @@ parser.add_argument('--swapxy', action='store_true',
 parser.add_argument('--method', default='least_squares',
                     choices=['least_squares', 'projected_landweber'],
                     help='Specifies the method to use for fitting the data')
+parser.add_argument('--cond', type=float, default=None,
+                    help='Specify the condition number for least squares fitting')
 parser.add_argument('--tolerance', type=float, default=1.0e-4,
                     help='The tolerance used in the fitting - currently used only for projected_landweber')
 parser.add_argument('--max-iterations', type=int, default=500,
@@ -115,7 +117,8 @@ else:
 logger.debug('fitting image...')
 fit.fit(img, mtx, centre=args.centre, swapxy=args.swapxy,
         oddl=oddl, lmax=lmax, Rmin=args.min_radius,
-        method=args.method, tolerance=args.tolerance,
+        method=args.method, cond=args.cond,
+        tolerance=args.tolerance,
         max_iterations=args.max_iterations)
 logger.debug('data fit')
 
