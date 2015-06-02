@@ -177,7 +177,7 @@ class PbasexFit(object):
 
         if method is 'least_squares' the following options are also used:
 
-        cond: cutoff for ‘small’ singular values; used to determine
+        cond: cutoff for small singular values; used to determine
         effective rank of the matrix. Singular values smaller than
         cond * largest_singular_value are considered zero. This allows
         some level of regularization to be achieved. Default is None
