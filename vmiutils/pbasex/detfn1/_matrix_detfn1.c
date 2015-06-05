@@ -74,6 +74,7 @@ integrand_detfn1 (double r, void *params)
   double cos_phi = sqrt((1.0 + sin_phi) * (1.0 - sin_phi));
   double cos_theta_det_frame;
   double a, rad, ang, val, df_val, delta;
+  double norm;
   int k, l, df_lidx, kmin, kmax, df_ldim;
 
   cos_theta_det_frame = p.df_cos_beta * cos_theta + 
@@ -133,11 +134,13 @@ integrand_detfn1 (double r, void *params)
      this R, taking care to normalize to Beta_0=1. */
   df_val = 0.0;
   df_lidx = -1;
+  norm = 1.0 / p.df_beta[0];
+
   for (l = 0; l <= p.df_lmax; l += p.df_linc)
     {
       df_lidx ++;
-      p.df_beta[df_lidx] /= p.df_beta[0]; /* Normalize to Beta_0 = 1 */
-      df_val += p.df_beta[df_lidx] * gsl_sf_legendre_Pl(l, cos_theta_det_frame); 
+      df_val += p.df_beta[df_lidx] * norm *
+	gsl_sf_legendre_Pl(l, cos_theta_det_frame);
     }
 
   val = df_val * val;
