@@ -251,21 +251,21 @@ if __name__ == "__main__":
     import matplotlib
     import matplotlib.pyplot as plot
 
-    Rbins = 256
-    Thetabins = 256
-    kmax = 128
+    Rbins = 128
+    Thetabins = 128
+    kmax = 70
     rkspacing = Rbins / kmax
-    sigma = rkspacing / (2.0 * m.sqrt(2.0 * m.log(2.0)))
-    k = 32
+    sigma = m.sqrt(rkspacing / 2.0) * 1.2
+    k = 70
     rk = k * rkspacing
-    l = 2
+    l = 0
     alpha = m.radians(0.0)
     beta = m.radians(90.0)
     epsabs = 0.0
-    epsrel = 1.0e-7
+    epsrel = 1.0e-5
     wkspsize = 100000
     method = 'cquad'
-    dffile = '/home/jgu/Code/vmi_invert/aarhus/junderwood/Probe.pbfit'
+    dffile = '/home/jgu/Code/vmi_sample_data/aarhus_OCS_1/vmidata/probe_only_horiz_1.fit'
     detectionfn = pbasex.PbasexFit()
     detectionfn.load(dffile)
 
@@ -276,7 +276,7 @@ if __name__ == "__main__":
 
     bf = basisfn_detfn1(
         k, l, Rbins, Thetabins, sigma, rk,
-        epsabs, epsrel, wkspsize, threshold,
+        epsabs, epsrel, wkspsize,
         detectionfn.coef, detectionfn.kmax, detectionfn.sigma,
         detectionfn.rkstep, detectionfn.lmax, df_oddl,
         alpha, beta, method)
