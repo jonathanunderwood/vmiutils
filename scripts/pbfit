@@ -45,7 +45,7 @@ parser.add_argument('--min-radius', type=float, default=None,
 parser.add_argument('--swapxy', action='store_true',
                     help='If specified, the image data will have the axes swapped before fitting')
 parser.add_argument('--method', default='least_squares',
-                    choices=['least_squares', 'projected_landweber'],
+                    choices=['least_squares', 'landweber', 'projected_landweber'],
                     help='Specifies the method to use for fitting the data')
 parser.add_argument('--cond', type=float, default=None,
                     help='Specify the condition number for least squares fitting')
