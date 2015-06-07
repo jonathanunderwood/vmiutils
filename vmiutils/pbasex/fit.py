@@ -271,18 +271,23 @@ class PbasexFit(object):
         else:
             raise NotImplementedError
 
+        kmax = matrix.kmax
+
         # If Rbinmin is specified, we don't want to fit bins less than
         # Rbinmin, so we remove them from the image and matrix
         if Rbinmin is None:
             Rdim = Rbins
+            mtx = mtx.reshape((kdim * ldim, Rdim * Thetadim))
+            img = img.reshape(Rdim * Thetadim)
+            kmin = 0
         else:
             Rdim = Rbins - Rbinmin
             img = img[Rbinmin:, :]
-            mtx = mtx[:, :, Rbinmin:, :]
-
-        mtx = mtx.reshape((kdim * ldim, Rdim * Thetadim))
-        img = img.reshape(Rdim * Thetadim)
-
+            rkspacing = float(Rbins) / kmax
+            kmin = int(math.floor(Rbinmin / rkspacing))
+            mtx = mtx[kmin:, :, Rbinmin:, :]
+            mtx = mtx.reshape(((kmax - kmin + 1) * ldim, Rdim * Thetadim))
+            img = img.reshape(Rdim * Thetadim)
 
         if method == 'least_squares':
             logger.debug('fitting with least squares')
@@ -290,10 +295,10 @@ class PbasexFit(object):
             # TODO: do something with resid
         elif method == 'projected_landweber':
             logger.debug('fitting with projected Landweber iteration')
-            krange = xrange(matrix.kmax + 1)
+            krange = xrange(kmax - kmin + 1)
 
-            def __filter(x, kdim, ldim, krange):
-                c = x.reshape((kdim, ldim))
+            def __filter(x, kmin, kmax, ldim, krange):
+                c = x.reshape((kmax - kmin + 1, ldim))
                 for k in krange:
                     if c[k, 0] < 0.0:
                         c[k, :] = 0.0
@@ -303,13 +308,21 @@ class PbasexFit(object):
                                                           max_iterations=max_iterations,
                                                           tolerance=tolerance,
                                                           filter_func=__filter,
-                                                          extra_args=(kdim,
+                                                          extra_args=(kmin,
+                                                                      kmax,
                                                                       ldim,
                                                                       krange), )
         else:
             raise NotImplementedError
 
-        coef = coef.reshape((kdim, ldim))
+        if Rbinmin is None:
+            coef = coef.reshape((kdim, ldim))
+        else:
+            # Rebuild coefficient array with coefficients for K<kmin
+            # equal to zero.
+            c = coef.reshape((kmax - kmin + 1, ldim))
+            coef = numpy.zeros((kdim, ldim))
+            coef[kmin:, :] = c
 
         # If oddl is False we need to expand the coef array to include the odd
         # l values and set them to zero, such that coef is indexed as coef[k,
