@@ -173,7 +173,7 @@ class PbasexFit(object):
         radial bins is used in the fit.
 
         method specifies the fitting method to use. Currently this can
-        be 'least_squares' or 'projected_landweber'
+        be 'least_squares', 'landweber', or 'projected_landweber'
 
         if method is 'least_squares' the following options are also used:
 
@@ -183,16 +183,16 @@ class PbasexFit(object):
         some level of regularization to be achieved. Default is None
         (ignored).
 
-        If method is 'projected_landweber' the following options are
-        also used:
+        If method is 'landweber' or 'projected_landweber' the
+        following options are also used:
 
-        tolerance: the value used to terminate Landweber iteration. Iteration is
-        terminated using a simple discrepancy calculation. The
-        simulated vector b_k is calculated from the current x vector,
-        x_k, from Ax_k=b_k. The norm of the discrepancy vector
-        (i.e. b-b_k) is then calculated and normalized to the norm of
-        b. If this value is less than tolerance, iteration is
-        terminated.
+        tolerance: the value used to terminate Landweber
+        iteration. Iteration is terminated using a simple discrepancy
+        calculation. The simulated vector b_k is calculated from the
+        current x vector, x_k, from Ax_k=b_k. The norm of the
+        discrepancy vector (i.e. b-b_k) is then calculated and
+        normalized to the norm of b. If this value is less than
+        tolerance, iteration is terminated.
 
         max_iterations: specifies the maximum number of iterations
         allowed before returning from Landweber iteration.
@@ -289,10 +289,20 @@ class PbasexFit(object):
             mtx = mtx.reshape(((kmax - kmin + 1) * ldim, Rdim * Thetadim))
             img = img.reshape(Rdim * Thetadim)
 
+        # Now do the fitting according to the selected method.
         if method == 'least_squares':
             logger.debug('fitting with least squares')
             coef, resid, rank, s = scipy.linalg.lstsq(mtx.transpose(), img, cond=cond)
             # TODO: do something with resid
+        elif method == 'landweber':
+            logger.debug('fitting with Landweber iteration')
+
+            coef = vmiutils.landweber.projected_landweber(mtx.T,
+                                                          img,
+                                                          max_iterations=max_iterations,
+                                                          tolerance=tolerance,
+                                                          filter_func=None,
+                                                          )
         elif method == 'projected_landweber':
             logger.debug('fitting with projected Landweber iteration')
             krange = xrange(kmax - kmin + 1)
