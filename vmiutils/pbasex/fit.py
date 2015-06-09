@@ -952,8 +952,47 @@ class PbasexFitBetaSpectrum(object):
     def plot(self, axis, betavals=None, rbins=500, scale_min=None,
              scale_max=None, xlabel=None, ylabel=None, cmap=matplotlib.cm.jet,
              linestyle='-', scaley=True):
-        ymin = scale_min
-        ymax = scale_max
+        """Generate a plot of the r-dependent beta values.
+
+        betavals is a list specifying which betavalues to plot. If
+        this is None (the default), all beta values are plotted.
+
+        rbins specifies the number of bins in r to use when generating
+        the plot. Default is 500.
+
+        scale_min specifies the minimum y-axis value. If this is None
+        (the default), the smallest value of all the beta values is
+        used.
+
+        scale_max specifies the maximum y-axis value. If this is None
+        (the default), the largest value of all the beta values is
+        used.
+
+        xlabel specifies the x-axis label. If this is None (the
+        default), the 'r (pixels)' is used.
+
+        ylabel specifies the y-axis label. If this is None (the
+        default) and only one beta value is specified in betavals,
+        then this will be 'beta_n' where n is the value of l for the
+        plotted beta value. If more than one beta value is plotted,
+        and ylabel is None, then 'beta_l' is used.
+
+        scaley IS UNUSED AND WILL BE REMOVED IN THE NEAR FUTURE.
+
+        """
+        if scale_min is None:
+            find_ymin = True
+            ymin = None
+        else:
+            find_ymin = False
+            ymin = scale_min
+
+        if scale_max is None:
+            find_ymax = True
+            ymax = None
+        else:
+            find_ymax = False
+            ymax = scale_max
 
         if betavals is None:
             if self.oddl is True:
@@ -967,6 +1006,12 @@ class PbasexFitBetaSpectrum(object):
             b = betavals[0]
             lines = axis.plot(self.r, self.beta[b],
                               label=r'$l=${0}'.format(b))
+            if find_ymin is True:
+                ymin = self.beta[b].min()
+
+            if find_ymax is True:
+                ymax = self.beta[b].max()
+
             if ylabel is None:
                 axis.set_ylabel(r'$\beta_{{{0}}}$'.format(b))
             else:
@@ -986,13 +1031,13 @@ class PbasexFitBetaSpectrum(object):
                                  linestyle=linestyle)
                 lines.append(line)
 
-                if scale_min is None:
+                if find_ymin is True:
                     if ymin is None:
                         ymin = self.beta[b].min()
                     else:
                         ymin = min(ymin, self.beta[b].min())
 
-                if scale_max is None:
+                if find_ymax is True:
                     if ymax is None:
                         ymax = self.beta[b].max()
                     else:
@@ -1013,10 +1058,7 @@ class PbasexFitBetaSpectrum(object):
                 axis.set_xlabel(xlabel)
 
         axis.set_autoscale_on(False)
-
-        if scaley is True:
-            axis.set_ylim(ymin, ymax)
-
+        axis.set_ylim(ymin, ymax)
         axis.set_xlim(self.r.min(), self.r.max())
 
         return lines
