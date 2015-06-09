@@ -918,7 +918,9 @@ class PbasexFitRadialSpectrum(object):
     def __init__(self, fit, rbins=500):
         self.r, self.spec = fit.calc_radial_spectrum(rbins=rbins)
 
-    def plot(self, axis, linestyle='-', xlabel=None, ylabel=None,
+    def plot(self, axis, linestyle='-',
+             scale_min=None, scale_max=None,
+             xlabel=None, ylabel=None,
              label=None, color=None):
 
         if color is not None:
@@ -939,7 +941,18 @@ class PbasexFitRadialSpectrum(object):
             axis.set_ylabel(ylabel)
 
         axis.set_xlim(self.r.min(), self.r.max())
-        axis.set_ylim(self.spec.min(), self.spec.max())
+
+        if scale_min is None:
+            ymin = self.spec.min()
+        else:
+            ymin = scale_min
+
+        if scale_max is None:
+            ymax = self.spec.max()
+        else:
+            ymax = scale_max
+
+        axis.set_ylim(ymin, ymax)
 
         return line
 
