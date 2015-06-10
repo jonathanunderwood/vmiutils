@@ -183,6 +183,7 @@ if args.grids == 'on':
 ax2=ax.twinx()
 radial_spec.plot(axis=ax2, linestyle='--', scale_min=args.rspec_scale_min,
                  scale_max=args.rspec_scale_max)
+ax.set_title(r'Radial dependence of $\beta_l$ parameters')
 pdf_pages.savefig(fig)
 plot.close(fig)
 logger.debug('beta spectra collective plotted')
@@ -216,7 +217,7 @@ for page in xrange(pages_reqd):
         beta_spec.plot(axis=ax1, betavals=[this_beta],
                        scale_min=args.beta_scale_min, 
                        scale_max=args.beta_scale_max)
-
+        ax1.set_title(r'Radial dependence of $\beta_{%d}$ parameter' %this_beta)
         if args.grids == 'on':
             ax1.grid()
         ax2 = ax1.twinx()
