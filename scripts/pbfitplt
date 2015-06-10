@@ -117,18 +117,22 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 ax = plot.subplot2grid((2, 2), (0, 0), aspect=1.0)
 im = vmi_im.plot(axis=ax, cmap=plot.cm.gist_heat)
 ax.set_title('Experimental data')
+ax.tick_params(labelsize=8)
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="5%", pad=0.05)
 plot.colorbar(im, cax=cax)
+cax.tick_params(labelsize=8)
 
 logger.debug('1/4 images done')
 
 ax = plot.subplot2grid((2, 2), (0, 1), aspect=1.0)
 im = cart_im.plot(axis=ax, cmap=plot.cm.gist_heat, clip=0.0)
 ax.set_title('pBasex reconstruction')
+ax.tick_params(labelsize=8)
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="5%", pad=0.05)
 plot.colorbar(im, cax=cax)
+cax.tick_params(labelsize=8)
 
 logger.debug('2/4 images done')
 
@@ -136,9 +140,11 @@ ax = plot.subplot2grid((2, 2), (1, 0), aspect=1.0)
 im = vmi_im.plot(axis=ax)
 ax.axis('image')
 ax.set_title('Experimental data')
+ax.tick_params(labelsize=8)
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="5%", pad=0.05)
 plot.colorbar(im, cax=cax)
+cax.tick_params(labelsize=8)
 
 logger.debug('3/4 images done')
 
@@ -149,9 +155,11 @@ if args.type == 'detfn1':
                    cmap=matplotlib.cm.gray)
 ax.axis('image')
 ax.set_title('pBasex reconstruction')
+ax.tick_params(labelsize=8)
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="5%", pad=0.05)
 plot.colorbar(im, cax=cax)
+cax.tick_params(labelsize=8)
 
 logger.debug('4/4 images done')
 
