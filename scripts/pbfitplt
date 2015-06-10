@@ -49,6 +49,12 @@ parser.add_argument('--beta-scale-min', help='Minimum y-axis value when plotting
 parser.add_argument('--beta-scale-max', help='Maximum y-axis value when plotting beta values',
                     type=float, default=None)
 
+parser.add_argument('--rspec-scale-min', help='Minimum y-axis value when plotting radial spectrum',
+                    type=float, default=None)
+
+parser.add_argument('--rspec-scale-max', help='Maximum y-axis value when plotting radial spectrum',
+                    type=float, default=None)
+
 args = parser.parse_args()
 
 if args.type == 'normal':
@@ -155,7 +161,8 @@ logger.debug('images plotted')
 # Second page containing the radial spectrum.
 fig = plot.figure(figsize=(8.27, 11.69 / 2), dpi=100)
 ax=plot.axes()
-radial_spec.plot(axis=ax)
+radial_spec.plot(axis=ax, scale_min=args.rspec_scale_min,
+                 scale_max=args.rspec_scale_max)
 ax.set_title('Radial spectrum')
 pdf_pages.savefig(fig)
 plot.close(fig)
@@ -168,7 +175,8 @@ beta_spec.plot(axis=ax, scale_min=args.beta_scale_min,
                scale_max=args.beta_scale_max)
 ax.legend(loc='upper left', bbox_to_anchor=(1.1, 1.0), fontsize=8)
 ax2=ax.twinx()
-radial_spec.plot(axis=ax2, linestyle='--')
+radial_spec.plot(axis=ax2, linestyle='--', scale_min=args.rspec_scale_min,
+                 scale_max=args.rspec_scale_max)
 pdf_pages.savefig(fig)
 plot.close(fig)
 logger.debug('beta spectra collective plotted')
@@ -204,7 +212,9 @@ for page in xrange(pages_reqd):
                        scale_max=args.beta_scale_max)
 
         ax2 = ax1.twinx()
-        radial_spec.plot(axis=ax2, linestyle='--')
+        radial_spec.plot(axis=ax2, linestyle='--',
+                         scale_min=args.rspec_scale_min,
+                         scale_max=args.rspec_scale_max)
 
     pdf_pages.savefig(fig)
     plot.close(fig)
@@ -230,7 +240,9 @@ for page in xrange(pages_reqd):
         cosn_spec.plot(axis=ax1, nvals=[this_n], scale_min=0.0, scale_max=1.0)
 
         ax2 = ax1.twinx()
-        radial_spec.plot(axis=ax2, linestyle='--')
+        radial_spec.plot(axis=ax2, linestyle='--',
+                         scale_min=args.rspec_scale_min,
+                         scale_max=args.rspec_scale_max)
 
         ax2.set_title(
             r'Radial dependence of $\langle\cos^{%d}\theta\rangle$' % this_n)
@@ -244,9 +256,11 @@ logger.debug('<cos^n(theta)> plotted')
 if args.type == 'detfn1':
     fig = plot.figure(figsize=(8.27, 11.69 / 2), dpi=100)
     ax1 = plot.axes()
-    overlap.plot(axis=ax1)#, scale_min=0.0, scale_max=1.0)
+    overlap.plot(axis=ax1, scale_min=0.0, scale_max=1.0)
     ax2 = ax1.twinx()
-    probespec.plot(axis=ax2, linestyle='--')
+    probespec.plot(axis=ax2, linestyle='--',
+                   scale_min=args.rspec_scale_min,
+                   scale_max=args.rspec_scale_max)
     ax1.set_title('Angular overlap factor')
     pdf_pages.savefig(fig)
     plot.close(fig)
