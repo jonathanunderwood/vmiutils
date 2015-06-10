@@ -54,6 +54,8 @@ parser.add_argument('--rspec-scale-min', help='Minimum y-axis value when plottin
 
 parser.add_argument('--rspec-scale-max', help='Maximum y-axis value when plotting radial spectrum',
                     type=float, default=None)
+parser.add_argument('--grids', help='specify whether to add grids to plots',
+                    default='off', choices=['on', 'off'])
 
 args = parser.parse_args()
 
@@ -164,6 +166,8 @@ ax=plot.axes()
 radial_spec.plot(axis=ax, scale_min=args.rspec_scale_min,
                  scale_max=args.rspec_scale_max)
 ax.set_title('Radial spectrum')
+if args.grids == 'on':
+    ax.grid()
 pdf_pages.savefig(fig)
 plot.close(fig)
 logger.debug('radial spectrum plotted')
@@ -174,6 +178,8 @@ ax = plot.axes([0.1, 0.2, 0.7, 0.7])
 beta_spec.plot(axis=ax, scale_min=args.beta_scale_min, 
                scale_max=args.beta_scale_max)
 ax.legend(loc='upper left', bbox_to_anchor=(1.1, 1.0), fontsize=8)
+if args.grids == 'on':
+    ax.grid()
 ax2=ax.twinx()
 radial_spec.plot(axis=ax2, linestyle='--', scale_min=args.rspec_scale_min,
                  scale_max=args.rspec_scale_max)
@@ -211,6 +217,8 @@ for page in xrange(pages_reqd):
                        scale_min=args.beta_scale_min, 
                        scale_max=args.beta_scale_max)
 
+        if args.grids == 'on':
+            ax1.grid()
         ax2 = ax1.twinx()
         radial_spec.plot(axis=ax2, linestyle='--',
                          scale_min=args.rspec_scale_min,
@@ -239,6 +247,9 @@ for page in xrange(pages_reqd):
         ax1 = plot.subplot2grid((plots_per_page, 1), (this_plot, 0))
         cosn_spec.plot(axis=ax1, nvals=[this_n], scale_min=0.0, scale_max=1.0)
 
+        if args.grids == 'on':
+            ax1.grid()
+
         ax2 = ax1.twinx()
         radial_spec.plot(axis=ax2, linestyle='--',
                          scale_min=args.rspec_scale_min,
@@ -257,6 +268,8 @@ if args.type == 'detfn1':
     fig = plot.figure(figsize=(8.27, 11.69 / 2), dpi=100)
     ax1 = plot.axes()
     overlap.plot(axis=ax1, scale_min=0.0, scale_max=1.0)
+    if args.grids == 'on':
+        ax1.grid()
     ax2 = ax1.twinx()
     probespec.plot(axis=ax2, linestyle='--',
                    scale_min=args.rspec_scale_min,
