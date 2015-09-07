@@ -22,7 +22,7 @@ import Queue
 import threading
 import multiprocessing
 import math
-import futures
+import concurrent.futures as futures
 import matplotlib
 import scipy.linalg
 

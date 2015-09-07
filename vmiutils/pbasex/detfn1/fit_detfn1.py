@@ -23,7 +23,7 @@ import numpy.polynomial.legendre as legendre
 import Queue
 import threading
 import multiprocessing
-import futures
+import concurrent.futures as futures
 import math
 import scipy.optimize
 from vmiutils.pbasex._fit import *

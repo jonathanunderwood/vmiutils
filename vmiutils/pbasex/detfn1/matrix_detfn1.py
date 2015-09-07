@@ -20,7 +20,7 @@ import cPickle as pickle
 import math as m
 import logging
 import multiprocessing
-import futures
+import concurrent.futures as futures
 
 import vmiutils.pbasex as pbasex
 
