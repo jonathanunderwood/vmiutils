@@ -5,7 +5,7 @@ bins = 256
 centre=(bins/2.0, bins/2.0)
 
 # cos^2 theta
-ions1 = NewtonSphere(50.0, 8.0, [1.0, 0.0, 2.0])
+ions1 = NewtonSphere(50.0, 2.0, [1.0, 0.0, 2.0])
 vmi_img1 = ions1.vmi_image(bins, centre=centre, resample=True)
 numpy.savetxt('cossq.dat', vmi_img1.image)
 
