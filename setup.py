@@ -12,7 +12,7 @@ class build_ext(_build_ext):
         self.include_dirs.append(numpy.get_include())
 
 setup(name='VMIutils',
-      version='0.1',
+      version='0.2.0',
       description='Programs for inverting VMI image',
       author='Jonathan G. Underwood',
       author_email='j.underwood@ucl.ac.uk',
