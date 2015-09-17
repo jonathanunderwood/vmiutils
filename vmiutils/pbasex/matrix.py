@@ -44,24 +44,22 @@ def _odd(x):
 
 
 class PbasexMatrix(object):
-    matrix = None
-    kmax = None
-    sigma = None
-    lmax = None
-    oddl = None
-    Rbins = None
-    Thetabins = None
-    epsabs = None
-    epsrel = None
-    description = 'pbasex_matrix'
-
     # This private attribute is a list containing the variables that should be
     # saved to a file when dump is called and read when load is called.
     _metadata = ['Rbins', 'Thetabins', 'kmax', 'sigma', 'lmax', 'oddl',
                  'epsabs', 'epsrel', 'description']
 
     def __init__(self):
-        pass
+        self.matrix = None
+        self.kmax = None
+        self.sigma = None
+        self.lmax = None
+        self.oddl = None
+        self.Rbins = None
+        self.Thetabins = None
+        self.epsabs = None
+        self.epsrel = None
+        self.description = 'pbasex_matrix'
 
     def calc_matrix_threaded(self, Rbins, Thetabins, kmax, lmax, sigma=None,
                              oddl=True, epsabs=0.0, epsrel=1.0e-7,
