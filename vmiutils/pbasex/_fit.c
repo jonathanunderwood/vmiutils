@@ -665,91 +665,10 @@ cosn_expval_point(PyObject *self, PyObject *args)
   return cosn_npy;
 }
 
-static PyObject *
-radial_spectrum(PyObject *self, PyObject *args)
-{
-  PyArrayObject *coef = NULL, *spec = NULL;
-  PyObject *coefarg = NULL;
-  int rbins, i, kmax;
-  double rmax, rstep, rkstep, sigma, s, max = 0.0;
-  npy_intp rbinsnp;
-
-  if (!PyArg_ParseTuple(args, "diOidd",
-			&rmax, &rbins, &coefarg, &kmax, &rkstep, &sigma))
-    {
-      PyErr_SetString (PyExc_TypeError, "Bad argument to radial_spectrum");
-      return NULL;
-    }
-
-  coef = (PyArrayObject *) PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-  if (!coef)
-    return NULL;
-
-  /* spec = (double *) PyDataMem_NEW (rbins * sizeof (double)); */
-  rbinsnp = (npy_intp) rbins;
-  spec = (PyArrayObject *) PyArray_SimpleNew (1, &rbinsnp, NPY_DOUBLE);
-  if (!spec)
-    {
-      Py_DECREF(coef);
-      return PyErr_NoMemory();
-    }
-
-  rstep = rmax / (rbins - 1);
-  s = 2.0 * sigma * sigma;
-
-  for (i = 0; i < rbins; i++)
-    {
-      double r = i * rstep;
-      double val = 0.0;
-      int k;
-
-      for (k = 0; k <= kmax; k++)
-	{
-	  double rk = k * rkstep;
-	  double a = r - rk;
-	  double rad = exp(-(a * a) / s);
-	  double c;
-
-	  if (arr2D_get(coef, k, 0, &c))
-	    goto fail;
-
-	  val += c * rad * r * r;
-	}
-
-      if (arr1D_set(spec, i, val))
-	goto fail;
-
-      if (val > max)
-	max = val;
-    }
-
-  Py_DECREF(coef);
-
-  /* Normalize to maximum value of 1. */
-  for (i = 0; i < rbins; i++)
-    {
-      double val;
-
-      if (arr1D_get(spec, i, &val))
-	goto fail;
-
-      if (arr1D_set(spec, i, val / max))
-	goto fail;
-    }
-
-  return (PyObject *) spec;
-
- fail:
-  Py_DECREF(coef);
-  Py_DECREF(spec);
-  return NULL;
-}
 
 /* Module function table. Each entry specifies the name of the function exported
    by the module and the corresponding C function. */
 static PyMethodDef FitMethods[] = {
-    {"radial_spectrum",  radial_spectrum, METH_VARARGS,
-     "Returns a simulated angular integrated radial spectrum from fit coefficients."},
     {"cartesian_distribution_point",  cartesian_distribution_point, METH_VARARGS,
      "Returns a (x, y) point in the simulated distribution cartesian image from fit coefficients."},
     {"polar_distribution",  polar_distribution, METH_VARARGS,
