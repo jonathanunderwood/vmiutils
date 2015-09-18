@@ -1,0 +1,6 @@
+fit_detfn1.py:
+1. Remove unecessary detectionfn_cartesian_distribution function -
+   this duplicates what's available from PbasexFit.
+
+_fit.c:
+1. Replace instances of lmax + 1 in loops with a pre-calculated ldim
