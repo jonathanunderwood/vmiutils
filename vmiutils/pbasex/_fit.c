@@ -89,83 +89,6 @@ arr2D_set(PyArrayObject *arr, int idx1, int idx2, double val)
     return -1;
 }
 
-static PyObject *
-polar_distribution(PyObject *self, PyObject *args)
-{
-  PyArrayObject *dist = NULL, *coef = NULL;
-  PyObject *coefarg = NULL;
-  int rbins, thetabins, i, kmax, lmax;
-  double rmax, rstep, thetastep, rkstep, sigma, s;
-  npy_intp dims[2];
-
-  if (!PyArg_ParseTuple(args, "diiOiddi",
-			&rmax, &rbins, &thetabins, &coef, &kmax, &rkstep, &sigma, &lmax))
-    {
-      PyErr_SetString (PyExc_TypeError, "Bad argument to polar_distribution");
-      return NULL;
-    }
-
-  coef = (PyArrayObject *) PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-  if (!coef)
-    return NULL;
-
-  dims[0] = (npy_intp) rbins;
-  dims[1] = (npy_intp) thetabins;
-
-  dist = (PyArrayObject *) PyArray_SimpleNew (2, dims, NPY_DOUBLE);
-  if (!dist)
-    {
-      Py_DECREF(coef);
-      return PyErr_NoMemory();
-    }
-
-  rstep = rmax / (rbins - 1);
-  thetastep = 2.0 * M_PI/ (thetabins - 1);
-  s = 2.0 * sigma * sigma;
-
-  for (i = 0; i < rbins; i++)
-    {
-      double r = i * rstep;
-      int j;
-
-      for (j = 0; j < thetabins; j++)
-	{
-	  double theta = j * thetastep;
-	  int k;
-	  double val = 0;
-
-	  for (k = 0; k <= kmax; k++)
-	    {
-	      double rk = k * rkstep;
-	      double a = r - rk;
-	      double rad = exp(-(a * a) / s);
-	      int l;
-
-	      for (l = 0; l <= lmax; l++)
-		{
-		  double ang = gsl_sf_legendre_Pl(l, cos(theta));
-		  double c;
-		  if (arr2D_get(coef, k, l, &c))
-		    goto fail;
-
-		  val += c * rad * ang;
-		}
-	    }
-	  if (arr2D_set(dist, i, j, val))
-	    goto fail;
-	}
-    }
-
-  Py_DECREF(coef);
-
-  return (PyObject *) dist;
-
- fail:
-  Py_DECREF(coef);
-  Py_DECREF(dist);
-  return NULL;
-}
-
 #define __SMALL 1.0e-30
 
 static int
@@ -318,7 +241,7 @@ radial_spectrum_point(PyObject *self, PyObject *args)
 			&truncate))
     {
       PyErr_SetString (PyExc_TypeError,
-		       "Bad argument to beta_coefs_point");
+		       "Bad argument to radial_spectrum_point");
       return NULL;
     }
 
@@ -403,6 +326,78 @@ cartesian_distribution_point(PyObject *self, PyObject *args)
   s = 2.0 * sigma * sigma;
   r = sqrt (x * x + y * y);
   costheta = cos(atan2(x, y));
+
+  kstart = floor((r - truncate * sigma) / rkstep);
+  kstop = ceil((r + truncate * sigma) / rkstep);
+  if (kstart < 0)
+    kstart = 0;
+  if (kstop > kmax)
+    kstop = kmax;
+
+  val = 0.0;
+  for (k = kstart; k <= kstop; k++)
+    {
+      double rk = k * rkstep;
+      double a = r - rk;
+      double rad = exp(-(a * a) / s);
+      int l;
+
+      for (l = 0; l <= lmax; l += linc)
+	{
+	  double ang = gsl_sf_legendre_Pl(l, costheta);
+	  double c = coef [k * (lmax + 1) + l];
+
+	  val += c * rad * ang;
+	}
+    }
+
+  /* Regain GIL */
+  Py_END_ALLOW_THREADS
+
+  Py_DECREF (pycoef);
+
+  return Py_BuildValue("d", val);
+}
+
+static PyObject *
+polar_distribution_point(PyObject *self, PyObject *args)
+{
+  PyObject *coefarg = NULL, *pycoef = NULL;
+  int k, kmax, lmax, oddl, linc, kstart, kstop;
+  double theta, costheta, r, rkstep, sigma, s, val, truncate;
+  double * coef;
+
+  if (!PyArg_ParseTuple(args, "ddOiddiid",
+			&r, &theta, &coefarg, &kmax, &rkstep, &sigma, &lmax,
+			&oddl, &truncate))
+    {
+      PyErr_SetString (PyExc_TypeError,
+		       "Bad argument to polar_distribution_point");
+      return NULL;
+    }
+
+  if (oddl == 1)
+    linc = 1;
+  else if (oddl == 0)
+    linc = 2;
+  else
+    return NULL;
+
+  pycoef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE,
+			    NPY_ARRAY_IN_ARRAY);
+  if (!pycoef)
+    {
+      Py_XDECREF(pycoef);
+      return NULL;
+    }
+
+  coef = (double *) PyArray_DATA((PyArrayObject *) pycoef);
+
+  /* Release GIL here as no longer accessing python objects. */
+  Py_BEGIN_ALLOW_THREADS
+
+  s = 2.0 * sigma * sigma;
+  costheta = cos(theta);
 
   kstart = floor((r - truncate * sigma) / rkstep);
   kstop = ceil((r + truncate * sigma) / rkstep);
@@ -671,8 +666,8 @@ cosn_expval_point(PyObject *self, PyObject *args)
 static PyMethodDef FitMethods[] = {
     {"cartesian_distribution_point",  cartesian_distribution_point, METH_VARARGS,
      "Returns a (x, y) point in the simulated distribution cartesian image from fit coefficients."},
-    {"polar_distribution",  polar_distribution, METH_VARARGS,
-     "Returns a simulated distribution polar image from fit coefficients."},
+    {"polar_distribution_point",  polar_distribution_point, METH_VARARGS,
+     "Returns a (r, theta) point in the simulated distribution polar image from fit coefficients."},
     {"radial_spectrum_point", radial_spectrum_point, METH_VARARGS,
      "Returns the radial spectrum at a single value of r."},
     {"beta_coeffs_point", beta_coeffs_point, METH_VARARGS,
