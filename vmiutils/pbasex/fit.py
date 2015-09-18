@@ -835,21 +835,23 @@ class PbasexFitVMI(object):
 def _augment(arr):
     return numpy.append(arr, arr[-1] + arr[1] - arr[0])
 
+
 class PbasexFitCartesianImage(object):
+
     def __init__(self, fit, bins=500):
-        self.image = fit.cartesian_distribution_threaded(bins=bins)
+        self.image = fit.cartesian_distribution(bins=bins)
 
     def plot(self, axis, cmap=matplotlib.cm.spectral,
              xlabel=None, ylabel=None, rasterized=True,
              transpose=False, plot_type='image', clip=None):
         if transpose is False:
-            x=self.image.x
-            y=self.image.y
-            image=self.image.image.T
+            x = self.image.x
+            y = self.image.y
+            image = self.image.image.T
         elif transpose is True:
-            x=self.image.y
-            y=self.image.x
-            image=self.image.image
+            x = self.image.y
+            y = self.image.x
+            image = self.image.image
         else:
             raise ValueError('transpose must be True or False')
 
