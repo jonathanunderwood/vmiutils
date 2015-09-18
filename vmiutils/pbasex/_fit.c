@@ -230,12 +230,57 @@ radial_spectrum_point(PyObject *self, PyObject *args)
   return Py_BuildValue("d", val);
 }
 
+
+static double
+distribution_value_at_point(const double r, const double costheta,
+			    const double * coef, const int kmax,
+			    const double sigma, const double rkstep,
+			    const double truncate,
+			    const int lmax, const int linc)
+/* Calculates the value of the distribution from the fit coefficients
+   at a point specified in terms of r and caos(theta). This function
+   contains the calculations common to both polar and cartesian
+   distribution calculations and only involves non-python objects, so
+   the GIL can be dropped prior to calling this function. */
+{
+  int k, kstart, kstop;
+  double s, val;
+
+  s = 2.0 * sigma * sigma;
+
+  kstart = floor((r - truncate * sigma) / rkstep);
+  kstop = ceil((r + truncate * sigma) / rkstep);
+  if (kstart < 0)
+    kstart = 0;
+  if (kstop > kmax)
+    kstop = kmax;
+
+  val = 0.0;
+  for (k = kstart; k <= kstop; k++)
+    {
+      double rk = k * rkstep;
+      double a = r - rk;
+      double rad = exp(-(a * a) / s);
+      int l;
+
+      for (l = 0; l <= lmax; l += linc)
+	{
+	  double ang = gsl_sf_legendre_Pl(l, costheta);
+	  double c = coef [k * (lmax + 1) + l];
+
+	  val += c * rad * ang;
+	}
+    }
+
+  return val;
+}
+
 static PyObject *
 cartesian_distribution_point(PyObject *self, PyObject *args)
 {
   PyObject *coefarg = NULL, *pycoef = NULL;
-  int k, kmax, lmax, oddl, linc, kstart, kstop;
-  double x, y, costheta, r, rkstep, sigma, s, val, truncate;
+  int kmax, lmax, oddl, linc;
+  double x, y, costheta, r, rkstep, sigma, val, truncate;
   double * coef;
 
   if (!PyArg_ParseTuple(args, "ddOiddiid",
@@ -267,33 +312,11 @@ cartesian_distribution_point(PyObject *self, PyObject *args)
   /* Release GIL here as no longer accessing python objects. */
   Py_BEGIN_ALLOW_THREADS
 
-  s = 2.0 * sigma * sigma;
   r = sqrt (x * x + y * y);
   costheta = cos(atan2(x, y));
 
-  kstart = floor((r - truncate * sigma) / rkstep);
-  kstop = ceil((r + truncate * sigma) / rkstep);
-  if (kstart < 0)
-    kstart = 0;
-  if (kstop > kmax)
-    kstop = kmax;
-
-  val = 0.0;
-  for (k = kstart; k <= kstop; k++)
-    {
-      double rk = k * rkstep;
-      double a = r - rk;
-      double rad = exp(-(a * a) / s);
-      int l;
-
-      for (l = 0; l <= lmax; l += linc)
-	{
-	  double ang = gsl_sf_legendre_Pl(l, costheta);
-	  double c = coef [k * (lmax + 1) + l];
-
-	  val += c * rad * ang;
-	}
-    }
+  val = distribution_value_at_point(r, costheta, coef, kmax, sigma,
+				    rkstep, truncate, lmax, linc);
 
   /* Regain GIL */
   Py_END_ALLOW_THREADS
@@ -307,8 +330,8 @@ static PyObject *
 polar_distribution_point(PyObject *self, PyObject *args)
 {
   PyObject *coefarg = NULL, *pycoef = NULL;
-  int k, kmax, lmax, oddl, linc, kstart, kstop;
-  double theta, costheta, r, rkstep, sigma, s, val, truncate;
+  int kmax, lmax, oddl, linc;
+  double theta, costheta, r, rkstep, sigma, val, truncate;
   double * coef;
 
   if (!PyArg_ParseTuple(args, "ddOiddiid",
@@ -340,32 +363,10 @@ polar_distribution_point(PyObject *self, PyObject *args)
   /* Release GIL here as no longer accessing python objects. */
   Py_BEGIN_ALLOW_THREADS
 
-  s = 2.0 * sigma * sigma;
   costheta = cos(theta);
 
-  kstart = floor((r - truncate * sigma) / rkstep);
-  kstop = ceil((r + truncate * sigma) / rkstep);
-  if (kstart < 0)
-    kstart = 0;
-  if (kstop > kmax)
-    kstop = kmax;
-
-  val = 0.0;
-  for (k = kstart; k <= kstop; k++)
-    {
-      double rk = k * rkstep;
-      double a = r - rk;
-      double rad = exp(-(a * a) / s);
-      int l;
-
-      for (l = 0; l <= lmax; l += linc)
-	{
-	  double ang = gsl_sf_legendre_Pl(l, costheta);
-	  double c = coef [k * (lmax + 1) + l];
-
-	  val += c * rad * ang;
-	}
-    }
+  val = distribution_value_at_point(r, costheta, coef, kmax, sigma,
+				    rkstep, truncate, lmax, linc);
 
   /* Regain GIL */
   Py_END_ALLOW_THREADS
