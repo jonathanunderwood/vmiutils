@@ -166,97 +166,6 @@ polar_distribution(PyObject *self, PyObject *args)
   return NULL;
 }
 
-static PyObject *
-beta_coeffs(PyObject *self, PyObject *args)
-{
-  PyArrayObject *coef = NULL, *beta = NULL;
-  PyObject *coefarg = NULL;
-  int rbins, i, kmax, lmax, ldim;
-  double rmax, rstep, rkstep, sigma, s;
-  npy_intp dims[2];
-
-  if (!PyArg_ParseTuple(args, "diOiddi",
-			&rmax, &rbins, &coefarg, &kmax, &rkstep, &sigma, &lmax))
-    {
-      PyErr_SetString (PyExc_TypeError, "Bad argument to beta_coeffs");
-      return NULL;
-    }
-
-  coef = (PyArrayObject *) PyArray_FROM_OTF(coefarg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
-  if (!coef)
-    return NULL;
-
-  ldim = lmax + 1;
-
-  dims[0] = (npy_intp) ldim;
-  dims[1] = (npy_intp) rbins;
-
-  beta = (PyArrayObject *) PyArray_ZEROS (2, dims, NPY_DOUBLE, 0);
-  if (!beta)
-    {
-      Py_DECREF (coef);
-      return PyErr_NoMemory();
-    }
-
-  rstep = rmax / (rbins - 1);
-  s = 2.0 * sigma * sigma;
-
-  for (i = 0; i < rbins; i++)
-    {
-      double r = i * rstep;
-      int k;
-
-      for (k = 0; k <= kmax; k++)
-	{
-	  double rk = k * rkstep;
-	  double a = r - rk;
-	  double rad = exp(-(a * a) / s);
-	  int l;
-
-	  for (l = 0; l <= lmax; l++)
-	    {
-	      double b, c;
-	      if (arr2D_get(coef, k, l, &c))
-		goto fail;
-	      if (arr2D_get(beta, l, i, &b))
-		goto fail;
-	      if (arr2D_set(beta, l, i, b + c * rad))
-		goto fail;
-	    }
-	}
-    }
-
-  Py_DECREF(coef);
-
-  /* Normalize to beta_0 = 1 at each r. */
-  for (i = 0; i < rbins; i++)
-    {
-      double norm;
-      int l;
-
-      if (arr2D_get(beta, 0, i, &norm))
-	goto fail;
-
-      for (l = 0; l <= lmax; l++)
-	{
-	  double b;
-
-	  if (arr2D_get(beta, l, i, &b))
-	    goto fail;
-
-	  if (arr2D_set(beta, l, i, b / norm))
-	    goto fail;
-	}
-    }
-
-  return (PyObject *) beta;
-
- fail:
-  Py_DECREF(beta);
-  Py_DECREF(coef);
-  return NULL;
-}
-
 #define __SMALL 1.0e-30
 
 static int
@@ -787,8 +696,6 @@ static PyMethodDef FitMethods[] = {
      "Returns a (x, y) point in the simulated distribution cartesian image from fit coefficients."},
     {"polar_distribution",  polar_distribution, METH_VARARGS,
      "Returns a simulated distribution polar image from fit coefficients."},
-    {"beta_coeffs",  beta_coeffs, METH_VARARGS,
-     "Returns beta coefficents as a function of r from fit coefficients."},
     {"beta_coeffs_point", beta_coeffs_point, METH_VARARGS,
      "Returns beta coefficients at a single value of r."},
     {"cosn_expval_point", cosn_expval_point, METH_VARARGS,
