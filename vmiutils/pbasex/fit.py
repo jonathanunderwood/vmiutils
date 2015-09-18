@@ -936,9 +936,11 @@ class PbasexFitRadialSpectrum(object):
 
         return line
 
+
 class PbasexFitBetaSpectrum(object):
+
     def __init__(self, fit, rbins=500):
-        self.r, self.beta = fit.beta_coefficients_threaded(rbins=rbins)
+        self.r, self.beta = fit.beta_coefficients(rbins=rbins)
         self.lmax = fit.lmax
         self.oddl = fit.oddl
 
