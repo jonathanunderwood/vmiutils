@@ -407,6 +407,17 @@ class PbasexFit(object):
     def cartesian_distribution_threaded(self, bins=250, rmax=None,
                                         truncate=5.0, nthreads=None,
                                         weighting='normal'):
+        msg = 'cartesian_distribution_threaded method is deprecated, use cartesian_distribution method instead'
+        logger.warning(msg)
+        warnings.warn(msg, DeprecationWarning)
+        return self.cartesian_distribution(bins=bins, rmax=rmax,
+                                           truncate=truncate,
+                                           nthreads=nthreads,
+                                           weighting=weighting)
+
+    def cartesian_distribution(self, bins=250, rmax=None,
+                               truncate=5.0, nthreads=None,
+                               weighting='normal'):
         """Calculates a cartesian image of the fitted distribution using
         multiple threads for speed.
 
