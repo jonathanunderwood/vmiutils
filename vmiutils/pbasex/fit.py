@@ -504,11 +504,10 @@ class PbasexFit(object):
                 xval = job['xval']
                 yval = job['yval']
 
-                #logger.debug('Calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
                 dist[xbin, ybin] = cartesian_distribution_point(
                     xval, yval, self.coef, self.kmax, self.rkstep,
                     self.sigma, self.lmax, oddl, truncate)
-                #logger.debug('Finished calculating cartesian distribution at x={0}, y={1}'.format(xvals[xbin], yvals[ybin]))
+
                 queue.task_done()
 
         if nthreads is None:
