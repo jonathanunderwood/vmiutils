@@ -889,12 +889,14 @@ class PbasexFitCartesianImage(object):
 
         return im
 
+
 class PbasexFitRadialSpectrum(object):
+
     xlabel = r'$r$ (pixels)'
     ylabel = r'$I$ (a.u)'
 
     def __init__(self, fit, rbins=500):
-        self.r, self.spec = fit.calc_radial_spectrum(rbins=rbins)
+        self.r, self.spec = fit.radial_spectrum(rbins=rbins)
 
     def plot(self, axis, linestyle='-',
              scale_min=None, scale_max=None,
