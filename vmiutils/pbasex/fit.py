@@ -373,17 +373,29 @@ class PbasexFit(object):
         warnings.warn(msg, DeprecationWarning)
         return self.radial_spectrum(rbins=rbins, rmax=rmax)
 
-    def radial_spectrum(self, rbins=500, rmax=None):
-        """Calculate a radial spectrum from the parameters of a fit. Returns a
-        tuple (r, intensity) containing the r values and the corresponding
-        intensities.
+    def radial_spectrum(self, rbins=500, rmax=None, truncate=5.0,
+                        nthreads=None):
+        """Calculate a radial spectrum from the parameters of a fit.  Returns
+        a tuple (r, intensity) containing the r values and the
+        corresponding intensities.
 
         rbins determines the number of points in the returned spectrum.
 
         rmax is the maximum radius to consider, i.e. the spectrum is
-        calculated for r=0..rmax. Note: rmax is the desired radial value and
-        not the bin number. If rmax is None (default) then the maximum radius
-        in the input image is used."""
+        calculated for r=0..rmax. Note: rmax is the desired radial
+        value and not the bin number. If rmax is None (default) then
+        the maximum radius in the input image is used.
+
+        truncate specifies the number of basis function sigmas we
+        consider either side of each point when calculating the
+        intensity at each point. For example if truncate is 5.0, at
+        each point we'll consider all basis functions whose centre
+        lies within 5.0 * sigma of that point. 5.0 is the default.
+
+        nthreads specifies the number of threads to use. If None, then
+        we'll use all available cores.
+
+        """
 
         if self.coef is None:
             logger.error('no fit done')
@@ -395,12 +407,48 @@ class PbasexFit(object):
             logger.error('rmax exceeds that of original data')
             raise ValueError
 
-        spec = radial_spectrum(rmax, rbins, self.coef, self.kmax,
-                               self.rkstep, self.sigma)
-
         # Calculate r values. Set enpoint=False here, since the r
         # values are the lowest value of r in each bin.
         r = numpy.linspace(0.0, rmax, rbins, endpoint=False)
+
+        spec = numpy.zeros(rbins)
+
+        def __worker(rbin):
+            rr = r[rbin]
+
+            spec[rbin] = radial_spectrum_point(
+                rr, self.coef, self.kmax, self.rkstep,
+                self.sigma, self.lmax, truncate)
+
+        if nthreads is None:
+            nthreads = multiprocessing.cpu_count()
+
+        with futures.ThreadPoolExecutor(max_workers=nthreads) as executor:
+            jobs = dict((executor.submit(__worker, rbin), rbin)
+                        for rbin in xrange(rbins))
+
+            jobs_done = futures.as_completed(jobs)
+
+            while True:
+                try:
+                    job = next(jobs_done)
+
+                    if job.exception() is not None:
+                        logger.error(job.exception())
+                        for j in jobs:
+                            if not j.done():
+                                j.cancel()
+                        raise job.exception()
+                except StopIteration:
+                    break
+                except KeyboardInterrupt:
+                    logger.info('Ctrl-c received, exiting.')
+                    for j in jobs:
+                        if not j.done():
+                            j.cancel()
+                    raise
+        # Normalize to max value of 1
+        spec /= spec.max()
 
         return r, spec
 
