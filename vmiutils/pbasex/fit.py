@@ -77,6 +77,10 @@ def _even(n):
 
 class PbasexFit(object):
 
+    # This private attribute is a list containing the variables that should be
+    # saved to a file when dump is called and read when load is called.
+    _metadata = ['kmax', 'lmax', 'oddl', 'sigma', 'rkstep', 'rmax']
+
     def __init__(self):
         self.coef = None
         self.kmax = None
@@ -86,13 +90,6 @@ class PbasexFit(object):
         self.rkstep = None
         self.rmax = None
         self.vmi_image = None
-        self._metadata = ['kmax',
-                           'lmax',
-                           'oddl',
-                           'sigma',
-                           'rkstep',
-                           'rmax',
-                           ]
 
     def _build_CartesianImage(self, image, x, y, centre, swapxy):
         # Wrap VMI data into instance of CartesianImage
