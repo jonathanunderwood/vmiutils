@@ -4,3 +4,6 @@ fit.py:
     function in _fit.c
 
 2. Better documentation ! Use sphinx.
+
+_fit.c:
+1. Replace instances of lmax + 1 in loops with a pre-calculated ldim
