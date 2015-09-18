@@ -1058,9 +1058,11 @@ class PbasexFitBetaSpectrum(object):
 
         return lines
 
+
 class PbasexFitCosnSpectrum(object):
+
     def __init__(self, fit, rbins=500):
-        self.r, self.cosn = fit.cosn_expval2(rbins=rbins)
+        self.r, self.cosn = fit.cosn_expval(rbins=rbins)
         self.lmax = fit.lmax
         self.oddl = fit.oddl
 
