@@ -33,62 +33,6 @@
 /* Exceptions for this module. */
 static PyObject *IntegrationError;
 
-static inline int
-arr1D_get(PyArrayObject *arr, int idx, double *val)
-{
-  PyObject *pval = PyArray_GETITEM(arr, PyArray_GETPTR1(arr, idx));
-  if (pval)
-    {
-      *val = PyFloat_AsDouble(pval);
-      Py_DECREF(pval);
-      return 0;
-    }
-  else
-    return -1;
-}
-
-static inline int
-arr1D_set(PyArrayObject *arr, int idx, double val)
-{
-  PyObject *pval = PyFloat_FromDouble (val);
-  if (pval)
-    {
-      int ret = PyArray_SETITEM(arr, PyArray_GETPTR1(arr, idx), pval);
-      Py_DECREF(pval);
-      return ret;
-    }
-  else
-    return -1;
-}
-
-static inline int
-arr2D_get(PyArrayObject *arr, int idx1, int idx2, double *val)
-{
-  PyObject *pval = PyArray_GETITEM(arr, PyArray_GETPTR2(arr, idx1, idx2));
-  if (pval)
-    {
-      *val = PyFloat_AsDouble(pval);
-      Py_DECREF(pval);
-      return 0;
-    }
-  else
-    return -1;
-}
-
-static inline int
-arr2D_set(PyArrayObject *arr, int idx1, int idx2, double val)
-{
-  PyObject *pval = PyFloat_FromDouble (val);
-  if (pval)
-    {
-      int ret = PyArray_SETITEM(arr, PyArray_GETPTR2(arr, idx1, idx2), pval);
-      Py_DECREF(pval);
-      return ret;
-    }
-  else
-    return -1;
-}
-
 #define __SMALL 1.0e-30
 
 static int
