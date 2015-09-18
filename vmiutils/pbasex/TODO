@@ -1,15 +1,6 @@
 fit.py:
- 1. Remove cosn_expval function - unused
- 2. Rename cosn_expval2 to cosn_expval_threaded and add a wrapper for
-    the old function name.
- 3. Remove beta_coefficients function - unthreaded, unused
- 4. Add a radial_spectrum_threaded function
- 5. Remove calc_radial_spectrum function (or turn it into a wrapper)
- 6. Add a polar_distribution_threaded function
- 
-_fit.c:
- 1. Add radial_spectrum_point function
- 2. Remove radial_spectrum function
- 3. Remove unused beta_coefficients function
- 4. Add polar_distribution_point function
- 5. Remove arr_Nd_get/set functions
+ 1. Add a polar_distribution threaded function to calculate a polar
+    distribution - we already have the polar_distribution_point
+    function in _fit.c
+
+2. Better documentation ! Use sphinx.
