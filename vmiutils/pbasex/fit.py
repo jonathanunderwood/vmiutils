@@ -648,8 +648,8 @@ class PbasexFit(object):
                                 truncate=truncate, nthreads=nthreads,
                                 epsabs=epsabs, epsrel=epsrel)
 
-    def beta_coefficients_threaded(self, rbins=500, rmax=None,
-                                   truncate=5.0, nthreads=None):
+    def beta_coefficients(self, rbins=500, rmax=None,
+                          truncate=5.0, nthreads=None):
         '''Calculates the beta coefficients for the fit as a function of
         r up to rmax and for n from 0 to nmax.
 
@@ -716,30 +716,15 @@ class PbasexFit(object):
 
         return r, beta
 
-    def beta_coefficients(self, rbins=500, rmax=None):
-        '''Calculates the beta coefficients for the fit as a function
-        of r up to rmax.
+    def beta_coefficients_threaded(self, rbins=500, rmax=None,
+                                   truncate=5.0, nthreads=None):
+        msg = 'beta_coefficients_threaded method is deprecated, use beta_coefficients method instead'
+        logger.warning(msg)
+        warnings.warn(msg, DeprecationWarning)
 
-        rbins specifies the number of data points calculated
-
-        rmax specifies the maximum radius to consider and is specified
-        in dimensions of the original image that was fitted.
-        '''
-        if self.coef is None:
-            logger.error('no fit done')
-            raise AttributeError
-
-        if rmax == None:
-            rmax = self.rmax
-
-        beta = beta_coeffs(rmax, rbins, self.coef, self.kmax,
-                           self.rkstep, self.sigma, self.lmax)
-
-        # Calculate r values. Set enpoint=False here, since the r
-        # values are the lowest value of r in each bin.
-        r = numpy.linspace(0.0, rmax, rbins, endpoint=False)
-
-        return r, beta
+        return self.beta_coefficients(rbins=rbins, rmax=rmax,
+                                      truncate=truncate,
+                                      nthreads=nthreads)
 
     def dumpfd(self, fd):
         for object in self._metadata:
