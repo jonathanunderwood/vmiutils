@@ -25,6 +25,7 @@ import math
 import concurrent.futures as futures
 import matplotlib
 import scipy.linalg
+import warnings
 
 import vmiutils as vmi
 import matrix as pbm
@@ -367,6 +368,12 @@ class PbasexFit(object):
         self.rkstep = rbinw * Rbins / float(matrix.kmax)
 
     def calc_radial_spectrum(self, rbins=500, rmax=None):
+        msg = 'calc_radial_spectrum method is deprecated, use radial_spectrum method instead'
+        logger.warning(msg)
+        warnings.warn(msg, DeprecationWarning)
+        return self.radial_spectrum(rbins=rbins, rmax=rmax)
+
+    def radial_spectrum(self, rbins=500, rmax=None):
         """Calculate a radial spectrum from the parameters of a fit. Returns a
         tuple (r, intensity) containing the r values and the corresponding
         intensities.
