@@ -306,6 +306,64 @@ beta_coeffs_point(PyObject *self, PyObject *args)
 }
 
 static PyObject *
+radial_spectrum_point(PyObject *self, PyObject *args)
+{
+  PyObject *coefarg = NULL, *pycoef = NULL;
+  int kmax, lmax, ldim, k, kstart, kstop;
+  double r, rkstep, sigma, truncate, s, val;
+  double *coef;
+
+  if (!PyArg_ParseTuple(args, "dOiddid",
+			&r, &coefarg, &kmax, &rkstep, &sigma, &lmax,
+			&truncate))
+    {
+      PyErr_SetString (PyExc_TypeError,
+		       "Bad argument to beta_coefs_point");
+      return NULL;
+    }
+
+  pycoef = PyArray_FROM_OTF(coefarg, NPY_DOUBLE,
+			    NPY_ARRAY_IN_ARRAY);
+  if (!pycoef)
+    {
+      Py_XDECREF(pycoef);
+      return NULL;
+    }
+
+  coef = (double *) PyArray_DATA((PyArrayObject *) pycoef);
+
+  /* Release GIL here as no longer accessing python objects. */
+  Py_BEGIN_ALLOW_THREADS
+
+  ldim = lmax + 1;
+  s = 2.0 * sigma * sigma;
+  kstart = floor((r - truncate * sigma) / rkstep);
+  kstop = ceil((r + truncate * sigma) / rkstep);
+
+  if (kstart < 0)
+    kstart = 0;
+  if (kstop > kmax)
+    kstop = kmax;
+
+  val = 0.0;
+  for (k = kstart; k <= kstop; k++)
+    {
+      double rk = k * rkstep;
+      double a = r - rk;
+      double rad = exp(-(a * a) / s);
+      double c = coef [k * ldim];
+      val += c * rad * r * r;
+    }
+
+  /* Regain GIL */
+  Py_END_ALLOW_THREADS
+
+  Py_DECREF (pycoef);
+
+  return Py_BuildValue("d", val);
+}
+
+static PyObject *
 cartesian_distribution_point(PyObject *self, PyObject *args)
 {
   PyObject *coefarg = NULL, *pycoef = NULL;
@@ -696,6 +754,8 @@ static PyMethodDef FitMethods[] = {
      "Returns a (x, y) point in the simulated distribution cartesian image from fit coefficients."},
     {"polar_distribution",  polar_distribution, METH_VARARGS,
      "Returns a simulated distribution polar image from fit coefficients."},
+    {"radial_spectrum_point", radial_spectrum_point, METH_VARARGS,
+     "Returns the radial spectrum at a single value of r."},
     {"beta_coeffs_point", beta_coeffs_point, METH_VARARGS,
      "Returns beta coefficients at a single value of r."},
     {"cosn_expval_point", cosn_expval_point, METH_VARARGS,
