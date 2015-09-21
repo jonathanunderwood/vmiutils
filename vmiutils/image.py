@@ -625,7 +625,9 @@ class PolarImage():
         """ Return a tuple (r, intensity) for the radial spectrum calculated
         by summing over theta for each r bin.
         """
-        return self.r, self.image.sum(1)
+        spec = self.image.sum(1)
+        spec /= spec.max()
+        return self.r, spec
 
     def beta_coefficients(self, lmax=2, oddl=False):
         """ Return a tuple (r, beta) representing the values of the beta
