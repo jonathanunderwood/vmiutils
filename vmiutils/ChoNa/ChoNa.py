@@ -91,8 +91,6 @@ def invert_CartesianImage(image, S=None):
 
     return image_out
 
-import copy
-
 def invert_CartesianImage_plreg(image, iterations=10, initial_guess=None, 
                                 reduced_tau=None):
     # reduced_tau lies in range 0..2
