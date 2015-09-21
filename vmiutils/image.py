@@ -498,8 +498,10 @@ class CartesianImage():
     def centre_of_grid(self):
         """Returns a tuple containing the central coordinates of the cartesian
         grid."""
-        xc = self.x[0] + 0.5 * (self.x[-1] - self.x[0])
-        yc = self.y[0] + 0.5 * (self.y[-1] - self.y[0])
+        xbinw = self.x[1] - self.x[0]
+        ybinw = self.y[1] - self.y[0]
+        xc = 0.5 * (self.x[-1] + xbinw - self.x[0])
+        yc = 0.5 * (self.y[-1] + ybinw - self.y[0])
         return xc, yc
 
     def dump(self, fd):
