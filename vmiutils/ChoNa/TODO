@@ -1,0 +1,16 @@
+- Replace all of the plreg stuff - use the projected landweber module
+  instead
+
+- Remove unused blurring stuff
+
+- Wrap these methods up into an object, which possibly subclasses
+  CartesianImage
+
+- Move plotting stuff into the above object and out of cnfit. Model it
+  on the pbasex plotting objects.
+
+- Add capability for calculaing expectation values of <cos^n theta> to
+  PolarImage - calculate from fitted beta values
+
+- Clean up cnfit a lot! Notably add an out put file argument rather
+  than dumping to junk.pdf!
