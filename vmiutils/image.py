@@ -16,11 +16,12 @@
 # along with VMIUtils.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
-from numpy.linalg import lstsq
+import numpy.linalg
+import numpy.polynomial.legendre as legendre
 import polcart
 import logging
 import scipy.ndimage
-from scipy.special import lpn as legpol
+
 import copy
 import pickle
 import matplotlib
@@ -629,46 +630,52 @@ class PolarImage():
         spec /= spec.max()
         return self.r, spec
 
-    def beta_coefficients(self, lmax=2, oddl=False):
-        """ Return a tuple (r, beta) representing the values of the beta
+    def beta_coefficients(self, lmax=2, mask_val=1.0e-8):
+        '''Return a tuple (r, beta) representing the values of the beta
         parameters at for each radial bin calculated by fitting to an
-        expansion in Legendre polynomials up to order lmax. oddl specifies
-        whether odd l coefficients are fit or not.
-        """
+        expansion in Legendre polynomials up to order lmax.
 
-        costheta = numpy.cos(self.theta)
-        A = numpy.c_[[legpol(lmax, ct)[0] for ct in costheta]]
-        logger.debug(
-            'matrix calculated for beta fitting with shape {0}'.format(A.shape))
+        The returned beta values are normalized to beta[0] = 1 at each
+        radius. So, if beta[0] is small, these values can be very
+        large.
 
-        if oddl is False:
-            A = A[:, ::2]
-            logger.debug(
-                'odd l coefs not fit: matrix reduced to shape {0}'.format(A.shape))
+        mask_val is used to determine which radii beta values are
+        calculated for. If this is None, beta values are returned for
+        all radiiu, even where there is no intensity and so they have
+        no meaningful physical significance. If mask_val is not none,
+        then beta values are calculated only when the radial spectrum
+        intensity (when normalized to maximum 1) takes a value greater
+        than mask_val, otherwise the beta values are set to invalid
+        data. In this case beta is a numpy masked array.
 
-        try:
-            # TODO set rcond
-            beta, resid, rank, s = lstsq(A, self.image.transpose())
-            # Note that beta is indexed as beta[l, r]
-            # TODO: do something with resid, rank, s
-        except numpy.linalg.LinAlgError:
-            logger.error(
-                'failed to converge while fitting beta coefficients')
-            raise
+        At present even and odd l Legendre polynomials are
+        included. In the future we'll extend this method to allow for
+        only even l Legendre polynomials to be included in the fit.
+
+        '''
+
+        # Need to fit to central values of the bins in theta, so
+        # construct an array of the central values.
+        theta_c = self.theta + 0.5 * (self.theta[1] - self.theta[0])
+
+        beta = legendre.legfit(numpy.cos(theta_c), self.image.T, lmax)
+
         logger.debug('beta coefficents fit successfully')
 
         # Normalize to beta_0 = 1 at each r
         beta0 = beta[0, :]
-        beta = beta / beta0
-        logger.debug('beta coefficents normalized')
+        if mask_val != None:
+            # Only calculate beta values normalized to beta_0=1 if the
+            # radial spectrum, when normalized to unity maximum, has a
+            # value greater than mask_val. Note that beta0.max
+            # corresponds to the maximum value of the radial spectrum.
+            mask_val = mask_val * beta0.max()
+            beta0_masked = numpy.ma.masked_inside(beta0, -mask_val, mask_val)
+            beta /= beta0_masked
+        else:
+            beta /= beta0
 
-        if oddl is False:
-            logger.debug('adding rows to beta matrix for odd l coeffs')
-            logger.debug(
-                'beta shape before adding new rows {0}'.format(beta.shape))
-            beta = numpy.insert(beta, numpy.arange(1, lmax), 0, axis=0)
-            logger.debug(
-                'rows for odd l added to beta array; new shape {0}'.format(beta.shape))
+        logger.debug('beta coefficents normalized')
 
         return self.r, beta
 
