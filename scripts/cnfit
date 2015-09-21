@@ -39,7 +39,7 @@ parser.add_argument('--centre', nargs=2, type=float, default=None,
 parser.add_argument('--swapxy', action='store_true',
                     help='If specified, the image data will have the axes swapped before fitting')
 parser.add_argument('--no-oddl', action='store_true',
-                    help='If specified, only even l coefficients in the Legendre polynomial fitting will be used')
+                    help='If specified, only even l coefficients in the Legendre polynomial fitting will be used. CURRENTLY IGNORED - FIXME')
 parser.add_argument('--lmax', type=int, default=2,
                     help='Maximum value of l in Legendre polynomial fitting')
 parser.add_argument('--rbins', type=float, default=128,
@@ -68,13 +68,13 @@ if args.swapxy is True:
     imdat = imdat.transpose()
 
 # Set centre - if not specified, use image centre of gravity
-if args.centre = None:
-    centre = 'cofg'
-    logger.info('image centre of gravity used as centre: {0}'.format(cofg))
+if args.centre == None:
+    centre = None
+    logger.info('image grid centre will be used as centre')
 else:
     centre = args.centre
 
-vmicart = vmi.CartesianImage(image=imdat, centre=args.centre)
+vmicart = vmi.CartesianImage(image=imdat, centre=centre)
 
 # Resample the image so that centre lies on lower left corner of a
 # pixel such that the quadrants are exact.
@@ -108,7 +108,7 @@ if args.no_oddl is True:
 else:
     oddl = True
 
-r2, beta = invimg_pol.beta_coefficients(lmax=args.lmax, oddl=oddl)
+r2, beta = invimg_pol.beta_coefficients(lmax=args.lmax)
 logger.debug('beta coefficients calculated')
 
 # Plotting - set up a 2x2 grid of plots, but have the radial spectrum span two
@@ -121,10 +121,10 @@ ax1 = plot.subplot(grid[0, :]) # Span both columns
 ax1.plot(r1, spec)
 
 ax2 = ax1.twinx()
-ax2.set_autoscaley_on(False)
-ax2.set_ybound(-5, 5)
+#ax2.set_autoscaley_on(False)
+#ax2.set_ybound(-5, 5)
 
-for b in numpy.arange(1, beta.shape[0]):
+for b in numpy.arange(0, beta.shape[0]):
     ax2.plot(r2, beta[b, :], label=r"$\beta_{%d}$"%b)
 plot.legend()
 
@@ -140,5 +140,5 @@ im = ax4.imshow(invimg_cart.image.transpose().clip(0.0), origin='lower',
                  cmap=plot.cm.gist_heat)
 fig.colorbar(im)
 
-#plot.show()
+plot.show()
 plot.savefig('junk.pdf')
