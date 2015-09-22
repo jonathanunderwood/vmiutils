@@ -71,6 +71,9 @@ class CartesianImage():
 
     def __init__(self, image=None, x=None, y=None,
                  xbins=None, ybins=None, centre=None):
+
+        self.from_PolarImage = self.__from_PolarImage
+
         if image is None:
             self.image = None
             self.x = None
@@ -441,7 +444,13 @@ class CartesianImage():
 
         return CartesianImage(image=newimg, x=newx, y=newy, centre=self.centre)
 
-    def from_PolarImage(self, pimage, xbins=None, ybins=None, order=3):
+    @classmethod
+    def from_PolarImage(cls, pimage, xbins=None, ybins=None, order=3):
+        instance = cls()
+        instance.from_PolarImage(pimage, xbins, ybins, order)
+        return instance
+
+    def __from_PolarImage(self, pimage, xbins=None, ybins=None, order=3):
         """Initialise from a PolarImage object by interpolation onto a
         cartesian grid.
 
