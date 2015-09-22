@@ -673,7 +673,7 @@ class PolarImage():
         then beta values are calculated only when the radial spectrum
         intensity (when normalized to maximum 1) takes a value greater
         than mask_val, otherwise the beta values are set to invalid
-        data. In this case beta is a numpy masked array.
+        data. In either case beta is a numpy masked array.
 
         At present even and odd l Legendre polynomials are
         included. In the future we'll extend this method to allow for
@@ -698,9 +698,10 @@ class PolarImage():
             # corresponds to the maximum value of the radial spectrum.
             mask_val = mask_val * beta0.max()
             beta0_masked = numpy.ma.masked_inside(beta0, -mask_val, mask_val)
-            beta /= beta0_masked
         else:
-            beta /= beta0
+            beta0_masked =  numpy.ma.array(beta0, mask=numpy.zeros(beta0.size))
+
+        beta = beta / beta0_masked
 
         logger.debug('beta coefficents normalized')
 
