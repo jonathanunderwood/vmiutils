@@ -573,13 +573,22 @@ class PolarImage():
     i.e. in regularly spaced bins in (r, theta)."""
 
     def __init__(self):
+        self.from_numpy_array = self.__from_numpy_array
+        self.from_CartesianImage = self.__from_CartesianImage
+
         self.image = None
         self.r = None
         self.theta = None
         self.rbins = None
         self.thetabins = None
 
-    def from_numpy_array(self, image, r=None, theta=None):
+    @classmethod
+    def from_numpy_array(cls, image, r=None, theta=None):
+        instance = cls()
+        instance.from_numpy_array(image, r=r, theta=theta)
+        return instance
+
+    def __from_numpy_array(self, image, r=None, theta=None):
         """ Initialize from a polar image stored in a numpy array. If R or theta are
         not specified, the r and theta coordinates are stored as pixel values.
         """
@@ -596,8 +605,17 @@ class PolarImage():
         else:
             self.theta = theta.copy()
 
-    def from_CartesianImage(self, cimage, rbins=None,
+    @classmethod
+    def from_CartesianImage(cls, cimage, rbins=None,
                             thetabins=None, rmax=None, order=3):
+        instance = cls()
+        instance.from_CartesianImage(cimage, rbins=rbins,
+                                     thetabins=thetabins,
+                                     rmax=rmax, order=order)
+        return instance
+
+    def __from_CartesianImage(self, cimage, rbins=None,
+                              thetabins=None, rmax=None, order=3):
         """Calculate a polar represenation of a CartesianImage instance.
 
         cimage is a CartesianImage instance.
