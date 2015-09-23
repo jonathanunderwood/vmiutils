@@ -168,6 +168,14 @@ class CartesianImage():
         else:
             self.set_centre(centre)
 
+    @classmethod
+    def from_no_data(cls, image=None, x=None, y=None,
+                     xbins=None, ybins=None, centre=None):
+        instance = cls()
+        instance.from_no_data(image=image, x=x, y=y, xbins=xbins,
+                              ybins=ybins, centre=centre)
+        return instance
+
     def __from_no_data(self, image=None, x=None, y=None,
                        xbins=None, ybins=None, centre=None):
         if x is not None and y is not None:
