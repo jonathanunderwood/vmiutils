@@ -72,6 +72,8 @@ class CartesianImage():
     def __init__(self, image=None, x=None, y=None,
                  xbins=None, ybins=None, centre=None):
 
+        self.from_numpy_array = self.__from_numpy_array
+        self.from_no_data = self.__from_no_data
         self.from_PolarImage = self.__from_PolarImage
 
         if image is None:
