@@ -130,6 +130,67 @@ class CartesianImage():
         else:
             self.set_centre(centre)
 
+    def __from_numpy_array(self, array, x=None, y=None,
+                           xbins=None, ybins=None, centre=None):
+        self.image = image.copy()
+
+        if x is None:
+            self.x = numpy.arange(float(self.image.shape[0]))
+        else:
+            self.x = x.copy()
+
+        if y is None:
+            self.y = numpy.arange(float(self.image.shape[1]))
+        else:
+            self.y = y.copy()
+
+        self.shape = self.image.shape
+
+        # Set bin widths in each dimension assuming bins are equally
+        # spaced
+        self.xbinw = self.x[1] - self.x[0]
+        self.ybinw = self.y[1] - self.y[0]
+
+        if centre is None or centre == 'grid_centre':
+            self.set_centre(self.centre_of_grid())
+        elif centre == 'cofg':
+            self.set_centre(self.centre_of_gravity())
+        else:
+            self.set_centre(centre)
+
+    def __from_no_data(self, image=None, x=None, y=None,
+                       xbins=None, ybins=None, centre=None):
+        if x is not None and y is not None:
+            self.x = x.copy()
+            self.y = y.copy()
+            xbins = x.shape[0]
+            ybins = y.shape[0]
+        elif xbins is not None and ybins is not None:
+            self.x = numpy.arange(float(xbins))
+            self.y = numpy.arange(float(ybins))
+        else:
+            logger.error(
+                'x and y dimensions of CartesianImage not specified')
+
+        if image in ('empty', 'Empty'):
+            self.image = numpy.empty((xbins, ybins))
+        else:
+            self.image = numpy.zeros((xbins, ybins))
+
+        self.shape = self.image.shape
+
+        # Set bin widths in each dimension assuming bins are equally
+        # spaced
+        self.xbinw = self.x[1] - self.x[0]
+        self.ybinw = self.y[1] - self.y[0]
+
+        if centre is None or centre == 'grid_centre':
+            self.set_centre(self.centre_of_grid())
+        elif centre == 'cofg':
+            self.set_centre(self.centre_of_gravity())
+        else:
+            self.set_centre(centre)
+
     def copy(self):
         return copy.copy(self)
 
