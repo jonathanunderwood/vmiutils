@@ -22,7 +22,8 @@ logger.addHandler(__null_handler)
 
 
 def legfit(x, y, deg, rcond=None, full=False, w=None):
-    """Least squares fit of Legendre series to data.
+    """
+    Least squares fit of Legendre series to data.
 
     Return the coefficients of a Legendre series of degree `deg` that is the
     least squares fit to the data values `y` given at points `x`. If `y` is
@@ -72,7 +73,7 @@ def legfit(x, y, deg, rcond=None, full=False, w=None):
         2-D, the coefficients for the data in column k of `y` are in
         column `k`. If `deg` is specified as a list, coefficients for
         terms not included in the fit are set equal to zero in the
-        returned coef.
+        returned `coef`.
 
     [residuals, rank, singular_values, rcond] : list
         These values are only returned if `full` = True
@@ -143,9 +144,11 @@ def legfit(x, y, deg, rcond=None, full=False, w=None):
     """
     x = np.asarray(x) + 0.0
     y = np.asarray(y) + 0.0
-    deg = np.asarray(deg, dtype=int)
+    deg = np.asarray([deg,], dtype=int).flatten()
 
     # check arguments.
+    if deg.size < 1:
+        raise TypeError("expected deg to be one or more integers")
     if deg.min() < 0:
         raise ValueError("expected deg >= 0")
     if x.ndim != 1:
@@ -200,15 +203,19 @@ def legfit(x, y, deg, rcond=None, full=False, w=None):
 
     # Expand c to include non-fitted coefficients which are set to zero
     if restricted_L:
-        cc = np.zeros((lmax+1, y.shape[1]))
-        cc[deg, :] = c
+        if c.ndim == 2:
+            cc = np.zeros((lmax+1, c.shape[1]))
+        else:
+            cc = np.zeros(lmax+1)
+        cc[deg] = c
         c = cc
 
     # warn on rank reduction
     if rank != order and not full:
         msg = "The fit may be poorly conditioned"
-        # warnings.warn(msg, pu.RankWarning)
+        #warnings.warn(msg, pu.RankWarning)
         logger.debug(msg + 'rank: {0} order: {1}'.format(rank, order))
+
     if full:
         return c, [resids, rank, s, rcond]
     else:
