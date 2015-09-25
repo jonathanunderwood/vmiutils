@@ -106,14 +106,14 @@ class CartesianImage():
 
 
     @classmethod
-    def from_numpy_array(cls, array, x=None, y=None,
+    def from_numpy_array(cls, image, x=None, y=None,
                          xbins=None, ybins=None, centre=None):
         instance = cls()
-        instance.from_numpy_array(array, x=x, y=y, xbins=xbins,
+        instance.from_numpy_array(image, x=x, y=y, xbins=xbins,
                                   ybins=ybins, centre=centre)
         return instance
 
-    def __from_numpy_array(self, array, x=None, y=None,
+    def __from_numpy_array(self, image, x=None, y=None,
                            xbins=None, ybins=None, centre=None):
         self.image = image.copy()
 
