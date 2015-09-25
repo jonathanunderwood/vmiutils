@@ -28,6 +28,11 @@ import matplotlib
 import matplotlib.cm
 import warnings
 
+# This is a local copy of the numpy Legendre series fitting function
+# with modifications to allow for specification of which terms to
+# fit. Once those changes are upstream in numpy, this can be removed.
+from legfit import legfit
+
 logger = logging.getLogger('vmiutils.image')
 
 
@@ -709,7 +714,7 @@ class PolarImage(object):
         spec /= spec.max()
         return self.r, spec
 
-    def beta_coefficients(self, lmax=2, mask_val=1.0e-8):
+    def beta_coefficients(self, lmax=2, oddl=False, mask_val=1.0e-8):
         '''Return a tuple (r, beta) representing the values of the beta
         parameters at for each radial bin calculated by fitting to an
         expansion in Legendre polynomials up to order lmax.
@@ -737,8 +742,12 @@ class PolarImage(object):
         # construct an array of the central values.
         theta_c = self.theta + 0.5 * (self.theta[1] - self.theta[0])
 
-        beta = legendre.legfit(numpy.cos(theta_c), self.image.T, lmax)
+        if oddl == False:
+            lvals = numpy.arange(0, lmax + 1, 2)
+        else:
+            lvals = numpy.arange(0, lmax + 1)
 
+        beta = legfit(numpy.cos(theta_c), self.image.T, lvals)
         logger.debug('beta coefficents fit successfully')
 
         # Normalize to beta_0 = 1 at each r
