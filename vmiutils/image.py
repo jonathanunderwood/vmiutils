@@ -44,7 +44,7 @@ def _round_int(x):
     return int(round(x))
 
 
-class CartesianImage():
+class CartesianImage(object):
     _metadata = ['xbinw', 'ybinw', 'centre', 'shape', 'quad']
     _numpydata = ['x', 'y', 'image']
 
@@ -619,7 +619,7 @@ class CartesianImage():
                                rasterized=rasterized)
 
 
-class PolarImage():
+class PolarImage(object):
 
     """ Class used to represent a VMI image stored in polar coordinates
     i.e. in regularly spaced bins in (r, theta)."""
