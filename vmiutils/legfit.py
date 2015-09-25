@@ -1,5 +1,7 @@
 # This is a local copy of numpy's legfit module with local mods to
 # allow selection of which Legendre polynomials are fit.
+#
+# https://github.com/numpy/numpy/pull/6360
 
 import numpy as np
 import numpy.linalg as la
@@ -66,10 +68,11 @@ def legfit(x, y, deg, rcond=None, full=False, w=None):
     Returns
     -------
     coef : ndarray, shape (M,) or (M, K)
-        Legendre coefficients ordered from low to high. If `y` was 2-D,
-        the coefficients for the data in column k  of `y` are in column
-        `k`. If `lvals` is specified, coefficients for terms not included
-        are set equal to zero in the returned coef.
+        Legendre coefficients ordered from low to high. If `y` was
+        2-D, the coefficients for the data in column k of `y` are in
+        column `k`. If `deg` is specified as a list, coefficients for
+        terms not included in the fit are set equal to zero in the
+        returned coef.
 
     [residuals, rank, singular_values, rcond] : list
         These values are only returned if `full` = True
