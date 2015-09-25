@@ -31,6 +31,7 @@ import warnings
 # This is a local copy of the numpy Legendre series fitting function
 # with modifications to allow for specification of which terms to
 # fit. Once those changes are upstream in numpy, this can be removed.
+# https://github.com/numpy/numpy/pull/6360
 from legfit import legfit
 
 logger = logging.getLogger('vmiutils.image')
