@@ -102,8 +102,8 @@ class PbasexFitDetFn1(pbasex.PbasexFit):
                                                truncate=5.0, nthreads=None,
                                                weighting='normal', func=None):
         """Calculates a cartesian image of the detection function distribution
-        in the y-z plane i.e. the plane that we normally plot the
-        extracted axis distribution in. Multithreaded for speed.
+        integrated over phi in the y-z plane i.e. the plane that we normally
+        plot the extracted axis distribution in. Multithreaded for speed.
 
         bins specifes the number of bins in the y and z dimension to
         calculate.
