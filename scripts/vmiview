@@ -21,6 +21,7 @@ import numpy
 import matplotlib.pyplot as plot
 from matplotlib.widgets import Cursor
 import argparse
+import sys
 
 parser = argparse.ArgumentParser(
     description='Simple utility for examining a VMI data file and locating the centre of an image')
