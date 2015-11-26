@@ -481,11 +481,11 @@ class CartesianImage(object):
                 logger.error('ymin outside of image in zoom_rect_pix')
                 raise RuntimeError('ymin outside of image')
 
-        if ymax <= self.image.shape[0]:
+        if ymax <= self.image.shape[1]:
             y2 = ymax
         else:
             if pad == True:
-                y2 = self.image.shape[0] - 1
+                y2 = self.image.shape[1] - 1
             else:
                 logger.error('ymax outside of image in zoom_rect_pix')
                 raise RuntimeError('ymax outside of image')
