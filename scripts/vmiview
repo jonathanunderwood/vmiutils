@@ -18,8 +18,10 @@
 # along with VMIUtils.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy
+import matplotlib
 import matplotlib.pyplot as plot
 from matplotlib.widgets import Cursor
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import argparse
 import sys
 
@@ -43,8 +45,11 @@ except IOError:
 
 fig = plot.figure()
 ax = fig.add_subplot(111, axisbg='#FFFFCC')
-ax.pcolormesh(data.T)
+im = ax.pcolormesh(data.T, cmap=matplotlib.cm.spectral)
 ax.axis('image')
-cursor = Cursor(ax, useblit=True, color='red')#, linewidth=2)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.05)
+plot.colorbar(im, cax=cax)
+cursor = Cursor(cax, useblit=True, color='red')#, linewidth=2)
 
 plot.show()
